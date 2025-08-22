@@ -1,0 +1,210 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --base-font-size: 16px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --base-font-size: 16px;
+  }
+}
+
+@media (min-width: 1536px) {
+  :root {
+    --base-font-size: 18px;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --base-font-size: 20px;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --base-font-size: 24px;
+  }
+}
+
+html {
+  font-size: var(--base-font-size);
+}
+
+@layer base {
+  body {
+    @apply text-gray-900 bg-gradient-to-br from-orange-50 via-white to-yellow-50;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-extrabold text-gray-900;
+  }
+  
+  input, textarea, select {
+    @apply outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all duration-300;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 sm:px-5 sm:py-2.5 lg:px-6 lg:py-3 rounded-full font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-soft hover:shadow-orange text-sm sm:text-base transform hover:scale-105;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-orange-600 to-red-600 text-white hover:from-orange-700 hover:to-red-700 shadow-lg hover:shadow-xl font-bold;
+  }
+  
+  .btn-secondary {
+    @apply bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600 shadow-lg font-bold;
+  }
+  
+  .btn-accent {
+    @apply bg-gradient-to-r from-red-500 to-pink-600 text-white hover:from-red-600 hover:to-pink-700 shadow-lg font-bold;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-orange-500 bg-white text-orange-700 hover:bg-orange-100 hover:border-orange-600 hover:text-orange-900 font-bold;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-lg;
+  }
+  
+  .card {
+    @apply bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft border-2 border-orange-100 overflow-hidden p-4 sm:p-5 lg:p-6 hover:border-orange-200 transition-all duration-300;
+  }
+  
+  .card-hover {
+    @apply hover:shadow-glow transition-all duration-300 hover:-translate-y-2 hover:rotate-1;
+  }
+  
+  .input {
+    @apply w-full px-3 py-2 sm:px-4 sm:py-2.5 lg:py-3 border-2 border-orange-300 rounded-xl bg-white focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all duration-300 text-sm sm:text-base hover:border-orange-400 text-gray-900 font-medium;
+  }
+  
+  .label {
+    @apply block text-xs sm:text-sm lg:text-base font-bold text-gray-900 mb-1.5 sm:mb-2;
+  }
+  
+  .error-text {
+    @apply text-sm text-error mt-1 font-medium;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs lg:text-sm font-medium;
+  }
+  
+  .badge-primary {
+    @apply bg-gradient-to-r from-orange-200 to-red-200 text-orange-900 font-bold;
+  }
+  
+  .badge-accent {
+    @apply bg-gradient-to-r from-red-200 to-pink-200 text-red-900 font-bold;
+  }
+  
+  .badge-warm {
+    @apply bg-gradient-to-r from-yellow-200 to-orange-200 text-yellow-900 font-bold;
+  }
+}
+
+@layer utilities {
+  .icon-xs {
+    @apply w-3 h-3 sm:w-4 sm:h-4;
+  }
+  .icon-sm {
+    @apply w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6;
+  }
+  .icon-md {
+    @apply w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8;
+  }
+  .icon-lg {
+    @apply w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12;
+  }
+  .icon-xl {
+    @apply w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14;
+  }
+  .icon-2xl {
+    @apply w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 xl:w-16 xl:h-16;
+  }
+  .icon-3xl {
+    @apply w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20;
+  }
+  
+  .container-spacing {
+    @apply px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12;
+  }
+  
+  .section-spacing {
+    @apply py-8 sm:py-10 lg:py-12 xl:py-16 2xl:py-20;
+  }
+  
+  .content-spacing {
+    @apply space-y-4 sm:space-y-5 lg:space-y-6 xl:space-y-8;
+  }
+  
+  .grid-spacing {
+    @apply gap-4 sm:gap-5 lg:gap-6 xl:gap-8;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .gradient-primary {
+    @apply bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 animate-gradient-shift bg-[length:200%_200%];
+  }
+  
+  .gradient-accent {
+    @apply bg-gradient-to-r from-red-400 via-pink-500 to-orange-400 animate-gradient-shift bg-[length:200%_200%];
+  }
+}
+
+/* Custom slider styles for CreatePlaylist */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #FB923C, #EA580C);
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #FB923C, #EA580C);
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  cursor: pointer;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+
+input[type="range"]:hover::-moz-range-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}

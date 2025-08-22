@@ -1,0 +1,44 @@
+{
+  "short_name": "BobMap",
+  "name": "BobMap - 맛있는 매칭",
+  "description": "취향 기반 맛집 매칭 서비스",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "https://ui-avatars.com/api/?name=BM&background=ff6b35&color=fff&size=192",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://ui-avatars.com/api/?name=BM&background=ff6b35&color=fff&size=512",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#ff6b35",
+  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "categories": ["food", "social", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "취향 매칭",
+      "short_name": "매칭",
+      "description": "나와 입맛이 맞는 사람 찾기",
+      "url": "/matches",
+      "icons": [{ "src": "/favicon.ico", "sizes": "96x96" }]
+    },
+    {
+      "name": "동행 찾기",
+      "short_name": "동행",
+      "description": "함께 식사할 친구 찾기",
+      "url": "/dining-buddy",
+      "icons": [{ "src": "/favicon.ico", "sizes": "96x96" }]
+    }
+  ]
+}
