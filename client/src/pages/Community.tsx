@@ -20,7 +20,7 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
-import { getCommunityImage, getAvatarColor } from '../utils/communityImages';
+import { getCommunityImage, getAvatarColor, getPostVisual } from '../utils/communityImages';
 
 interface CommunityPost {
   id: string;
@@ -72,7 +72,7 @@ const Community: React.FC = () => {
       },
       category: '레시피',
       tags: ['라면', '꿀팁', '백종원', '인스턴트'],
-      images: [getCommunityImage('recipe', 0)],
+      images: [],
       likes: 1234,
       comments: 89,
       saves: 456,
@@ -129,7 +129,7 @@ const Community: React.FC = () => {
       },
       category: '음식 조합',
       tags: ['치킨', '음료', '조합', '꿀조합'],
-      images: [getCommunityImage('combination', 0)],
+      images: [],
       likes: 567,
       comments: 123,
       saves: 234,
@@ -152,7 +152,7 @@ const Community: React.FC = () => {
       },
       category: '할인 정보',
       tags: ['이마트', '1+1', '할인', '세일'],
-      images: [getCommunityImage('deal', 0)],
+      images: [],
       likes: 2341,
       comments: 89,
       saves: 1892,
@@ -402,16 +402,12 @@ const Community: React.FC = () => {
                     <h3 className="text-xl font-bold mb-2">{post.title}</h3>
                     <p className="text-gray-600 mb-4">{post.content}</p>
 
-                    {/* Images/Video */}
-                    {post.images && post.images.length > 0 && (
-                      <div className="mb-4">
-                        <img
-                          src={post.images[0]}
-                          alt={post.title}
-                          className="w-full h-64 object-cover rounded-lg"
-                        />
+                    {/* 이미지 대신 이모지 플레이스홀더 */}
+                    <div className="mb-4">
+                      <div className={`w-full h-64 bg-gradient-to-br ${getPostVisual(post.type, parseInt(post.id) - 1).gradient} rounded-lg flex items-center justify-center`}>
+                        <span className="text-7xl">{getPostVisual(post.type, parseInt(post.id) - 1).emoji}</span>
                       </div>
-                    )}
+                    </div>
 
                     {/* Recipe Details */}
                     {post.type === 'recipe' && post.difficulty && (

@@ -17,7 +17,7 @@ import {
   EyeIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
-import { getCommunityImage, getAvatarColor } from '../utils/communityImages';
+import { getCommunityImage, getAvatarColor, getPostVisual } from '../utils/communityImages';
 
 interface CommunityPost {
   id: string;
@@ -69,7 +69,7 @@ const MobileCommunity: React.FC = () => {
       },
       category: '레시피',
       tags: ['김치찌개', '백종원', '한식'],
-      images: [getCommunityImage('recipe', 0)],
+      images: [],
       likes: 3421,
       comments: 234,
       saves: 1892,
@@ -96,7 +96,7 @@ const MobileCommunity: React.FC = () => {
       },
       category: '레시피',
       tags: ['볶음밥', '자취요리', '간단요리'],
-      images: [getCommunityImage('recipe', 1)],
+      images: [],
       likes: 892,
       comments: 45,
       saves: 678,
@@ -122,7 +122,7 @@ const MobileCommunity: React.FC = () => {
       },
       category: '레시피',
       tags: ['에어프라이어', '치킨', '다이어트'],
-      images: [getCommunityImage('recipe', 2)],
+      images: [],
       likes: 5678,
       comments: 456,
       saves: 3421,
@@ -260,7 +260,7 @@ const MobileCommunity: React.FC = () => {
       },
       category: '할인',
       tags: ['이마트', '1+1', '라면'],
-      images: [getCommunityImage('deal', 0)],
+      images: [],
       likes: 8901,
       comments: 567,
       saves: 6789,
@@ -447,16 +447,12 @@ const MobileCommunity: React.FC = () => {
               <h3 className="font-bold text-base mb-1">{post.title}</h3>
               <p className="text-gray-600 text-sm mb-3">{post.content}</p>
 
-              {/* 이미지 */}
-              {post.images && post.images.length > 0 && (
-                <div className="mb-3 -mx-4">
-                  <img
-                    src={post.images[0]}
-                    alt={post.title}
-                    className="w-full h-48 object-cover"
-                  />
+              {/* 이미지 대신 이모지 플레이스홀더 */}
+              <div className="mb-3 -mx-4">
+                <div className={`w-full h-48 bg-gradient-to-br ${getPostVisual(post.type, parseInt(post.id) - 1).gradient} flex items-center justify-center`}>
+                  <span className="text-6xl">{getPostVisual(post.type, parseInt(post.id) - 1).emoji}</span>
                 </div>
-              )}
+              </div>
 
               {/* 메타 정보 */}
               <div className="flex flex-wrap gap-3 mb-3 text-xs text-gray-500">

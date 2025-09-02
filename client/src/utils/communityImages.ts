@@ -1,35 +1,40 @@
-// Community post images using reliable placeholder services
+// Community post images using emoji placeholders with gradient backgrounds
 
-export const getCommunityImage = (type: string, index: number = 0): string => {
-  // Using placeholder images that are more reliable
-  const imageMap: { [key: string]: string[] } = {
+export const getCommunityImage = (type: string, index: number = 0): string | null => {
+  // Return null to indicate no image - we'll use emoji placeholders instead
+  return null;
+};
+
+// Get emoji and gradient for post types
+export const getPostVisual = (type: string, index: number = 0) => {
+  const visuals: { [key: string]: Array<{ emoji: string; gradient: string }> } = {
     recipe: [
-      'https://via.placeholder.com/400x300/FF6B6B/FFFFFF?text=김치찌개',
-      'https://via.placeholder.com/400x300/4ECDC4/FFFFFF?text=볶음밥',
-      'https://via.placeholder.com/400x300/45B7D1/FFFFFF?text=치킨',
-      'https://via.placeholder.com/400x300/F7DC6F/FFFFFF?text=라면',
-      'https://via.placeholder.com/400x300/BB8FCE/FFFFFF?text=파스타'
+      { emoji: '🍲', gradient: 'from-orange-400 to-red-500' },
+      { emoji: '🍳', gradient: 'from-yellow-400 to-orange-500' },
+      { emoji: '🍗', gradient: 'from-amber-400 to-orange-600' },
+      { emoji: '🍜', gradient: 'from-red-400 to-pink-500' },
+      { emoji: '🍝', gradient: 'from-green-400 to-teal-500' }
     ],
     tip: [
-      'https://via.placeholder.com/400x300/52C3F1/FFFFFF?text=요리팁',
-      'https://via.placeholder.com/400x300/62D2A2/FFFFFF?text=손질법',
-      'https://via.placeholder.com/400x300/F48B94/FFFFFF?text=보관법',
-      'https://via.placeholder.com/400x300/9B59B6/FFFFFF?text=조리법'
+      { emoji: '💡', gradient: 'from-blue-400 to-cyan-500' },
+      { emoji: '🔪', gradient: 'from-purple-400 to-pink-500' },
+      { emoji: '🧅', gradient: 'from-indigo-400 to-purple-500' },
+      { emoji: '🦐', gradient: 'from-teal-400 to-blue-500' }
     ],
     combination: [
-      'https://via.placeholder.com/400x300/E74C3C/FFFFFF?text=음식조합',
-      'https://via.placeholder.com/400x300/3498DB/FFFFFF?text=꿀조합',
-      'https://via.placeholder.com/400x300/2ECC71/FFFFFF?text=의외조합'
+      { emoji: '🍔', gradient: 'from-red-400 to-orange-500' },
+      { emoji: '🍕', gradient: 'from-green-400 to-emerald-500' },
+      { emoji: '🌮', gradient: 'from-yellow-400 to-red-500' }
     ],
     deal: [
-      'https://via.placeholder.com/400x300/F39C12/FFFFFF?text=1%2B1',
-      'https://via.placeholder.com/400x300/E67E22/FFFFFF?text=할인',
-      'https://via.placeholder.com/400x300/D35400/FFFFFF?text=세일'
+      { emoji: '🏷️', gradient: 'from-purple-400 to-indigo-500' },
+      { emoji: '💰', gradient: 'from-green-400 to-emerald-600' },
+      { emoji: '🛒', gradient: 'from-blue-400 to-indigo-500' }
     ]
   };
 
-  const images = imageMap[type] || imageMap.recipe;
-  return images[index % images.length];
+  const items = visuals[type] || visuals.recipe;
+  return items[index % items.length];
 };
 
 // Generate avatar background color based on username

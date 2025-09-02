@@ -15,10 +15,10 @@ const MobileLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden">
-      {/* 모바일 헤더 */}
+      {/* 모바일 헤더 - Dynamic Island 대응 */}
       <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-40 w-full">
-        <div className="pt-safe">
-          <div className="flex items-center justify-between h-14 px-4 max-w-full">
+        <div className="pt-safe"> {/* iPhone notch/Dynamic Island safe area */}
+          <div className="flex items-center justify-between h-12 px-3 max-w-full">
             <div className="flex items-center">
               {!isHomePage ? (
                 <button
@@ -33,34 +33,34 @@ const MobileLayout: React.FC = () => {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center">
               {/* Create Button */}
               <button 
                 onClick={() => navigate('/create-playlist')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                 title="만들기"
               >
-                <PlusIcon className="w-5 h-5 text-gray-700" />
+                <PlusIcon className="w-4 h-4 text-gray-700" />
               </button>
               
-              {/* Messages Button with better visibility */}
+              {/* Messages Button - 더 작게, Dynamic Island 회피 */}
               <button 
                 onClick={() => navigate('/messages')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors relative"
                 title="메시지"
               >
-                <ChatBubbleLeftRightIcon className="w-5 h-5 text-gray-700" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <ChatBubbleLeftRightIcon className="w-4 h-4 text-gray-700" />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
               </button>
               
               {/* Notifications Button */}
               <button 
                 onClick={() => navigate('/notifications')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors relative"
                 title="알림"
               >
-                <BellIcon className="w-5 h-5 text-gray-700" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full"></span>
+                <BellIcon className="w-4 h-4 text-gray-700" />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
               </button>
             </div>
           </div>
@@ -68,7 +68,7 @@ const MobileLayout: React.FC = () => {
       </header>
 
       {/* 메인 콘텐츠 */}
-      <main className="pt-14 pb-20 w-full overflow-x-hidden">
+      <main className="pt-12 pb-20 w-full overflow-x-hidden">
         <div className="w-full max-w-full">
           <Outlet />
         </div>
