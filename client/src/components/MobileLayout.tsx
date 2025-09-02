@@ -33,34 +33,34 @@ const MobileLayout: React.FC = () => {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {/* Create Button */}
               <button 
                 onClick={() => navigate('/create-playlist')}
-                className="p-2"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 title="만들기"
               >
-                <PlusIcon className="w-6 h-6 text-gray-700" />
+                <PlusIcon className="w-5 h-5 text-gray-700" />
               </button>
               
-              {/* Messages Button */}
+              {/* Messages Button with better visibility */}
               <button 
                 onClick={() => navigate('/messages')}
-                className="p-2 relative"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
                 title="메시지"
               >
-                <ChatBubbleLeftRightIcon className="w-6 h-6 text-gray-700" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                <ChatBubbleLeftRightIcon className="w-5 h-5 text-gray-700" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
               </button>
               
               {/* Notifications Button */}
               <button 
                 onClick={() => navigate('/notifications')}
-                className="p-2 relative"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
                 title="알림"
               >
-                <BellIcon className="w-6 h-6 text-gray-700" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                <BellIcon className="w-5 h-5 text-gray-700" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full"></span>
               </button>
             </div>
           </div>

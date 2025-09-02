@@ -123,32 +123,32 @@ const MobileMessages: React.FC = () => {
   if (currentChat) {
     return (
       <div className="min-h-screen bg-white flex flex-col">
-        {/* 채팅 헤더 */}
+        {/* 채팅 헤더 - 더 컴팩트하고 명확하게 */}
         <div className="sticky top-0 z-30 bg-white border-b">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between px-3 py-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               <button
                 onClick={() => setSelectedChat(null)}
-                className="p-1 -ml-2"
+                className="p-1.5 hover:bg-gray-100 rounded-lg"
               >
-                <ChevronLeftIcon className="w-6 h-6" />
+                <ChevronLeftIcon className="w-5 h-5" />
               </button>
-              <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-400 rounded-full flex items-center justify-center text-white">
+              <div className="relative flex-shrink-0">
+                <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-red-400 rounded-full flex items-center justify-center text-white text-sm">
                   {currentChat.user.avatar}
                 </div>
                 {currentChat.user.isOnline && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></div>
                 )}
               </div>
-              <div>
-                <h3 className="font-semibold">{currentChat.user.name}</h3>
-                <p className="text-xs text-gray-500">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm truncate">{currentChat.user.name}</h3>
+                <p className="text-xs text-gray-500 truncate">
                   {currentChat.user.isOnline ? '온라인' : `마지막 접속: ${currentChat.user.lastSeen}`}
                 </p>
               </div>
             </div>
-            <button className="p-2">
+            <button className="p-1.5 hover:bg-gray-100 rounded-lg flex-shrink-0">
               <EllipsisVerticalIcon className="w-5 h-5" />
             </button>
           </div>
@@ -185,26 +185,26 @@ const MobileMessages: React.FC = () => {
                   </svg>
                 </div>
                 
-                {/* 메시지 내용 */}
-                <div className={`relative px-4 py-2 rounded-2xl ${
+                {/* 메시지 내용 - 더 읽기 쉽게 */}
+                <div className={`relative px-3 py-2 rounded-2xl ${
                   message.sender === 'me'
                     ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
                     : 'bg-gray-100 text-gray-900'
                 }`}>
-                  <p className="text-sm">{message.text}</p>
-                  <div className={`flex items-center gap-1 mt-1 ${
+                  <p className="text-sm leading-relaxed break-words">{message.text}</p>
+                  <div className={`flex items-center gap-1 mt-0.5 ${
                     message.sender === 'me' ? 'justify-end' : 'justify-start'
                   }`}>
-                    <span className={`text-xs ${
+                    <span className={`text-[10px] ${
                       message.sender === 'me' ? 'text-orange-100' : 'text-gray-500'
                     }`}>
                       {message.timestamp}
                     </span>
                     {message.sender === 'me' && (
                       message.read ? (
-                        <CheckSolidIcon className="w-3 h-3 text-orange-100" />
+                        <CheckSolidIcon className="w-2.5 h-2.5 text-orange-100" />
                       ) : (
-                        <CheckIcon className="w-3 h-3 text-orange-200" />
+                        <CheckIcon className="w-2.5 h-2.5 text-orange-200" />
                       )
                     )}
                   </div>
@@ -248,16 +248,11 @@ const MobileMessages: React.FC = () => {
   // 채팅 목록
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <div className="sticky top-0 z-30 bg-white shadow-sm">
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                <ChatBubbleLeftRightIcon className="w-5 h-5 text-white" />
-              </div>
-              <h1 className="text-xl font-bold">메시지</h1>
-            </div>
+      {/* 헤더 - 더 간단하고 명확하게 */}
+      <div className="sticky top-0 z-30 bg-white border-b">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold">메시지</h1>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowSearch(!showSearch)}
@@ -307,15 +302,15 @@ const MobileMessages: React.FC = () => {
                   <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
                 )}
               </div>
-              <div className="flex-1 text-left">
+              <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold">{chat.user.name}</span>
-                  <span className="text-xs text-gray-500">{chat.timestamp}</span>
+                  <span className="font-semibold text-gray-900">{chat.user.name}</span>
+                  <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{chat.timestamp}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-600 truncate pr-2">{chat.lastMessage}</p>
+                  <p className="text-sm text-gray-600 truncate flex-1 mr-2">{chat.lastMessage}</p>
                   {chat.unreadCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full min-w-[20px] text-center flex-shrink-0">
                       {chat.unreadCount}
                     </span>
                   )}
