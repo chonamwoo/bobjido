@@ -3,14 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   HomeIcon, 
   PuzzlePieceIcon, 
-  PlusCircleIcon, 
+  UsersIcon, 
   UserIcon,
   MapPinIcon 
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
   PuzzlePieceIcon as PuzzlePieceIconSolid,
-  PlusCircleIcon as PlusCircleIconSolid,
+  UsersIcon as UsersIconSolid,
   UserIcon as UserIconSolid,
   MapPinIcon as MapPinIconSolid
 } from '@heroicons/react/24/solid';
@@ -32,10 +32,10 @@ const MobileNavigation: React.FC = () => {
       label: '지도' 
     },
     { 
-      path: '/create-playlist', 
-      icon: PlusCircleIcon, 
-      iconActive: PlusCircleIconSolid, 
-      label: '만들기' 
+      path: '/community', 
+      icon: UsersIcon, 
+      iconActive: UsersIconSolid, 
+      label: '커뮤니티' 
     },
     { 
       path: '/game-hub', 

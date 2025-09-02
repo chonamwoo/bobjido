@@ -16,6 +16,10 @@ import {
   HomeIcon,
   SparklesIcon,
   Cog6ToothIcon,
+  BellIcon,
+  ChatBubbleLeftRightIcon,
+  PlusIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
@@ -37,8 +41,8 @@ const LayoutMVP: React.FC = () => {
   const mainMenuItems = [
     { path: '/', label: '홈', icon: HomeIcon },
     { path: '/discover', label: '둘러보기', icon: PlayIcon },
+    { path: '/community', label: '커뮤니티', icon: UsersIcon },
     { path: '/game-hub', label: '게임', icon: SparklesIcon },
-    { path: '/create-playlist', label: '플레이리스트', icon: PlusCircleIcon },
     { path: '/local-experts', label: '맛잘알', icon: TrophyIcon },
   ];
 
@@ -82,53 +86,84 @@ const LayoutMVP: React.FC = () => {
             </nav>
 
             {/* User Menu */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {user ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                <>
+                  {/* Create Button */}
+                  <Link
+                    to="/create-playlist"
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="만들기"
                   >
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-                      {user.username?.[0]?.toUpperCase() || 'U'}
-                    </div>
-                    <span className="hidden md:block text-sm font-medium">
-                      {user.username}
-                    </span>
-                  </button>
+                    <PlusIcon className="w-6 h-6 text-gray-700" />
+                  </Link>
 
-                  {/* User Dropdown */}
-                  <AnimatePresence>
-                    {isUserMenuOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50"
-                      >
-                        {userMenuItems.map((item) => (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100"
-                          >
-                            <item.icon className="w-4 h-4" />
-                            {item.label}
-                          </Link>
-                        ))}
-                        <hr className="my-2" />
-                        <button
-                          onClick={handleLogout}
-                          className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 w-full text-left"
+                  {/* Messages Button */}
+                  <Link
+                    to="/messages"
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                    title="메시지"
+                  >
+                    <ChatBubbleLeftRightIcon className="w-6 h-6 text-gray-700" />
+                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                  </Link>
+
+                  {/* Notifications Button */}
+                  <Link
+                    to="/notifications"
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                    title="알림"
+                  >
+                    <BellIcon className="w-6 h-6 text-gray-700" />
+                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                  </Link>
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
+                        {user.username?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                      <span className="hidden md:block text-sm font-medium">
+                        {user.username}
+                      </span>
+                    </button>
+
+                    {/* User Dropdown */}
+                    <AnimatePresence>
+                      {isUserMenuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50"
                         >
-                          <ArrowLeftOnRectangleIcon className="w-4 h-4" />
-                          로그아웃
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                          {userMenuItems.map((item) => (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              onClick={() => setIsUserMenuOpen(false)}
+                              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100"
+                            >
+                              <item.icon className="w-4 h-4" />
+                              {item.label}
+                            </Link>
+                          ))}
+                          <hr className="my-2" />
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 w-full text-left"
+                          >
+                            <ArrowLeftOnRectangleIcon className="w-4 h-4" />
+                            로그아웃
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </>
               ) : (
                 <div className="flex items-center gap-2">
                   <Link

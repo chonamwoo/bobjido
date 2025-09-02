@@ -18,7 +18,7 @@ import Auth from './pages/Auth';
 import PlaylistDetail from './pages/PlaylistDetail';
 import MobilePlaylistDetail from './pages/MobilePlaylistDetail';
 import CreatePlaylist from './pages/CreatePlaylist';
-import Profile from './pages/Profile';
+import ProfileV2 from './pages/ProfileV2';
 import AdminPanel from './pages/AdminPanel';
 import SimpleAdminPanel from './pages/SimpleAdminPanel';
 import EnhancedAdminPanel from './pages/EnhancedAdminPanel';
@@ -28,7 +28,7 @@ import EnhancedProfile from './pages/EnhancedProfile';
 import Discover from './pages/Discover';
 import RestaurantDetail from './pages/RestaurantDetail';
 import MobileRestaurantDetail from './pages/MobileRestaurantDetail';
-import RestaurantMap from './pages/RestaurantMap';
+import RestaurantMapV3 from './pages/RestaurantMapV3';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthCallback from './pages/AuthCallback';
 import SavedList from './pages/SavedList';
@@ -46,10 +46,16 @@ import RestaurantExplorer from './pages/RestaurantExplorer';
 import SimplePlaylistDetail from './pages/SimplePlaylistDetail';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
-import Explore from './pages/Explore';
+import SuperExplore from './pages/SuperExplore';
+import MobileSuperExplore from './pages/MobileSuperExplore';
+import Community from './pages/Community';
+import Messages from './pages/Messages';
+import MobileCommunity from './pages/MobileCommunity';
+import MobileMessages from './pages/MobileMessages';
 import CreateRestaurant from './pages/CreateRestaurant';
 import Followers from './pages/Followers';
 import Following from './pages/Following';
+import Admin from './pages/Admin';
 
 function App() {
   const isMobile = useIsMobile();
@@ -57,6 +63,9 @@ function App() {
   const HomePage = isMobile ? MobileHomeSoundCloud : HomeSoundCloud;
   const PlaylistPage = isMobile ? MobilePlaylistDetail : PlaylistDetail;
   const RestaurantPage = isMobile ? MobileRestaurantDetail : RestaurantDetail;
+  const ExplorePage = isMobile ? MobileSuperExplore : SuperExplore;
+  const CommunityPage = isMobile ? MobileCommunity : Community;
+  const MessagesPage = isMobile ? MobileMessages : Messages;
   
   return (
     <Routes>
@@ -74,13 +83,19 @@ function App() {
         <Route path="register" element={<Auth />} />
         <Route path="auth/callback" element={<AuthCallback />} />
         <Route path="discover" element={<Discover />} />
-        <Route path="explore" element={<Explore />} />
+        <Route path="explore" element={<ExplorePage />} />
+        <Route path="community" element={<CommunityPage />} />
+        <Route path="messages" element={
+          <ProtectedRoute>
+            <MessagesPage />
+          </ProtectedRoute>
+        } />
         <Route path="create-restaurant" element={
           <ProtectedRoute>
             <CreateRestaurant />
           </ProtectedRoute>
         } />
-        <Route path="map" element={<RestaurantMap />} />
+        <Route path="map" element={<RestaurantMapV3 />} />
         <Route path="saved" element={<SavedList />} />
         <Route path="my-lists" element={<MyLists />} />
         <Route path="playlist/:id" element={<PlaylistPage />} />
@@ -97,7 +112,7 @@ function App() {
           path="profile"
           element={
             <ProtectedRoute>
-              <Profile />
+              <ProfileV2 />
             </ProtectedRoute>
           }
         />
@@ -152,7 +167,8 @@ function App() {
       </Route>
       
       {/* Admin Routes - Layout 밖에 배치 */}
-      <Route path="/admin" element={<EnhancedAdminPanel />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/admin/edit" element={<Admin />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/panel" element={<EnhancedAdminPanel />} />
