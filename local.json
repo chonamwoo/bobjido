@@ -1,0 +1,120 @@
+{
+  "settings": {
+    "logging": {
+      "enabled": true,
+      "level": "info",
+      "logToFile": true,
+      "logFilePath": "./logs/app.log",
+      "maxFileSize": "10MB",
+      "maxFiles": 5,
+      "console": {
+        "enabled": true,
+        "colors": true,
+        "timestamp": true
+      },
+      "levels": {
+        "error": true,
+        "warn": true,
+        "info": true,
+        "debug": false,
+        "verbose": false
+      }
+    },
+    "notifications": {
+      "enabled": true,
+      "sound": {
+        "enabled": true,
+        "volume": 0.7,
+        "soundFile": "notification.mp3",
+        "events": {
+          "taskComplete": true,
+          "error": true,
+          "serverStart": true,
+          "buildComplete": true,
+          "testComplete": true
+        }
+      },
+      "desktop": {
+        "enabled": true,
+        "duration": 5000,
+        "position": "bottom-right"
+      }
+    },
+    "development": {
+      "port": 8888,
+      "clientPort": 3000,
+      "hotReload": true,
+      "clearConsoleOnRestart": false,
+      "openBrowserOnStart": false,
+      "watchFiles": [
+        "server/**/*.js",
+        "client/src/**/*.tsx",
+        "client/src/**/*.ts"
+      ]
+    },
+    "database": {
+      "logging": false,
+      "showQueries": false,
+      "connectionTimeout": 30000
+    },
+    "api": {
+      "responseTime": true,
+      "requestLogging": true,
+      "errorDetails": true,
+      "rateLimiting": {
+        "enabled": true,
+        "maxRequests": 100,
+        "windowMs": 900000
+      }
+    },
+    "security": {
+      "cors": {
+        "enabled": true,
+        "origin": "http://localhost:3000",
+        "credentials": true
+      },
+      "helmet": true,
+      "compression": true
+    },
+    "features": {
+      "autoSave": true,
+      "autoSaveInterval": 60000,
+      "codeFormatOnSave": true,
+      "lintOnSave": true
+    },
+    "monitoring": {
+      "performance": {
+        "enabled": true,
+        "slowQueryThreshold": 1000,
+        "memoryWarningThreshold": 0.8
+      },
+      "errors": {
+        "trackErrors": true,
+        "sendToSlack": false,
+        "sendToEmail": false
+      }
+    },
+    "taskCompletion": {
+      "playSound": true,
+      "showNotification": true,
+      "soundFile": "success.mp3",
+      "message": "Task completed successfully! 🎉"
+    }
+  },
+  "scripts": {
+    "onServerStart": "echo 'BobMap Server Started Successfully! 🚀'",
+    "onBuildComplete": "echo 'Build completed! Ready to deploy 📦'",
+    "onError": "echo 'Error detected! Check logs for details ⚠️'"
+  },
+  "aliases": {
+    "dev": "npm run dev",
+    "start": "npm run server",
+    "build": "npm run build",
+    "test": "npm test"
+  },
+  "environment": {
+    "NODE_ENV": "development",
+    "DEBUG": "app:*",
+    "LOG_LEVEL": "debug"
+  }
+}

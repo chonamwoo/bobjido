@@ -91,7 +91,7 @@ const CreateRestaurant: React.FC = () => {
     setSearching(true);
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/restaurants/search/naver`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/restaurants/search/naver`,
         {
           params: { query: searchQuery },
           headers: { Authorization: `Bearer ${token}` }
@@ -195,7 +195,7 @@ const CreateRestaurant: React.FC = () => {
       });
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/restaurants`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/restaurants`,
         formData,
         {
           headers: {

@@ -278,11 +278,11 @@ const Onboarding: React.FC = () => {
       console.log('current user:', user);
 
       // axios 기본 URL 강제 설정 (캐시 문제 해결)
-      axios.defaults.baseURL = 'http://localhost:8888';
+      axios.defaults.baseURL = 'http://localhost:5000';
       console.log('axios.defaults.baseURL 설정:', axios.defaults.baseURL);
 
       // 절대 URL로 요청 (더 안전)
-      const fullUrl = 'http://localhost:8888/api/onboarding/taste-profile';
+      const fullUrl = 'http://localhost:5000/api/onboarding/taste-profile';
       console.log('전체 URL:', fullUrl);
       
       const response = await axios.post(fullUrl, {

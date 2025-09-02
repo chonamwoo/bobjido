@@ -105,7 +105,9 @@ const Auth: React.FC = () => {
   };
 
   const handleSocialLogin = (provider: 'google' | 'kakao') => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8888';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    
+    // 모든 환경에서 동일하게 현재 창에서 이동
     window.location.href = `${apiUrl}/api/auth/${provider}`;
   };
 

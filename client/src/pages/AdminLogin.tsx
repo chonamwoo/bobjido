@@ -134,14 +134,6 @@ const AdminLogin: React.FC = () => {
           </div>
         </form>
 
-        {/* 개발용 힌트 */}
-        <div className="mt-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
-          <p className="text-xs text-gray-400 text-center">
-            개발 환경 로그인 정보<br/>
-            Email: admin@bobmap.com<br/>
-            Password: admin123
-          </p>
-        </div>
       </motion.div>
     </div>
   );

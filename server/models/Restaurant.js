@@ -172,6 +172,44 @@ const restaurantSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  
+  // 상세한 조회수 및 활동 트래킹
+  views: {
+    total: { type: Number, default: 0 },
+    uniqueUsers: [{ 
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      viewedAt: { type: Date, default: Date.now },
+      viewCount: { type: Number, default: 1 }
+    }],
+    dailyStats: [{
+      date: { type: Date, required: true },
+      views: { type: Number, default: 0 },
+      uniqueViews: { type: Number, default: 0 }
+    }],
+    weeklyViews: { type: Number, default: 0 },
+    monthlyViews: { type: Number, default: 0 }
+  },
+  
+  // 사용자 활동 트래킹
+  interactions: {
+    likes: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      likedAt: { type: Date, default: Date.now }
+    }],
+    saves: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      savedAt: { type: Date, default: Date.now }
+    }],
+    shares: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      sharedAt: { type: Date, default: Date.now },
+      platform: String
+    }]
+  },
+  
+  // 인기도 점수
+  popularityScore: { type: Number, default: 0, index: true },
+  trendingScore: { type: Number, default: 0, index: true },
   region: {
     city: String,
     district: String,
@@ -204,6 +242,9 @@ restaurantSchema.index({ priceRange: 1 });
 restaurantSchema.index({ 'region.city': 1, 'region.district': 1 });
 restaurantSchema.index({ averageRating: -1 });
 restaurantSchema.index({ createdBy: 1 });
+restaurantSchema.index({ popularityScore: -1 });
+restaurantSchema.index({ trendingScore: -1 });
+restaurantSchema.index({ 'views.total': -1 });
 
 restaurantSchema.methods.updateAverageRating = async function() {
   const Review = mongoose.model('Review');
@@ -235,6 +276,78 @@ restaurantSchema.methods.findSimilarRestaurants = async function(limit = 5) {
     .select('name address averageRating category priceRange');
     
   return similarRestaurants;
+};
+
+// 조회수 증가 메서드
+restaurantSchema.methods.incrementView = async function(userId = null) {
+  this.viewCount += 1;
+  this.views.total += 1;
+  
+  if (userId) {
+    const existingView = this.views.uniqueUsers.find(
+      v => v.user && v.user.toString() === userId.toString()
+    );
+    
+    if (existingView) {
+      existingView.viewCount += 1;
+      existingView.viewedAt = new Date();
+    } else {
+      this.views.uniqueUsers.push({
+        user: userId,
+        viewedAt: new Date(),
+        viewCount: 1
+      });
+    }
+  }
+  
+  // 일일 통계 업데이트
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  let todayStats = this.views.dailyStats.find(
+    stat => stat.date.getTime() === today.getTime()
+  );
+  
+  if (todayStats) {
+    todayStats.views += 1;
+    if (userId && !todayStats.uniqueUsers) todayStats.uniqueViews += 1;
+  } else {
+    this.views.dailyStats.push({
+      date: today,
+      views: 1,
+      uniqueViews: userId ? 1 : 0
+    });
+  }
+  
+  this.calculatePopularityScore();
+  return this.save();
+};
+
+// 인기도 점수 계산
+restaurantSchema.methods.calculatePopularityScore = function() {
+  const weights = {
+    view: 1,
+    review: 10,
+    rating: 20,
+    save: 5,
+    share: 3
+  };
+  
+  this.popularityScore = 
+    (this.viewCount * weights.view) +
+    (this.reviewCount * weights.review) +
+    (this.averageRating * weights.rating) +
+    ((this.interactions?.saves?.length || 0) * weights.save) +
+    ((this.interactions?.shares?.length || 0) * weights.share);
+    
+  // 트렌딩 점수 (최근 7일 활동)
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const recentViews = this.views.weeklyViews || 0;
+  const recentSaves = (this.interactions?.saves || []).filter(s => 
+    s.savedAt >= weekAgo
+  ).length;
+  
+  this.trendingScore = (recentViews * 2) + (recentSaves * 10);
 };
 
 restaurantSchema.statics.searchNearby = async function(coordinates, maxDistance = 5000) {

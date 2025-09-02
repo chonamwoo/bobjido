@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import axios from '../utils/axios';
 import KoreanMap from '../components/KoreanMap';
 import { 
@@ -27,18 +28,33 @@ import {
 } from '@heroicons/react/24/solid';
 import { Restaurant } from '../types';
 import { realRestaurants } from '../data/realRestaurants';
+import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
+import { ShareIcon } from '@heroicons/react/24/outline';
+import { dataManager } from '../utils/dataManager';
+import { sampleRestaurants, getRestaurantById } from '../data/sampleRestaurants';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 const RestaurantMapV3: React.FC = () => {
+  const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const [selectedList, setSelectedList] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [showAdminMenu, setShowAdminMenu] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [viewMode, setViewMode] = useState<'restaurants' | 'lists'>('lists');
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [savedLists, setSavedLists] = useState<string[]>(() => {
+    const savedData = dataManager.getSavedPlaylists();
+    return savedData.map(p => p.playlistId);
+  });
   
   // 필터 상태
   const [filters, setFilters] = useState({
@@ -67,8 +83,69 @@ const RestaurantMapV3: React.FC = () => {
     contact: ''
   });
 
+  const [savedRestaurants, setSavedRestaurants] = useState<string[]>(() => {
+    const savedData = dataManager.getSavedRestaurants();
+    return savedData.map(r => r.restaurantId);
+  });
+
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+
+  // Listen for dataManager updates
+  useEffect(() => {
+    const handleDataUpdate = () => {
+      const savedData = dataManager.getSavedRestaurants();
+      setSavedRestaurants(savedData.map(r => r.restaurantId));
+    };
+
+    window.addEventListener('dataManager:update', handleDataUpdate);
+    window.addEventListener('storage', handleDataUpdate);
+
+    return () => {
+      window.removeEventListener('dataManager:update', handleDataUpdate);
+      window.removeEventListener('storage', handleDataUpdate);
+    };
+  }, []);
+
+  // Handle restaurant query parameter from profile
+  useEffect(() => {
+    const restaurantId = searchParams.get('restaurant');
+    if (restaurantId) {
+      // First try to find in sampleRestaurants
+      let restaurant = getRestaurantById(restaurantId);
+      
+      // If not found, try localStorage
+      if (!restaurant) {
+        const localRestaurants = localStorage.getItem('localRestaurants');
+        if (localRestaurants) {
+          const restaurants = JSON.parse(localRestaurants);
+          restaurant = restaurants.find((r: any) => r._id === restaurantId);
+        }
+      }
+      
+      // If still not found, try realRestaurants
+      if (!restaurant) {
+        restaurant = realRestaurants.find(r => r._id === restaurantId);
+      }
+      
+      if (restaurant) {
+        setSelectedRestaurant(restaurant);
+        // Set map center to restaurant location
+        if (restaurant.coordinates) {
+          setMapCenter({
+            lat: restaurant.coordinates.lat,
+            lng: restaurant.coordinates.lng
+          });
+        }
+        // Also open the restaurant details modal on mobile
+        if (isMobile) {
+          setTimeout(() => {
+            setSelectedRestaurant(restaurant);
+          }, 500);
+        }
+      }
+    }
+  }, [searchParams, isMobile]);
 
   // DB에서 맛집 데이터 가져오기
   const { data: dbRestaurants, isLoading: isLoadingDB } = useQuery({
@@ -154,6 +231,41 @@ const RestaurantMapV3: React.FC = () => {
       result = [...dbData, ...realRestaurants].filter((restaurant: Restaurant, index: number, self: Restaurant[]) =>
         index === self.findIndex((r) => r._id === restaurant._id)
       );
+      
+      // Add sampleRestaurants data with proper type conversion
+      const convertedSampleRestaurants = sampleRestaurants.map((r: any) => ({
+        ...r,
+        priceRange: r.priceRange || '',
+        images: r.image ? [r.image] : [],
+        averageRating: r.rating || 0,
+        reviewCount: 0,
+        tags: [],
+        dnaProfile: {
+          atmosphere: [],
+          foodStyle: [],
+          instagramability: 0,
+          dateSpot: 0,
+          groupFriendly: 0,
+          soloFriendly: 0,
+        },
+        features: [],
+        createdBy: {} as any,
+        verifiedBy: [],
+        isVerified: false,
+        viewCount: 0,
+        saveCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      } as Restaurant));
+      
+      result = [...result, ...convertedSampleRestaurants].filter((restaurant: Restaurant, index: number, self: Restaurant[]) =>
+        index === self.findIndex((r) => r._id === restaurant._id)
+      );
+    }
+    
+    // 선택된 레스토랑이 있고 리스트에 없으면 추가
+    if (selectedRestaurant && !result.find(r => r._id === selectedRestaurant._id)) {
+      result = [selectedRestaurant, ...result];
     }
     
     // 검색어 필터 (이름에 포함된 것만)
@@ -206,7 +318,7 @@ const RestaurantMapV3: React.FC = () => {
     }
     
     return result;
-  }, [searchKeyword, searchResults, dbRestaurants, filters]);
+  }, [searchKeyword, searchResults, dbRestaurants, filters, selectedRestaurant]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,12 +374,82 @@ const RestaurantMapV3: React.FC = () => {
   });
 
   const handleSaveRestaurant = useCallback((restaurantId: string) => {
-    if (!user) {
-      toast.error('로그인이 필요합니다.');
+    console.log('Map - handleSaveRestaurant called - id:', restaurantId);
+    
+    if (!restaurantId) {
+      console.error('Restaurant ID is missing');
+      toast.error('맛집 정보를 찾을 수 없습니다.');
       return;
     }
-    saveRestaurantMutation.mutate(restaurantId);
-  }, [saveRestaurantMutation, user]);
+    
+    const isSaved = dataManager.isRestaurantSaved(restaurantId);
+    console.log('Map - Is already saved?', isSaved);
+    
+    if (isSaved) {
+      dataManager.unsaveRestaurant(restaurantId);
+      toast.success('저장을 취소했습니다.');
+      // Update local state
+      setSavedRestaurants(prev => prev.filter(id => id !== restaurantId));
+    } else {
+      // 맛집 정보도 함께 저장 (나중에 표시하기 위해)
+      const restaurantData = sampleRestaurants.find(r => r._id === restaurantId) || 
+                            realRestaurants.find(r => r._id === restaurantId) ||
+                            selectedRestaurant || 
+                            { _id: restaurantId, name: '맛집', category: '기타', address: '' };
+      
+      // localRestaurants에 저장
+      const localRestaurants = localStorage.getItem('localRestaurants');
+      const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+      if (!restaurants.find((r: any) => r._id === restaurantId)) {
+        restaurants.push(restaurantData);
+        localStorage.setItem('localRestaurants', JSON.stringify(restaurants));
+        console.log('Restaurant data saved to localStorage:', restaurantData);
+      }
+      
+      dataManager.saveRestaurant(restaurantId);
+      toast.success('맛집이 저장되었습니다!');
+      // Update local state
+      setSavedRestaurants(prev => [...prev, restaurantId]);
+    }
+    
+    // 저장 후 상태 확인
+    const savedData = dataManager.getSavedRestaurants();
+    console.log('Map - After save - Saved restaurants:', savedData);
+    
+    // 이벤트 발생
+    window.dispatchEvent(new CustomEvent('dataManager:update'));
+    
+    // 상태 업데이트 강제
+    setRefreshKey(prev => prev + 1);
+  }, [selectedRestaurant]);
+
+  // 플레이리스트 저장 핸들러
+  const handleSaveList = useCallback((listId: string) => {
+    console.log('Map - handleSaveList called - id:', listId);
+    
+    if (!listId) {
+      console.error('List ID is missing');
+      toast.error('리스트 정보를 찾을 수 없습니다.');
+      return;
+    }
+    
+    const isSaved = dataManager.isPlaylistSaved(listId);
+    console.log('Map - Is list already saved?', isSaved);
+    
+    if (isSaved) {
+      dataManager.unsavePlaylist(listId);
+      toast.success('리스트 저장을 취소했습니다.');
+      setSavedLists(prev => prev.filter(id => id !== listId));
+    } else {
+      dataManager.savePlaylist(listId);
+      toast.success('리스트가 저장되었습니다!');
+      setSavedLists(prev => [...prev, listId]);
+    }
+    
+    // 이벤트 발생
+    window.dispatchEvent(new CustomEvent('dataManager:update'));
+    setRefreshKey(prev => prev + 1);
+  }, []);
 
   const handleSubmitRequest = async () => {
     if (!requestForm.name || !requestForm.category || !requestForm.address) {
@@ -356,8 +538,30 @@ const RestaurantMapV3: React.FC = () => {
             </div>
           </form>
 
-          {/* 필터 버튼 */}
-          <div className="flex justify-center">
+          {/* 필터 버튼과 토글 */}
+          <div className="flex justify-center items-center gap-4">
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('restaurants')}
+                className={`px-4 py-2 rounded-md transition-all ${
+                  viewMode === 'restaurants' 
+                    ? 'bg-white text-primary-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                🍚 맛집
+              </button>
+              <button
+                onClick={() => setViewMode('lists')}
+                className={`px-4 py-2 rounded-md transition-all ${
+                  viewMode === 'lists' 
+                    ? 'bg-white text-primary-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                📋 리스트
+              </button>
+            </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -501,17 +705,20 @@ const RestaurantMapV3: React.FC = () => {
         </div>
 
         {/* 지도와 정보 섹션 */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className={`${isMobile ? 'flex flex-col' : 'grid lg:grid-cols-3 gap-6'}`}>
           {/* 지도 */}
-          <div className="lg:col-span-2">
+          <div className={`${isMobile ? 'w-full' : 'lg:col-span-2'}`}>
             <div className="bg-white rounded-3xl shadow-xl relative">
-              <div className="relative w-full h-[600px]">
+              <div className={`relative w-full ${isMobile ? 'h-[300px]' : 'h-[600px]'}`}>
                 <KoreanMap
-                  restaurants={restaurants}
+                  restaurants={viewMode === 'lists' && selectedList ? 
+                    selectedList.restaurants?.map((r: any) => r.restaurant || r) || [] : 
+                    restaurants}
                   onRestaurantClick={handleRestaurantClick}
                   onMapClick={handleMapClick}
                   className="w-full h-full rounded-3xl"
                   markerSize="small" // 마커 크기 축소
+                  center={mapCenter} // 지도 중심 설정
                 />
                 
                 {/* 플로팅 액션 버튼 */}
@@ -572,18 +779,265 @@ const RestaurantMapV3: React.FC = () => {
                 {/* 현재 등록된 맛집 수 표시 */}
                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-lg" style={{ zIndex: 1000 }}>
                   <span className="text-sm font-medium text-gray-700">
-                    <BuildingStorefrontIcon className="w-4 h-4 inline mr-1" />
-                    {restaurants.length}개 맛집
+                    {viewMode === 'lists' ? (
+                      <>📋 {certifiedRestaurantLists.length}개 리스트</>
+                    ) : (
+                      <><BuildingStorefrontIcon className="w-4 h-4 inline mr-1" />
+                      {restaurants.length}개 맛집</>
+                    )}
                   </span>
                 </div>
               </div>
             </div>
+            
+            {/* 모바일에서 지도 아래에 리스트/맛집 표시 */}
+            {isMobile && (
+              <div className="mt-4">
+                {viewMode === 'lists' ? (
+                  // 리스트 목록
+                  <div className="grid grid-cols-1 gap-3">
+                    {certifiedRestaurantLists.map((list) => (
+                  <div
+                    key={list._id}
+                    onClick={() => setSelectedList(list)}
+                    className={`p-4 bg-white rounded-xl border-2 cursor-pointer transition-all ${
+                      selectedList?._id === list._id ? 
+                      'border-orange-500 shadow-lg' : 
+                      'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 text-sm">{list.title}</h4>
+                        <p className="text-xs text-gray-500 mt-1">{list.certification || list.category}</p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSaveList(list._id);
+                        }}
+                        className={`p-2 rounded-lg transition-colors ${
+                          dataManager.isPlaylistSaved(list._id) ?
+                          'bg-orange-100 text-orange-600' :
+                          'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {dataManager.isPlaylistSaved(list._id) ? 
+                          <BookmarkSolidIcon className="w-4 h-4" /> : 
+                          <BookmarkIcon className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-600 line-clamp-2">{list.description}</p>
+                    <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
+                      <span>📍 {list.restaurants?.length || 0}개</span>
+                      <span>👤 {typeof list.createdBy === 'object' ? list.createdBy?.username : list.createdBy}</span>
+                    </div>
+                  </div>
+                    ))}
+                  </div>
+                ) : (
+                  // 맛집 목록
+                  <div className="grid grid-cols-1 gap-3">
+                    {restaurants.slice(0, 10).map((restaurant) => {
+                      const hasRating = 'rating' in restaurant && restaurant.rating;
+                      return (
+                        <div
+                          key={restaurant._id}
+                          onClick={() => setSelectedRestaurant(restaurant)}
+                          className={`p-4 bg-white rounded-xl border-2 cursor-pointer transition-all ${
+                            selectedRestaurant?._id === restaurant._id ? 
+                            'border-orange-500 shadow-lg' : 
+                            'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                          }`}
+                        >
+                          <>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900 text-sm">{restaurant.name}</h4>
+                                <p className="text-xs text-gray-500 mt-1">{restaurant.category}</p>
+                                <p className="text-xs text-gray-400 mt-1 line-clamp-1">{restaurant.address}</p>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSaveRestaurant(restaurant._id);
+                                }}
+                                className={`p-2 rounded-lg transition-colors ${
+                                  dataManager.isRestaurantSaved(restaurant._id) ?
+                                  'bg-orange-100 text-orange-600' :
+                                  'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                              >
+                                {dataManager.isRestaurantSaved(restaurant._id) ? (
+                                  <BookmarkSolidIcon className="w-4 h-4" />
+                                ) : (
+                                  <BookmarkIcon className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
+                            {hasRating && (
+                              <div className="flex items-center mt-2">
+                                <StarIcon className="w-3 h-3 text-yellow-500 fill-current" />
+                                <span className="text-xs ml-1">{(restaurant as any).rating}</span>
+                              </div>
+                            )}
+                          </>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* 선택된 리스트의 식당들 표시 (모바일) */}
+            {isMobile && selectedList && viewMode === 'lists' && (
+              <div className="mt-4 bg-orange-50 rounded-xl p-4">
+                <h3 className="font-bold text-lg mb-3">{selectedList.title} 맛집 목록</h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {selectedList.restaurants?.map((restaurantId: string, index: number) => {
+                    const restaurant = getRestaurantById(restaurantId);
+                    if (!restaurant) return null;
+                    
+                    return (
+                      <div
+                        key={restaurantId}
+                        onClick={() => handleRestaurantClick(restaurant)}
+                        className="bg-white rounded-lg p-3 cursor-pointer hover:shadow-md transition-all flex items-center gap-3"
+                      >
+                        {restaurant.image && (
+                          <img
+                            src={restaurant.image}
+                            alt={restaurant.name}
+                            className="w-16 h-16 rounded-lg object-cover"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm">{restaurant.name}</h4>
+                          <p className="text-xs text-gray-500">{restaurant.category}</p>
+                          {restaurant.address && (
+                            <p className="text-xs text-gray-400 mt-1">{restaurant.address}</p>
+                          )}
+                        </div>
+                        {restaurant.rating && (
+                          <div className="flex items-center">
+                            <StarIcon className="w-4 h-4 text-yellow-500 fill-current" />
+                            <span className="text-sm ml-1">{restaurant.rating}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* 데스크톱에서만 기존 리스트 표시 */}
+            {!isMobile && viewMode === 'lists' && (
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {certifiedRestaurantLists.map((list) => (
+                  <div
+                    key={list._id}
+                    onClick={() => setSelectedList(list)}
+                    className={`p-4 bg-white rounded-xl border-2 cursor-pointer transition-all ${
+                      selectedList?._id === list._id ? 
+                      'border-orange-500 shadow-lg' : 
+                      'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 text-sm">{list.title}</h4>
+                        <p className="text-xs text-gray-500 mt-1">{list.certification || list.category}</p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSaveList(list._id);
+                        }}
+                        className={`p-2 rounded-lg transition-colors ${
+                          dataManager.isPlaylistSaved(list._id) ?
+                          'bg-orange-100 text-orange-600' :
+                          'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {dataManager.isPlaylistSaved(list._id) ? 
+                          <BookmarkSolidIcon className="w-4 h-4" /> : 
+                          <BookmarkIcon className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-600 line-clamp-2">{list.description}</p>
+                    <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
+                      <span>📍 {list.restaurants?.length || 0}개</span>
+                      <span>👤 {typeof list.createdBy === 'object' ? list.createdBy?.username : list.createdBy}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* 오른쪽 사이드 패널 - 선택된 맛집 정보 */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-3xl shadow-xl p-6 h-[600px] overflow-y-auto">
-              {selectedRestaurant ? (
+          {/* 오른쪽 사이드 패널 - 선택된 맛집 또는 리스트 정보 (데스크톱만) */}
+          {!isMobile && (
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-3xl shadow-xl p-6 h-[600px] overflow-y-auto">
+              {selectedList && viewMode === 'lists' ? (
+                <div className="animate-fade-in">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">{selectedList.title}</h2>
+                      <p className="text-sm text-gray-500 mt-1">{selectedList.description}</p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedList(null)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <XMarkIcon className="w-5 h-5 text-gray-400" />
+                    </button>
+                  </div>
+                  
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold text-gray-700 mb-3">맛집 목록 ({selectedList.restaurants?.length || 0}개)</h3>
+                    <div className="space-y-3">
+                      {selectedList.restaurants?.map((restaurantId: string) => {
+                        const restaurant = getRestaurantById(restaurantId);
+                        if (!restaurant) return null;
+                        
+                        return (
+                          <div
+                            key={restaurantId}
+                            onClick={() => handleRestaurantClick(restaurant)}
+                            className="bg-gray-50 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-all"
+                          >
+                            <div className="flex items-start gap-3">
+                              {restaurant.image && (
+                                <img
+                                  src={restaurant.image}
+                                  alt={restaurant.name}
+                                  className="w-20 h-20 rounded-lg object-cover"
+                                />
+                              )}
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900">{restaurant.name}</h4>
+                                <p className="text-sm text-gray-500 mt-1">{restaurant.category}</p>
+                                {restaurant.address && (
+                                  <p className="text-xs text-gray-400 mt-1">{restaurant.address}</p>
+                                )}
+                                {restaurant.rating && (
+                                  <div className="flex items-center mt-2">
+                                    <StarIcon className="w-4 h-4 text-yellow-500 fill-current" />
+                                    <span className="text-sm ml-1">{restaurant.rating}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : selectedRestaurant ? (
                 <div className="animate-fade-in">
                   <div className="flex justify-between items-start mb-4">
                     <h2 className="text-2xl font-bold text-gray-900">{selectedRestaurant.name}</h2>
@@ -618,6 +1072,47 @@ const RestaurantMapV3: React.FC = () => {
                         <span>{selectedRestaurant.phoneNumber}</span>
                       </div>
                     )}
+
+                    {/* 저장 및 공유 버튼 */}
+                    <div className="flex gap-2 my-4">
+                      <button
+                        onClick={() => {
+                          console.log('Desktop Save button clicked, restaurant:', selectedRestaurant);
+                          if (selectedRestaurant && selectedRestaurant._id) {
+                            handleSaveRestaurant(selectedRestaurant._id);
+                          } else {
+                            console.error('No restaurant ID available');
+                            toast.error('맛집 정보를 찾을 수 없습니다.');
+                          }
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        {dataManager.isRestaurantSaved(selectedRestaurant._id) ? (
+                          <BookmarkSolidIcon className="w-5 h-5 text-primary-500" />
+                        ) : (
+                          <BookmarkIcon className="w-5 h-5" />
+                        )}
+                        {dataManager.isRestaurantSaved(selectedRestaurant._id) ? '저장됨' : '저장하기'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (navigator.share) {
+                            navigator.share({
+                              title: selectedRestaurant.name,
+                              text: `${selectedRestaurant.name} - ${selectedRestaurant.category} 맛집`,
+                              url: window.location.href
+                            });
+                          } else {
+                            navigator.clipboard.writeText(window.location.href);
+                            toast.success('링크가 복사되었습니다!');
+                          }
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <ShareIcon className="w-5 h-5" />
+                        공유하기
+                      </button>
+                    </div>
 
                     {selectedRestaurant.averageRating > 0 && (
                       <div className="bg-yellow-50 rounded-xl p-4">
@@ -761,7 +1256,15 @@ const RestaurantMapV3: React.FC = () => {
                     {/* 액션 버튼 */}
                     <div className="flex gap-3 pt-4">
                       <button
-                        onClick={() => handleSaveRestaurant(selectedRestaurant._id)}
+                        onClick={() => {
+                          console.log('Mobile Save button clicked, restaurant:', selectedRestaurant);
+                          if (selectedRestaurant && selectedRestaurant._id) {
+                            handleSaveRestaurant(selectedRestaurant._id);
+                          } else {
+                            console.error('No restaurant ID available');
+                            toast.error('맛집 정보를 찾을 수 없습니다.');
+                          }
+                        }}
                         className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
                           selectedRestaurant.savedBy?.some((s: any) => s.user?._id === user?._id || s.user === user?._id)
                             ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600'
@@ -805,7 +1308,70 @@ const RestaurantMapV3: React.FC = () => {
               )}
             </div>
           </div>
+          )}
         </div>
+
+        {/* 모바일에서 선택된 맛집 정보 모달 */}
+        {isMobile && selectedRestaurant && (
+          <div className="fixed inset-0 bg-black/50 flex items-end z-50">
+            <div className="bg-white w-full max-h-[70vh] rounded-t-3xl p-6 animate-slide-up overflow-y-auto">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-bold">{selectedRestaurant.name}</h2>
+                <button
+                  onClick={() => setSelectedRestaurant(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+                    {selectedRestaurant.category}
+                  </span>
+                  {selectedRestaurant.priceRange && (
+                    <span className="text-gray-600 text-sm">{selectedRestaurant.priceRange}</span>
+                  )}
+                </div>
+                
+                <div className="flex items-start gap-3 text-gray-700">
+                  <MapPinIcon className="w-5 h-5 text-gray-400 mt-1" />
+                  <span className="flex-1 text-sm">{selectedRestaurant.address}</span>
+                </div>
+                
+                {selectedRestaurant.phoneNumber && (
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <PhoneIcon className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm">{selectedRestaurant.phoneNumber}</span>
+                  </div>
+                )}
+                
+                {/* 저장 버튼 */}
+                <button
+                  onClick={() => handleSaveRestaurant(selectedRestaurant._id)}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
+                    dataManager.isRestaurantSaved(selectedRestaurant._id)
+                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                      : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {dataManager.isRestaurantSaved(selectedRestaurant._id) ? (
+                    <>
+                      <BookmarkSolidIcon className="w-5 h-5" />
+                      <span>저장됨</span>
+                    </>
+                  ) : (
+                    <>
+                      <BookmarkIcon className="w-5 h-5" />
+                      <span>저장하기</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Admin 맛집 등록 모달 */}
         {showAddModal && (user as any)?.isAdmin && (

@@ -37,3 +37,4 @@ coverage/
 *.log
 .cache/
 .temp/
+SOCIAL_LOGIN_SETUP.md

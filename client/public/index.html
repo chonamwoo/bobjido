@@ -13,6 +13,25 @@
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>Bob's Map - 맛집 플레이리스트 공유 플랫폼</title>
     
+    <!-- Start Single Page Apps for GitHub Pages -->
+    <script type="text/javascript">
+      // Single Page Apps for GitHub Pages
+      // When the single page app is loaded further down in this file,
+      // the correct url will be waiting in the browser's history for
+      // the single page app to route accordingly.
+      (function(l) {
+        if (l.search[1] === '/' ) {
+          var decoded = l.search.slice(1).split('&').map(function(s) { 
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null,
+              l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))
+    </script>
+    <!-- End Single Page Apps for GitHub Pages -->
+    
     <!-- Naver Map API는 컴포넌트에서 동적으로 로드됩니다 -->
     
     <!-- Pretendard Font -->
@@ -21,5 +40,48 @@
   <body>
     <noscript>이 앱을 실행하려면 JavaScript를 활성화해야 합니다.</noscript>
     <div id="root"></div>
+    
+    <!-- Clear all browser storage and service workers -->
+    <script>
+      (function() {
+        // Unregister all service workers
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+              registration.unregister().then(function() {
+                console.log('Service worker unregistered');
+              });
+            }
+          });
+        }
+        
+        // Clear all caches
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (let name of names) {
+              caches.delete(name).then(function() {
+                console.log('Cache deleted:', name);
+              });
+            }
+          });
+        }
+        
+        // Clear IndexedDB (if any)
+        if ('indexedDB' in window) {
+          indexedDB.databases().then(function(databases) {
+            databases.forEach(function(db) {
+              indexedDB.deleteDatabase(db.name);
+              console.log('IndexedDB deleted:', db.name);
+            });
+          }).catch(function(e) {
+            // Older browsers don't support databases()
+            console.log('Could not list IndexedDB databases');
+          });
+        }
+        
+        // Note: We keep localStorage/sessionStorage as they have app data
+        console.log('Browser cache cleanup completed');
+      })();
+    </script>
   </body>
 </html>

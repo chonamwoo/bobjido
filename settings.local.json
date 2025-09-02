@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "user-prompt-submit-hook": {
+      "command": "powershell -Command \"Add-Type -AssemblyName System.Speech; $speak = New-Object System.Speech.Synthesis.SpeechSynthesizer; $speak.Speak('Task complete'); $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'; $log = '{0} - Response completed' -f $timestamp; Add-Content -Path 'claude-activity.log' -Value $log\"",
+      "description": "Play audio notification when response is complete"
+    },
+    "task-complete": {
+      "command": "powershell -Command \"Add-Type -AssemblyName System.Speech; $speak = New-Object System.Speech.Synthesis.SpeechSynthesizer; $speak.Speak('complete'); $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'; $log = '{0} - Task completed: {1}' -f $timestamp, $env:CLAUDE_TASK; Add-Content -Path 'claude-activity.log' -Value $log\"",
+      "description": "Play audio notification and log activity when task completes"
+    },
+    "after-edit": {
+      "command": "powershell -Command \"$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'; $log = '{0} - Edited file: {1}' -f $timestamp, $env:CLAUDE_FILE_PATH; Add-Content -Path 'claude-activity.log' -Value $log\"",
+      "description": "Log file edits"
+    },
+    "after-write": {
+      "command": "powershell -Command \"$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'; $log = '{0} - Created/wrote file: {1}' -f $timestamp, $env:CLAUDE_FILE_PATH; Add-Content -Path 'claude-activity.log' -Value $log\"",
+      "description": "Log file creation/writes"
+    },
+    "after-bash": {
+      "command": "powershell -Command \"$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'; $log = '{0} - Executed command: {1}' -f $timestamp, $env:CLAUDE_COMMAND; Add-Content -Path 'claude-activity.log' -Value $log\"",
+      "description": "Log bash commands"
+    },
+    "after-read": {
+      "command": "powershell -Command \"$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'; $log = '{0} - Read file: {1}' -f $timestamp, $env:CLAUDE_FILE_PATH; Add-Content -Path 'claude-activity.log' -Value $log\"",
+      "description": "Log file reads"
+    }
+  }
+}

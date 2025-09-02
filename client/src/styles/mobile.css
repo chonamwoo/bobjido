@@ -1,0 +1,266 @@
+/* Mobile Optimizations for BobMap */
+
+/* Reset and base mobile styles */
+* {
+  box-sizing: border-box;
+}
+
+/* Safe area for iPhone notch/Dynamic Island */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 20px);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Slide up animation for mobile popups */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  /* Fix viewport and prevent horizontal scroll */
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Main layout adjustments */
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
+  }
+  
+  /* Remove any default margins/paddings that might cause overflow */
+  * {
+    max-width: 100vw;
+  }
+}
+
+/* iPhone simulator frame adjustments */
+@media (max-width: 430px) {
+  /* Navigation bar adjustments */
+  .navbar {
+    padding: 0.5rem !important;
+  }
+  
+  .navbar .container {
+    padding: 0 1rem !important;
+  }
+  
+  /* Hide desktop-only elements */
+  .desktop-only {
+    display: none !important;
+  }
+  
+  /* Adjust font sizes */
+  h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  h2 {
+    font-size: 1.5rem !important;
+  }
+  
+  h3 {
+    font-size: 1.25rem !important;
+  }
+  
+  /* Button adjustments */
+  .btn, button {
+    font-size: 14px !important;
+    padding: 0.75rem 1.25rem !important;
+  }
+  
+  /* Card adjustments */
+  .card {
+    margin: 0.5rem !important;
+    padding: 1rem !important;
+  }
+  
+  /* Form adjustments */
+  input, textarea, select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    padding: 0.75rem !important;
+  }
+  
+  /* Social login buttons */
+  .social-login-btn {
+    width: 100% !important;
+    margin: 0.5rem 0 !important;
+    padding: 0.875rem !important;
+    font-size: 14px !important;
+  }
+  
+  /* Home page hero section */
+  .hero-section {
+    padding: 2rem 1rem !important;
+  }
+  
+  /* Restaurant cards */
+  .restaurant-card {
+    margin: 0.5rem !important;
+  }
+  
+  /* Playlist grid */
+  .playlist-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    padding: 0 1rem !important;
+  }
+  
+  /* Bottom navigation for mobile */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-around;
+    padding: 0.5rem 0;
+    z-index: 9999;
+  }
+  
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.25rem;
+    font-size: 11px;
+  }
+  
+  /* Adjust main content padding to account for bottom nav */
+  main {
+    padding-bottom: 80px !important;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Modal adjustments */
+  .modal {
+    margin: 1rem !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Map view adjustments */
+  .map-container {
+    height: calc(100vh - 140px) !important; /* 상단 헤더(56px) + 하단 네비(80px) 고려 */
+    position: relative !important;
+  }
+  
+  /* 지도 페이지 컨테이너 조정 */
+  .map-page-container {
+    padding-bottom: 80px !important;
+  }
+  
+  /* 지도 컨트롤 버튼들이 하단 네비에 가려지지 않도록 */
+  .leaflet-bottom {
+    bottom: 90px !important;
+  }
+  
+  /* Search bar */
+  .search-bar {
+    padding: 0.75rem !important;
+    font-size: 14px !important;
+  }
+  
+  /* Reduce padding and margins globally */
+  .container {
+    padding: 0 1rem !important;
+  }
+  
+  .section {
+    padding: 1.5rem 0 !important;
+  }
+  
+  /* Login/Register pages */
+  .auth-container {
+    padding: 1rem !important;
+    margin: 0 !important;
+  }
+  
+  .auth-card {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 1.5rem !important;
+  }
+  
+  /* Responsive images */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  
+  /* Hide horizontal scrollbar and fix layout */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  body {
+    overflow-x: hidden !important;
+    width: 100vw !important;
+  }
+  
+  /* Fix container widths */
+  .container, .container-fluid {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  
+  /* Toast notifications */
+  .Toastify__toast-container {
+    width: 90vw !important;
+    left: 5vw !important;
+    right: 5vw !important;
+  }
+}
+
+/* Specific iPhone X and later (with notch) */
+@supports (padding: max(0px)) {
+  @media (max-width: 430px) {
+    .navbar {
+      padding-top: max(0.5rem, env(safe-area-inset-top)) !important;
+    }
+    
+    .bottom-nav {
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom)) !important;
+    }
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero-section {
+    min-height: auto !important;
+    padding: 1rem !important;
+  }
+  
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  .bottom-nav {
+    display: none !important;
+  }
+  
+  main {
+    padding-bottom: 1rem !important;
+  }
+}

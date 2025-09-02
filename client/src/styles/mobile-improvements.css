@@ -1,0 +1,152 @@
+/* 모바일 성능 및 렌더링 개선 */
+@media (max-width: 768px) {
+  /* 텍스트 선명도 개선 */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* 이미지 렌더링 개선 */
+  img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    will-change: transform;
+  }
+  
+  /* 터치 반응 개선 */
+  button, a, .clickable {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  
+  /* 스크롤 성능 개선 */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* 지도 z-index 문제 해결 */
+  .leaflet-container {
+    z-index: 1 !important;
+  }
+  
+  .leaflet-control-container {
+    z-index: 2 !important;
+  }
+  
+  .leaflet-pane {
+    z-index: 1 !important;
+  }
+  
+  .leaflet-popup-pane {
+    z-index: 5 !important;
+  }
+  
+  /* 콘텐츠가 지도 위에 표시되도록 */
+  .content-over-map {
+    position: relative;
+    z-index: 10 !important;
+    background-color: white;
+  }
+  
+  /* 모달/팝업이 항상 최상단에 */
+  .fixed.z-\\[9999\\] {
+    z-index: 9999 !important;
+  }
+  
+  .z-\\[10000\\] {
+    z-index: 10000 !important;
+  }
+  
+  .z-\\[10001\\] {
+    z-index: 10001 !important;
+  }
+  
+  /* 모바일 헤더 고정 */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  
+  /* 모바일 네비게이션 고정 */
+  .mobile-nav {
+    position: fixed;
+    bottom: 0;
+    z-index: 50;
+  }
+  
+  /* 카드 그림자 최적화 */
+  .card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    transition: box-shadow 0.2s ease;
+  }
+  
+  .card:active {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* 플레이리스트 카드 gradient overlay 최적화 */
+  /* aspect-ratio 속성 지원 */
+  @supports (aspect-ratio: 16/9) {
+    [style*="aspect-ratio"] {
+      position: relative;
+      width: 100%;
+    }
+  }
+  
+  /* Play 버튼 스타일 개선 */
+  button:has(.w-4.h-4) {
+    backdrop-filter: blur(4px);
+  }
+  
+  /* 지도 마커 스타일 */
+  .custom-marker {
+    background: transparent !important;
+    border: none !important;
+    display: block !important;
+  }
+  
+  /* Leaflet 마커 z-index 확보 */
+  .leaflet-marker-pane {
+    z-index: 600 !important;
+  }
+  
+  .leaflet-marker-icon {
+    z-index: 601 !important;
+  }
+  
+  /* Leaflet 아이콘 표시 보장 */
+  .leaflet-div-icon {
+    background: transparent !important;
+    border: none !important;
+  }
+  
+  /* 마커 내부 div 스타일 */
+  .leaflet-marker-icon > div {
+    position: relative !important;
+    display: block !important;
+  }
+  
+  /* 팝업 애니메이션 */
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  /* 폰트 크기 최적화 */
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.1rem; }
+  p { font-size: 0.95rem; }
+  small { font-size: 0.85rem; }
+}

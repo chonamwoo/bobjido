@@ -1,7 +1,12 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LayoutMVP from './components/LayoutMVP';
+import MobileLayout from './components/MobileLayout';
+import { useIsMobile } from './hooks/useIsMobile';
+import './styles/mobile.css';
+import 'leaflet/dist/leaflet.css';
 import HomeSoundCloud from './pages/HomeSoundCloud';
+import MobileHomeSoundCloud from './pages/MobileHomeSoundCloud';
 import FoodMBTI from './pages/FoodMBTI';
 import GameHub from './pages/GameHub';
 import LunchRecommendation from './pages/LunchRecommendation';
@@ -11,11 +16,18 @@ import FoodRoulette from './pages/FoodRoulette';
 import RestaurantQuiz from './pages/RestaurantQuiz';
 import Auth from './pages/Auth';
 import PlaylistDetail from './pages/PlaylistDetail';
+import MobilePlaylistDetail from './pages/MobilePlaylistDetail';
 import CreatePlaylist from './pages/CreatePlaylist';
 import Profile from './pages/Profile';
+import AdminPanel from './pages/AdminPanel';
+import SimpleAdminPanel from './pages/SimpleAdminPanel';
+import EnhancedAdminPanel from './pages/EnhancedAdminPanel';
+import AdminUserManagement from './pages/AdminUserManagement';
+import AdminRestaurantManagement from './pages/AdminRestaurantManagement';
 import EnhancedProfile from './pages/EnhancedProfile';
 import Discover from './pages/Discover';
 import RestaurantDetail from './pages/RestaurantDetail';
+import MobileRestaurantDetail from './pages/MobileRestaurantDetail';
 import RestaurantMap from './pages/RestaurantMap';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthCallback from './pages/AuthCallback';
@@ -40,10 +52,16 @@ import Followers from './pages/Followers';
 import Following from './pages/Following';
 
 function App() {
+  const isMobile = useIsMobile();
+  const Layout = isMobile ? MobileLayout : LayoutMVP;
+  const HomePage = isMobile ? MobileHomeSoundCloud : HomeSoundCloud;
+  const PlaylistPage = isMobile ? MobilePlaylistDetail : PlaylistDetail;
+  const RestaurantPage = isMobile ? MobileRestaurantDetail : RestaurantDetail;
+  
   return (
     <Routes>
-      <Route path="/" element={<LayoutMVP />}>
-        <Route index element={<HomeSoundCloud />} />
+      <Route path="/" element={<Layout />}>
+        <Route index element={<HomePage />} />
         <Route path="game-hub" element={<GameHub />} />
         <Route path="food-mbti" element={<FoodMBTI />} />
         <Route path="lunch-recommendation" element={<LunchRecommendation />} />
@@ -65,8 +83,8 @@ function App() {
         <Route path="map" element={<RestaurantMap />} />
         <Route path="saved" element={<SavedList />} />
         <Route path="my-lists" element={<MyLists />} />
-        <Route path="playlist/:id" element={<PlaylistDetail />} />
-        <Route path="restaurant/:id" element={<RestaurantDetail />} />
+        <Route path="playlist/:id" element={<PlaylistPage />} />
+        <Route path="restaurant/:id" element={<RestaurantPage />} />
         <Route
           path="create-playlist"
           element={
@@ -131,12 +149,15 @@ function App() {
         <Route path="expert/:username/following" element={<Following />} />
         <Route path="expert-playlist/:id" element={<SimplePlaylistDetail />} />
         <Route path="influencer/:id" element={<InfluencerProfile />} />
-        <Route path="explore" element={<RestaurantExplorer />} />
       </Route>
       
       {/* Admin Routes - Layout 밖에 배치 */}
+      <Route path="/admin" element={<EnhancedAdminPanel />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/panel" element={<EnhancedAdminPanel />} />
+      <Route path="/admin/users" element={<AdminUserManagement />} />
+      <Route path="/admin/restaurants" element={<AdminRestaurantManagement />} />
     </Routes>
   );
 }

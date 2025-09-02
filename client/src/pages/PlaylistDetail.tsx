@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import axios from '../utils/axios';
 import toast from 'react-hot-toast';
 import KoreanMap from '../components/KoreanMap';
 import { 
@@ -36,7 +36,7 @@ const PlaylistDetail: React.FC = () => {
   const { data: playlist, isLoading, error } = useQuery({
     queryKey: ['playlist', id],
     queryFn: async () => {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/playlists/${id}`);
+      const response = await axios.get(`/api/playlists/${id}`);
       return response.data;
     },
     enabled: !!id,
@@ -45,7 +45,7 @@ const PlaylistDetail: React.FC = () => {
   const likeMutation = useMutation({
     mutationFn: async () => {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/playlists/${id}/like`,
+        `/api/playlists/${id}/like`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -67,7 +67,7 @@ const PlaylistDetail: React.FC = () => {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/playlists/${id}/save`,
+        `/api/playlists/${id}/save`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -89,7 +89,7 @@ const PlaylistDetail: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       await axios.delete(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/playlists/${id}`,
+        `/api/playlists/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
     },

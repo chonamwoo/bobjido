@@ -109,7 +109,7 @@ const EnhancedProfile: React.FC = () => {
     queryKey: ['profile', username],
     queryFn: async () => {
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/users/${username}/profile`
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/users/${username}/profile`
       );
       return response.data;
     },

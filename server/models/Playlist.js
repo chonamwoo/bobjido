@@ -143,6 +143,27 @@ const playlistSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  
+  // 상세한 조회수 트래킹
+  views: {
+    total: { type: Number, default: 0 },
+    uniqueUsers: [{ 
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      viewedAt: { type: Date, default: Date.now },
+      viewCount: { type: Number, default: 1 }
+    }],
+    dailyStats: [{
+      date: { type: Date, required: true },
+      views: { type: Number, default: 0 },
+      uniqueViews: { type: Number, default: 0 }
+    }],
+    weeklyViews: { type: Number, default: 0 },
+    monthlyViews: { type: Number, default: 0 }
+  },
+  
+  // 인기도 점수 (조회수, 좋아요, 저장 등 종합)
+  popularityScore: { type: Number, default: 0, index: true },
+  trendingScore: { type: Number, default: 0, index: true },
   commentCount: {
     type: Number,
     default: 0
@@ -203,6 +224,9 @@ playlistSchema.index({ 'region.city': 1, 'region.district': 1 });
 playlistSchema.index({ isPublic: 1, createdAt: -1 });
 playlistSchema.index({ 'likes.length': -1 });
 playlistSchema.index({ viewCount: -1 });
+playlistSchema.index({ popularityScore: -1 });
+playlistSchema.index({ trendingScore: -1 });
+playlistSchema.index({ 'views.total': -1 });
 
 playlistSchema.virtual('likeCount').get(function() {
   return this.likes.length;
@@ -352,6 +376,107 @@ playlistSchema.methods.canView = function(userId) {
   return this.collaborators.some(
     c => c.user.toString() === userId.toString()
   );
+};
+
+// 조회수 증가 메서드
+playlistSchema.methods.incrementView = async function(userId = null) {
+  // 전체 조회수 증가
+  this.viewCount += 1;
+  this.views.total += 1;
+  
+  // 로그인한 사용자의 경우 유니크 조회수 트래킹
+  if (userId) {
+    const existingView = this.views.uniqueUsers.find(
+      v => v.user && v.user.toString() === userId.toString()
+    );
+    
+    if (existingView) {
+      existingView.viewCount += 1;
+      existingView.viewedAt = new Date();
+    } else {
+      this.views.uniqueUsers.push({
+        user: userId,
+        viewedAt: new Date(),
+        viewCount: 1
+      });
+    }
+  }
+  
+  // 일일 통계 업데이트
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  let todayStats = this.views.dailyStats.find(
+    stat => stat.date.getTime() === today.getTime()
+  );
+  
+  if (todayStats) {
+    todayStats.views += 1;
+    if (userId) {
+      const isNewToday = !this.views.uniqueUsers.some(
+        v => v.user && v.user.toString() === userId.toString() && 
+        v.viewedAt >= today
+      );
+      if (isNewToday) todayStats.uniqueViews += 1;
+    }
+  } else {
+    this.views.dailyStats.push({
+      date: today,
+      views: 1,
+      uniqueViews: userId ? 1 : 0
+    });
+  }
+  
+  // 주간/월간 조회수 업데이트
+  this.updatePeriodViews();
+  
+  // 인기도 점수 재계산
+  this.calculatePopularityScore();
+  
+  return this.save();
+};
+
+// 주간/월간 조회수 계산
+playlistSchema.methods.updatePeriodViews = function() {
+  const now = new Date();
+  const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+  const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  
+  this.views.weeklyViews = this.views.dailyStats
+    .filter(stat => stat.date >= weekAgo)
+    .reduce((sum, stat) => sum + stat.views, 0);
+    
+  this.views.monthlyViews = this.views.dailyStats
+    .filter(stat => stat.date >= monthAgo)
+    .reduce((sum, stat) => sum + stat.views, 0);
+};
+
+// 인기도 점수 계산
+playlistSchema.methods.calculatePopularityScore = function() {
+  const weights = {
+    view: 1,
+    like: 5,
+    save: 10,
+    completion: 20,
+    share: 3,
+    comment: 2
+  };
+  
+  this.popularityScore = 
+    (this.viewCount * weights.view) +
+    (this.likes.length * weights.like) +
+    (this.saves.length * weights.save) +
+    (this.completions.length * weights.completion) +
+    (this.shareCount * weights.share) +
+    (this.commentCount * weights.comment);
+    
+  // 트렌딩 점수 (최근 활동에 가중치)
+  const recentViews = this.views.weeklyViews || 0;
+  const recentLikes = this.likes.filter(l => 
+    l.likedAt >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  ).length;
+  
+  this.trendingScore = (recentViews * 2) + (recentLikes * 10);
 };
 
 playlistSchema.statics.getTrending = async function(limit = 10, days = 7) {

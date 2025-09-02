@@ -1,11 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import './styles/mobile-improvements.css';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+// import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,5 +55,14 @@ root.render(
   </React.StrictMode>
 );
 
-// PWA 서비스 워커 등록
-serviceWorkerRegistration.register();
+// PWA 서비스 워커 등록 - 현재 비활성화 (에러 해결을 위해)
+// serviceWorkerRegistration.register();
+
+// 기존 서비스 워커 제거
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for(let registration of registrations) {
+      registration.unregister();
+    }
+  });
+}

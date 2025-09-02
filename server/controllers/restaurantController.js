@@ -70,8 +70,8 @@ const getRestaurant = async (req, res) => {
       return res.status(404).json({ message: '맛집을 찾을 수 없습니다' });
     }
     
-    restaurant.viewCount += 1;
-    await restaurant.save();
+    // 조회수 증가 (로그인한 사용자는 유니크 트래킹)
+    await restaurant.incrementView(req.user?._id);
     
     const Playlist = restaurant.model('Playlist');
     const playlistsRaw = await Playlist

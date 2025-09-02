@@ -39,12 +39,12 @@ const Register: React.FC = () => {
   };
 
   const handleGoogleRegister = () => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8888';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
     window.location.href = `${apiUrl}/api/auth/google`;
   };
 
   const handleKakaoRegister = () => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8888';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
     window.location.href = `${apiUrl}/api/auth/kakao`;
   };
 

@@ -1,15 +1,35 @@
 import axios from 'axios';
 
 // Create axios instance with default config
-// API URL 설정 - 8888 포트 사용 (프로젝트 표준)
-const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8888';
+// API URL 설정 - 8888 포트 사용 (서버 실제 포트)
+// For mobile access through public URLs, use relative URLs or check hostname
+const getBaseURL = () => {
+  // If REACT_APP_API_URL is set, use it
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // If accessing through a public URL (like localtunnel), use relative URLs
+  const hostname = window.location.hostname;
+  if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    // Use relative URL for non-localhost access (mobile, public URLs)
+    return '';
+  }
+  
+  // Default to localhost:8888 for local development
+  return 'http://localhost:8888';
+};
+
+const baseURL = getBaseURL();
 console.log('=== Axios 설정 ===');
 console.log('REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+console.log('Current hostname:', window.location.hostname);
 console.log('baseURL:', baseURL);
 
 const axiosInstance = axios.create({
   baseURL: baseURL,
   timeout: 30000, // 30초로 증가 (파일 업로드 고려)
+  withCredentials: true, // Enable cookies/credentials for CORS
   headers: {
     'Content-Type': 'application/json',
   },

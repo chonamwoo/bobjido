@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Expo App Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #333;
+            border-radius: 10px;
+        }
+        .info {
+            margin: 20px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Expo App Direct Test</h1>
+    
+    <div class="info">
+        <p>✅ Expo 웹 서버: http://localhost:8083</p>
+        <p>아래에 앱이 보이지 않으면:</p>
+        <ol>
+            <li>직접 <a href="http://localhost:8083" target="_blank">http://localhost:8083</a> 접속해보기</li>
+            <li>브라우저 콘솔(F12)에서 에러 확인</li>
+            <li>CORS 문제일 수 있음</li>
+        </ol>
+    </div>
+    
+    <iframe src="http://localhost:8083" frameborder="0"></iframe>
+</body>
+</html>

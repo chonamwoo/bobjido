@@ -268,7 +268,7 @@ const CreatePlaylist: React.FC = () => {
                   />
                 </div>
                 {/* 프리셋 버튼들 */}
-                <div className="flex gap-2 mt-4">
+                <div className="flex flex-wrap gap-2 mt-4">
                   {[
                     { label: '💵 저렴', range: [5000, 15000] as [number, number] },
                     { label: '💰 보통', range: [15000, 35000] as [number, number] },
@@ -279,7 +279,7 @@ const CreatePlaylist: React.FC = () => {
                       key={preset.label}
                       type="button"
                       onClick={() => setPriceRange(preset.range)}
-                      className={`px-3 py-1 rounded-full text-sm transition-all ${
+                      className={`px-3 py-1 rounded-full text-sm transition-all whitespace-nowrap ${
                         JSON.stringify(priceRange) === JSON.stringify(preset.range)
                           ? 'bg-orange-500 text-white'
                           : 'bg-gray-100 hover:bg-gray-200'
@@ -310,7 +310,7 @@ const CreatePlaylist: React.FC = () => {
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                 />
                 {/* 시간 프리셋 */}
-                <div className="flex gap-2 mt-4">
+                <div className="flex flex-wrap gap-2 mt-4">
                   {[
                     { label: '⚡ 간단히', time: 60 },
                     { label: '🍽️ 보통', time: 120 },
@@ -321,7 +321,7 @@ const CreatePlaylist: React.FC = () => {
                       key={preset.label}
                       type="button"
                       onClick={() => setEstimatedDuration(preset.time)}
-                      className={`px-3 py-1 rounded-full text-sm transition-all ${
+                      className={`px-3 py-1 rounded-full text-sm transition-all whitespace-nowrap ${
                         estimatedDuration === preset.time
                           ? 'bg-blue-500 text-white'
                           : 'bg-gray-100 hover:bg-gray-200'

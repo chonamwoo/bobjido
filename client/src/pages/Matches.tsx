@@ -515,6 +515,62 @@ const Matches: React.FC = () => {
         {/* 인재풀 탭 */}
         {activeTab === 'pool' && (
           <div className="space-y-8">
+            {/* 매칭된 사람들과의 대화 목록 */}
+            {matches.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <HeartIcon className="w-6 h-6 text-red-500" />
+                    매칭된 사람들
+                  </h2>
+                  <button 
+                    onClick={() => navigate('/chat-list')}
+                    className="text-sm text-pink-600 hover:text-pink-700 font-bold"
+                  >
+                    전체 대화 보기 →
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {matches.map((match) => (
+                    <div
+                      key={match.id}
+                      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-4 border-2 border-red-100 cursor-pointer"
+                      onClick={() => navigate(`/chat/${match.id}`)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <img
+                            src={match.profileImage}
+                            alt={match.username}
+                            className="w-14 h-14 rounded-full object-cover"
+                          />
+                          {match.isNew && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                          )}
+                        </div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-bold text-gray-900">{match.username}</h3>
+                            <span className="text-xs text-gray-500">{match.matchedAt}</span>
+                          </div>
+                          <p className="text-sm text-gray-600">{match.tasteProfile}</p>
+                          {match.lastMessage && (
+                            <p className="text-sm text-gray-500 mt-1 truncate">{match.lastMessage}</p>
+                          )}
+                        </div>
+                        
+                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-all">
+                          <ChatBubbleLeftIcon className="w-5 h-5 text-gray-600" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {/* 서브 탭 - 오늘의 추천 / 취향 쌍둥이 */}
             <div className="flex gap-2 mb-6">
               <button
@@ -618,10 +674,11 @@ const Matches: React.FC = () => {
                             맛집 보기
                           </button>
                           <button
-                            onClick={() => handleMatchRequest(user.id)}
-                            className="flex-1 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition-all text-sm font-bold"
+                            onClick={() => navigate(`/chat/${user.id}`)}
+                            className="flex-1 px-3 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition-all text-sm font-bold flex items-center justify-center gap-1"
                           >
-                            매칭 신청
+                            <ChatBubbleLeftIcon className="w-4 h-4" />
+                            대화하기
                           </button>
                         </div>
                         
@@ -755,10 +812,11 @@ const Matches: React.FC = () => {
                           {/* 액션 버튼 */}
                           <div className="flex gap-2">
                             <button
-                              onClick={() => handleMatchRequest(twin.id)}
-                              className="flex-1 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all text-sm font-bold"
+                              onClick={() => navigate(`/chat/${twin.id}`)}
+                              className="flex-1 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all text-sm font-bold flex items-center justify-center gap-1"
                             >
-                              매칭 신청
+                              <ChatBubbleLeftIcon className="w-4 h-4" />
+                              대화하기
                             </button>
                             <button
                               onClick={() => handleViewRestaurants(twin.id)}

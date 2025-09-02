@@ -87,7 +87,7 @@ const EnhancedPlaylistDetail: React.FC = () => {
     queryKey: ['playlist', id],
     queryFn: async () => {
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/playlists/${id}`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/playlists/${id}`,
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       return response.data;
@@ -100,7 +100,7 @@ const EnhancedPlaylistDetail: React.FC = () => {
     queryKey: ['playlist-ratings', id],
     queryFn: async () => {
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/playlists/${id}/ratings`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/playlists/${id}/ratings`,
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       return response.data.ratings;
@@ -112,7 +112,7 @@ const EnhancedPlaylistDetail: React.FC = () => {
   const updateRatingMutation = useMutation({
     mutationFn: async ({ restaurantId, data }: { restaurantId: string; data: any }) => {
       const response = await axios.put(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/playlists/${id}/restaurants/${restaurantId}/rating`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/playlists/${id}/restaurants/${restaurantId}/rating`,
         data,
         { headers: { Authorization: `Bearer ${token}` } }
       );

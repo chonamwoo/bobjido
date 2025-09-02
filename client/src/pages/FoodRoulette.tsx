@@ -89,7 +89,7 @@ const FoodRoulette: React.FC = () => {
   const saveGameResult = async (option: RouletteOption) => {
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/games/submit`,
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/games/submit`,
         {
           gameType: 'food_roulette',
           answers: [{

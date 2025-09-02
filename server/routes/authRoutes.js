@@ -78,9 +78,9 @@ router.get('/google/callback',
       onboardingCompleted: true  // MVP에서는 온보딩 없음
     };
     
-    // 프론트엔드로 리다이렉트 (토큰과 사용자 정보 포함)
+    // auth-bridge.html로 리다이렉트 (토큰과 사용자 정보 포함)
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3001';
-    res.redirect(`${clientUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
+    res.redirect(`${clientUrl}/auth-bridge.html?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
   }
 );
 
@@ -102,10 +102,10 @@ router.get('/kakao/callback',
       onboardingCompleted: true  // MVP에서는 온보딩 없음
     };
     
-    // 프론트엔드로 리다이렉트 (토큰과 사용자 정보 포함)
+    // auth-bridge.html로 리다이렉트 (토큰과 사용자 정보 포함)
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3001';
     console.log('🔍 Redirecting to:', clientUrl);
-    res.redirect(`${clientUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
+    res.redirect(`${clientUrl}/auth-bridge.html?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
   }
 );
 

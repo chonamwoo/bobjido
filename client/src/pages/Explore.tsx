@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../utils/axios';
 import { 
   MapPinIcon,
   FunnelIcon,
@@ -96,10 +96,15 @@ const Explore: React.FC = () => {
 
   const fetchRestaurants = async () => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/restaurants`);
+      console.log('Fetching restaurants from API...');
+      const response = await axios.get('/api/restaurants');
+      
+      console.log('Restaurant API response:', response);
       
       // response.data.restaurants 형식으로 옴
       const restaurantData = response.data.restaurants || response.data || [];
+      
+      console.log('Restaurant data:', restaurantData);
       
       // 찐맛집 속성 랜덤 할당 (실제로는 DB에서 가져와야 함)
       const restaurantsWithFilters = restaurantData.map((restaurant: Restaurant) => ({
@@ -114,8 +119,10 @@ const Explore: React.FC = () => {
       
       setRestaurants(restaurantsWithFilters);
       setLoading(false);
-    } catch (error) {
-      console.error('맛집 로드 실패:', error);
+    } catch (error: any) {
+      console.error('맛집 로드 실패 - 상세 에러:', error);
+      console.error('에러 응답:', error.response);
+      console.error('에러 메시지:', error.message);
       toast.error('맛집을 불러오는데 실패했습니다');
       setLoading(false);
     }
@@ -174,90 +181,16 @@ const Explore: React.FC = () => {
 
   const fetchPlaylists = async () => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/playlists`);
+      const response = await axios.get('/api/playlists');
       // Handle both array and object response formats
-      const playlistData = response.data.playlists || response.data || [];
+      const playlistData = Array.isArray(response.data) ? response.data : (response.data.playlists || []);
       
-      // Mock data if no playlists
-      if (playlistData.length === 0) {
-        const mockPlaylists = [
-          {
-            _id: 'p1',
-            name: '이태원 숨은 맛집 TOP 10',
-            description: '이태원 3년차가 추천하는 진짜 맛집',
-            restaurantCount: 10,
-            followerCount: 234,
-            createdBy: { username: 'foodie_seoul87' },
-            category: '세계음식',
-            tags: ['이태원', '브런치', '세계음식'],
-            coverImage: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400'
-          },
-          {
-            _id: 'p2',
-            name: '연남동 카페 투어',
-            description: '연남동 현지인 추천 디저트 맛집',
-            restaurantCount: 8,
-            followerCount: 189,
-            createdBy: { username: '연남동_맛집탐방' },
-            category: '카페',
-            tags: ['연남동', '카페', '디저트'],
-            coverImage: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400'
-          },
-          {
-            _id: 'p3',
-            name: '을지로 노포 맛집',
-            description: '을지로 직장인들의 점심 성지',
-            restaurantCount: 12,
-            followerCount: 456,
-            createdBy: { username: '을지로_직장인' },
-            category: '한식',
-            tags: ['을지로', '노포', '점심'],
-            coverImage: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400'
-          },
-          {
-            _id: 'p4',
-            name: '강남 미슐랭 투어',
-            description: '특별한 날 가기 좋은 파인다이닝',
-            restaurantCount: 7,
-            followerCount: 678,
-            createdBy: { username: 'fine_dining_kr' },
-            category: '파인다이닝',
-            tags: ['강남', '미슐랭', '특별한날'],
-            coverImage: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400'
-          },
-          {
-            _id: 'p5',
-            name: '성수동 핫플 맛집',
-            description: 'SNS 핫한 성수동 카페 & 레스토랑',
-            restaurantCount: 15,
-            followerCount: 892,
-            createdBy: { username: 'cafe_addict_22' },
-            category: '카페',
-            tags: ['성수동', '핫플', 'SNS'],
-            coverImage: 'https://images.unsplash.com/photo-1559305616-3f99cd43e353?w=400'
-          }
-        ];
-        setPlaylists(mockPlaylists);
-      } else {
-        setPlaylists(playlistData);
-      }
+      // Always use real data from backend
+      setPlaylists(playlistData);
     } catch (error) {
       console.error('플레이리스트 로드 실패:', error);
-      // Set mock data on error
-      const mockPlaylists = [
-        {
-          _id: 'p1',
-          name: '이태원 숨은 맛집 TOP 10',
-          description: '이태원 3년차가 추천하는 진짜 맛집',
-          restaurantCount: 10,
-          followerCount: 234,
-          createdBy: { username: 'foodie_seoul87' },
-          category: '세계음식',
-          tags: ['이태원', '브런치', '세계음식'],
-          coverImage: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400'
-        }
-      ];
-      setPlaylists(mockPlaylists);
+      // Don't use mock data, just set empty array
+      setPlaylists([]);
     }
   };
 
@@ -327,11 +260,11 @@ const Explore: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-xl shadow-md overflow-hidden"
+        className="bg-white rounded-lg sm:rounded-xl shadow-sm sm:shadow-md overflow-hidden"
       >
         <div className="relative">
           {/* 이미지/지도 토글 섹션 */}
-          <div className="relative h-48">
+          <div className="relative h-32 sm:h-40 md:h-48">
             {showMap ? (
               <div className="w-full h-full">
                 <KoreanMap 
@@ -355,41 +288,41 @@ const Explore: React.FC = () => {
                 e.stopPropagation();
                 setShowMap(!showMap);
               }}
-              className="absolute top-2 left-2 p-2 bg-white/90 backdrop-blur rounded-full shadow-md hover:bg-white transition-colors"
+              className="absolute top-1 left-1 sm:top-2 sm:left-2 p-1.5 sm:p-2 bg-white/90 backdrop-blur rounded-full shadow-md hover:bg-white transition-colors"
             >
-              <MapPinIcon className={`w-5 h-5 ${showMap ? 'text-orange-500' : 'text-gray-600'}`} />
+              <MapPinIcon className={`w-4 h-4 sm:w-5 sm:h-5 ${showMap ? 'text-orange-500' : 'text-gray-600'}`} />
             </button>
 
             {/* 좋아요 버튼 */}
-            <div className="absolute top-2 right-2">
+            <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setLiked(!liked);
                 }}
-                className="p-2 bg-white/90 backdrop-blur rounded-full shadow-md hover:bg-white transition-colors"
+                className="p-1.5 sm:p-2 bg-white/90 backdrop-blur rounded-full shadow-md hover:bg-white transition-colors"
               >
                 {liked ? (
-                  <HeartSolid className="w-5 h-5 text-red-500" />
+                  <HeartSolid className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
                 ) : (
-                  <HeartIcon className="w-5 h-5 text-gray-600" />
+                  <HeartIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                 )}
               </button>
             </div>
 
             {/* 필터 배지 */}
             {activeFilters.length > 0 && (
-              <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
+              <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex flex-wrap gap-0.5 sm:gap-1">
                 {activeFilters.slice(0, 2).map(filter => (
                   <span
                     key={filter.id}
-                    className="px-2 py-1 bg-orange-500/90 backdrop-blur text-white text-xs rounded-full"
+                    className="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-orange-500/90 backdrop-blur text-white text-[10px] sm:text-xs rounded-full"
                   >
                     {filter.label}
                   </span>
                 ))}
                 {activeFilters.length > 2 && (
-                  <span className="px-2 py-1 bg-gray-800/90 backdrop-blur text-white text-xs rounded-full">
+                  <span className="px-1.5 py-0.5 sm:px-2 sm:py-1 bg-gray-800/90 backdrop-blur text-white text-[10px] sm:text-xs rounded-full">
                     +{activeFilters.length - 2}
                   </span>
                 )}
@@ -399,29 +332,29 @@ const Explore: React.FC = () => {
         </div>
         
         <div 
-          className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="p-2 sm:p-3 md:p-4 cursor-pointer hover:bg-gray-50 transition-colors"
           onClick={() => navigate(`/restaurant/${restaurant._id}`)}
         >
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-bold text-lg">{restaurant.name}</h3>
-            <span className="text-sm text-gray-500">{restaurant.category}</span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 sm:mb-2">
+            <h3 className="font-bold text-sm sm:text-base md:text-lg truncate pr-1">{restaurant.name}</h3>
+            <span className="text-xs sm:text-sm text-gray-500 flex-shrink-0">{restaurant.category}</span>
           </div>
           
-          <p className="text-sm text-gray-600 mb-2 line-clamp-1">{restaurant.address}</p>
+          <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2 line-clamp-1">{restaurant.address}</p>
           
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1">
-              <StarIcon className="w-4 h-4 text-yellow-500 fill-current" />
-              <span className="text-sm font-semibold">{(restaurant.averageRating || restaurant.rating || 0).toFixed(1)}</span>
-              <span className="text-xs text-gray-500">({restaurant.reviewCount || 0})</span>
+              <StarIcon className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 fill-current" />
+              <span className="text-xs sm:text-sm font-semibold">{(restaurant.averageRating || restaurant.rating || 0).toFixed(1)}</span>
+              <span className="text-xs text-gray-500 hidden sm:inline">({restaurant.reviewCount || 0})</span>
             </div>
-            <span className="text-sm text-gray-500">{restaurant.priceRange}</span>
+            <span className="text-xs sm:text-sm text-gray-500">{restaurant.priceRange}</span>
           </div>
 
           {restaurant.popularMenu && restaurant.popularMenu.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {restaurant.popularMenu.slice(0, 2).map((menu, idx) => (
-                <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                <span key={idx} className="text-xs bg-gray-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs">
                   {menu}
                 </span>
               ))}
@@ -673,7 +606,7 @@ const Explore: React.FC = () => {
         ) : (
           // 맛집 뷰
           filteredRestaurants.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
               {filteredRestaurants.map(restaurant => (
                 <RestaurantCard key={restaurant._id} restaurant={restaurant} />
               ))}

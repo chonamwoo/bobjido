@@ -35,9 +35,10 @@ interface PlaylistCardProps {
     isLiked?: boolean;
     isSaved?: boolean;
   };
+  horizontal?: boolean; // 가로 레이아웃 옵션 추가
 }
 
-const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist }) => {
+const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, horizontal = false }) => {
   const [imageError, setImageError] = React.useState(false);
   
   const handleLike = (e: React.MouseEvent) => {
@@ -102,6 +103,93 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist }) => {
     setImageError(true);
   };
 
+  // 가로 레이아웃일 때
+  if (horizontal) {
+    return (
+      <Link to={`/playlist/${playlist._id}`} className="block">
+        <div className="card card-hover group flex bg-white rounded-lg shadow-sm overflow-hidden">
+          {/* Cover Image or Gradient - 가로 레이아웃 */}
+          <div className="relative w-32 h-32 md:w-40 md:h-32 flex-shrink-0">
+            {playlist.coverImage ? (
+              <>
+                <img
+                  src={getCoverImage()}
+                  alt={playlist.title}
+                  className="w-full h-full object-cover"
+                  onError={onImageError}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+              </>
+            ) : (
+              <div 
+                className="w-full h-full"
+                style={{ background: getPlaylistGradient(playlist) }}
+              />
+            )}
+          </div>
+          
+          {/* Content - 가로 레이아웃 */}
+          <div className="flex-1 p-4 flex flex-col justify-between">
+            <div>
+              <h3 className="font-bold text-gray-900 line-clamp-1 mb-1">{playlist.title}</h3>
+              <p className="text-sm text-gray-600 line-clamp-1 mb-2">{playlist.description}</p>
+              
+              <div className="flex items-center space-x-4 text-xs text-gray-500">
+                <span className="flex items-center">
+                  <MapPinIcon className="w-3 h-3 mr-1" />
+                  {playlist.restaurants?.length || 0}개 맛집
+                </span>
+                <span>❤️ {playlist.likeCount}</span>
+                <span>👁️ {playlist.viewCount}</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center space-x-2">
+                <img
+                  src={playlist.createdBy.profileImage || getDefaultAvatar(playlist.createdBy.username, 24)}
+                  alt={playlist.createdBy.username}
+                  className="w-6 h-6 rounded-full"
+                />
+                <span className="text-xs text-gray-600">{playlist.createdBy.username}</span>
+              </div>
+              
+              <div className="flex space-x-1">
+                <button
+                  onClick={handleLike}
+                  className="p-1"
+                >
+                  {playlist.isLiked ? (
+                    <HeartSolidIcon className="w-4 h-4 text-red-500" />
+                  ) : (
+                    <HeartIcon className="w-4 h-4 text-gray-400" />
+                  )}
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="p-1"
+                >
+                  {playlist.isSaved ? (
+                    <BookmarkSolidIcon className="w-4 h-4 text-primary-500" />
+                  ) : (
+                    <BookmarkIcon className="w-4 h-4 text-gray-400" />
+                  )}
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="p-1"
+                >
+                  <ShareIcon className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
+  // 세로 레이아웃 (기존)
   return (
     <Link to={`/playlist/${playlist._id}`} className="block">
       <div className="card card-hover group">

@@ -11,8 +11,8 @@ const getPlaylists = async (req, res) => {
       city, 
       district, 
       search, 
-      sortBy = 'createdAt', 
-      sortOrder = 'desc',
+      sortBy = 'title', 
+      sortOrder = 'asc',
       page = 1, 
       limit = 12 
     } = req.query;
@@ -45,7 +45,7 @@ const getPlaylists = async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .populate('createdBy', 'username profileImage trustScore')
-      .populate('restaurants.restaurant', 'name address images category')
+      .populate('restaurants.restaurant', 'name address images category coordinates priceRange')
       .lean();
     
     const playlistsWithCounts = playlists.map(playlist => ({
@@ -118,8 +118,8 @@ const getPlaylist = async (req, res) => {
       return res.status(403).json({ message: '접근 권한이 없습니다' });
     }
     
-    playlist.viewCount += 1;
-    await playlist.save();
+    // 조회수 증가 (로그인한 사용자는 유니크 트래킹)
+    await playlist.incrementView(req.user?._id);
     
     const playlistData = {
       ...playlist.toObject(),

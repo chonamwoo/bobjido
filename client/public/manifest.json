@@ -5,18 +5,14 @@
   "icons": [
     {
       "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
+      "sizes": "128x128",
       "type": "image/x-icon"
     },
     {
-      "src": "https://ui-avatars.com/api/?name=BM&background=ff6b35&color=fff&size=192",
+      "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "https://ui-avatars.com/api/?name=BM&background=ff6b35&color=fff&size=512",
-      "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "128x128",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",

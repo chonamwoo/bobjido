@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import adminAxios from '../utils/adminAxios';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import {
@@ -55,14 +55,7 @@ const AdminDashboard: React.FC = () => {
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [recentPlaylists, setRecentPlaylists] = useState<RecentPlaylist[]>([]);
 
-  // Admin axios 인스턴스 생성
-  const adminAxios = axios.create({
-    baseURL: 'http://localhost:8888',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-      'Content-Type': 'application/json'
-    }
-  });
+  // adminAxios는 utils에서 임포트하여 사용
 
   // Admin 권한 체크
   useEffect(() => {
@@ -81,7 +74,13 @@ const AdminDashboard: React.FC = () => {
   const loadDashboard = async () => {
     try {
       setLoading(true);
+      console.log('Loading dashboard data...');
+      console.log('Admin token:', localStorage.getItem('adminToken'));
+      
+      // adminAxios가 자동으로 토큰과 헤더를 처리합니다
       const response = await adminAxios.get('/api/admin/dashboard');
+      
+      console.log('Dashboard response:', response.data);
       
       if (response.data) {
         setStats(response.data.stats || {
@@ -97,6 +96,7 @@ const AdminDashboard: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Dashboard load error:', error);
+      console.error('Error details:', error.response);
       if (error.response?.status === 401) {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminData');
@@ -169,7 +169,8 @@ const AdminDashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-gray-800 rounded-xl p-6 border border-gray-700"
+            className="bg-gray-800 rounded-xl p-6 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
+            onClick={() => navigate('/admin/users')}
           >
             <UserGroupIcon className="w-8 h-8 text-blue-400 mb-2" />
             <p className="text-3xl font-bold text-white">{stats.totalUsers}</p>
@@ -180,7 +181,8 @@ const AdminDashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-gray-800 rounded-xl p-6 border border-gray-700"
+            className="bg-gray-800 rounded-xl p-6 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
+            onClick={() => navigate('/admin/panel')}
           >
             <DocumentDuplicateIcon className="w-8 h-8 text-green-400 mb-2" />
             <p className="text-3xl font-bold text-white">{stats.totalPlaylists}</p>
@@ -191,7 +193,8 @@ const AdminDashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-gray-800 rounded-xl p-6 border border-gray-700"
+            className="bg-gray-800 rounded-xl p-6 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
+            onClick={() => navigate('/admin/restaurants')}
           >
             <BuildingStorefrontIcon className="w-8 h-8 text-orange-400 mb-2" />
             <p className="text-3xl font-bold text-white">{stats.totalRestaurants}</p>
@@ -202,7 +205,8 @@ const AdminDashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-gray-800 rounded-xl p-6 border border-gray-700"
+            className="bg-gray-800 rounded-xl p-6 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
+            onClick={() => navigate('/admin/users')}
           >
             <ChartBarIcon className="w-8 h-8 text-purple-400 mb-2" />
             <p className="text-3xl font-bold text-white">{stats.activeUsers}</p>
@@ -213,7 +217,8 @@ const AdminDashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-gray-800 rounded-xl p-6 border border-gray-700"
+            className="bg-gray-800 rounded-xl p-6 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
+            onClick={() => navigate('/admin/users')}
           >
             <ClockIcon className="w-8 h-8 text-yellow-400 mb-2" />
             <p className="text-3xl font-bold text-white">{stats.todaySignups}</p>
@@ -224,7 +229,8 @@ const AdminDashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="bg-gray-800 rounded-xl p-6 border border-gray-700"
+            className="bg-gray-800 rounded-xl p-6 border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
+            onClick={() => navigate('/admin/panel')}
           >
             <DocumentDuplicateIcon className="w-8 h-8 text-red-400 mb-2" />
             <p className="text-3xl font-bold text-white">{stats.todayPlaylists}</p>
@@ -310,7 +316,7 @@ const AdminDashboard: React.FC = () => {
           className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4"
         >
           <button
-            onClick={() => toast('사용자 관리 기능은 준비 중입니다', { icon: 'ℹ️' })}
+            onClick={() => navigate('/admin/users')}
             className="p-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all transform hover:scale-105"
           >
             <UserGroupIcon className="w-8 h-8 mx-auto mb-2" />
@@ -318,7 +324,7 @@ const AdminDashboard: React.FC = () => {
           </button>
 
           <button
-            onClick={() => toast('플레이리스트 관리 기능은 준비 중입니다', { icon: 'ℹ️' })}
+            onClick={() => navigate('/admin/panel')}
             className="p-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl transition-all transform hover:scale-105"
           >
             <DocumentDuplicateIcon className="w-8 h-8 mx-auto mb-2" />
@@ -326,7 +332,7 @@ const AdminDashboard: React.FC = () => {
           </button>
 
           <button
-            onClick={() => toast('맛집 관리 기능은 준비 중입니다', { icon: 'ℹ️' })}
+            onClick={() => navigate('/admin/restaurants')}
             className="p-4 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-xl transition-all transform hover:scale-105"
           >
             <BuildingStorefrontIcon className="w-8 h-8 mx-auto mb-2" />

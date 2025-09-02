@@ -9,6 +9,9 @@ const {
   deletePlaylist,
   getRestaurants,
   verifyRestaurant,
+  updatePlaylistAdmin,
+  searchRestaurantsNaver,
+  createRestaurantFromSearch
 } = require('../controllers/adminController');
 const { adminProtect, requirePermission } = require('../middleware/adminAuth');
 
@@ -28,9 +31,12 @@ router.put('/users/:userId/status', requirePermission('user_management'), update
 // 플레이리스트 관리
 router.get('/playlists', requirePermission('playlist_management'), getPlaylists);
 router.delete('/playlists/:playlistId', requirePermission('playlist_management'), deletePlaylist);
+router.put('/playlists/:playlistId', requirePermission('playlist_management'), updatePlaylistAdmin);
 
 // 맛집 관리
 router.get('/restaurants', requirePermission('restaurant_management'), getRestaurants);
 router.put('/restaurants/:restaurantId/verify', requirePermission('restaurant_management'), verifyRestaurant);
+router.get('/restaurants/search', requirePermission('restaurant_management'), searchRestaurantsNaver);
+router.post('/restaurants/create', requirePermission('restaurant_management'), createRestaurantFromSearch);
 
 module.exports = router;

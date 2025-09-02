@@ -15,6 +15,7 @@ export interface SimpleMockRestaurant {
   };
   specialties: string[];
   openHours?: string;
+  famousReason?: string; // 유명한 이유 추가
 }
 
 // Convert simple mock data to full Restaurant type
@@ -71,7 +72,8 @@ const apgujeongRestaurants: SimpleMockRestaurant[] = [
     area: '압구정',
     coordinates: { lat: 37.5209, lng: 127.0414 },
     specialties: ['한식파인다이닝', '계절별특선', '모던한식'],
-    openHours: '12:00-22:00'
+    openHours: '12:00-22:00',
+    famousReason: '🌟 미쉐린 3스타 연속 수상한 한식 파인다이닝'
   },
   {
     id: 'ag_002',
@@ -84,7 +86,8 @@ const apgujeongRestaurants: SimpleMockRestaurant[] = [
     area: '압구정',
     coordinates: { lat: 37.5198, lng: 127.0452 },
     specialties: ['북경오리', '마파두부', '탕수육'],
-    openHours: '11:30-22:00'
+    openHours: '11:30-22:00',
+    famousReason: '🦆 북경 현지 셰프가 인정한 정통 북경오리 맛집'
   },
   {
     id: 'ag_003',
@@ -97,7 +100,8 @@ const apgujeongRestaurants: SimpleMockRestaurant[] = [
     area: '압구정',
     coordinates: { lat: 37.5244, lng: 127.0385 },
     specialties: ['하우스스테이크', '바질파스타', '랍스터롤'],
-    openHours: '11:00-22:00'
+    openHours: '11:00-22:00',
+    famousReason: '🥩 성수동 연예인들이 단골인 스테이크 맛집'
   },
   {
     id: 'ag_004',
@@ -110,7 +114,8 @@ const apgujeongRestaurants: SimpleMockRestaurant[] = [
     area: '압구정',
     coordinates: { lat: 37.5189, lng: 127.0350 },
     specialties: ['짜장면', '짬뽕', '탕수육'],
-    openHours: '11:00-21:30'
+    openHours: '11:00-21:30',
+    famousReason: '🚫 배달 안하는 진짜 동네 중국집'
   },
   {
     id: 'ag_005',
@@ -123,7 +128,8 @@ const apgujeongRestaurants: SimpleMockRestaurant[] = [
     area: '압구정',
     coordinates: { lat: 37.5201, lng: 127.0288 },
     specialties: ['감자탕', '생삼겹살', '김치찌개'],
-    openHours: '11:00-22:00'
+    openHours: '11:00-22:00',
+    famousReason: '👨‍👩‍👧 3대가 함께 운영하는 40년 전통 감자탕집'
   },
   {
     id: 'ag_006',
@@ -136,7 +142,8 @@ const apgujeongRestaurants: SimpleMockRestaurant[] = [
     area: '압구정',
     coordinates: { lat: 37.5235, lng: 127.0301 },
     specialties: ['냉삼', '된장찌개', '김치찌개'],
-    openHours: '11:30-05:00'
+    openHours: '11:30-05:00',
+    famousReason: '🌙 새벽까지 영업하는 직장인들의 성지'
   },
   {
     id: 'ag_007',

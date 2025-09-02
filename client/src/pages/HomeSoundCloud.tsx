@@ -15,7 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { useAuthStore } from '../store/authStore';
-import axios from 'axios';
+import axios from '../utils/axios';
 import toast from 'react-hot-toast';
 import { getPlaylistCoverImage } from '../utils/imageUtils';
 
@@ -40,7 +40,7 @@ const HomeSoundCloud: React.FC = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/playlists`,
+        `/api/playlists`,
         {
           params: {
             limit: 20,
@@ -120,7 +120,7 @@ const HomeSoundCloud: React.FC = () => {
 
       try {
         await axios.post(
-          `${process.env.REACT_APP_API_URL || 'http://localhost:8888'}/api/playlists/${playlist._id}/like`,
+          `/api/playlists/${playlist._id}/like`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );

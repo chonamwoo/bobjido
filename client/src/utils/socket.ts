@@ -15,7 +15,7 @@ class SocketManager {
 
     console.log('🔄 WebSocket 연결 중...');
     
-    this.socket = io(process.env.REACT_APP_API_URL || 'http://localhost:8888', {
+    this.socket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000', {
       auth: {
         token
       },

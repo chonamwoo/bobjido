@@ -10,6 +10,9 @@ require('dotenv').config();
 // Import logger
 const { logger, requestLogger, errorLogger, notifyTaskComplete } = require('./utils/logger');
 
+// Import tracking middleware
+const { trackUserActivity } = require('./middleware/tracking');
+
 // Import routes with error handling
 let authRoutes, userRoutes, restaurantRoutes, playlistRoutes, adminRoutes, tasteProfileRoutes, globalDiscoveryRoutes, matchingRoutes, chatRoutes, onboardingRoutes, userStatsRoutes, followRoutes, notificationRoutes;
 
@@ -19,6 +22,7 @@ try {
   restaurantRoutes = require('./routes/restaurantRoutes');
   playlistRoutes = require('./routes/playlistRoutes');
   adminRoutes = require('./routes/adminRoutes');
+  searchRoutes = require('./routes/searchRoutes');
   tasteProfileRoutes = require('./routes/tasteProfileRoutes');
   globalDiscoveryRoutes = require('./routes/globalDiscoveryRoutes');
   matchingRoutes = require('./routes/matchingRoutes');
@@ -37,7 +41,7 @@ const app = express();
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000, // 100에서 1000으로 증가
   message: '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.'
 });
 
@@ -58,12 +62,32 @@ app.use(helmet({
 
 app.use(compression());
 
-// CORS 설정 - 더 구체적으로
+// CORS 설정 - 여러 origin 허용
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001', 
+  'http://localhost:3002',
+  'http://localhost:5555',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:3002',
+  'http://127.0.0.1:5555'
+];
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3001',
+  origin: function(origin, callback) {
+    // origin이 없는 경우(예: 모바일 앱, Postman 등) 허용
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, true); // 개발 중에는 모든 origin 허용
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Auth', 'x-admin-auth'],
 }));
 
 app.use(express.json());
@@ -72,9 +96,13 @@ app.use(express.urlencoded({ extended: true }));
 // Add request logging
 app.use(requestLogger);
 
+// Add user activity tracking
+app.use(trackUserActivity);
+
 // Session middleware는 MongoDB 연결 후에 설정됩니다
 
-app.use('/api/', limiter);
+// Rate limiting 일시적으로 비활성화 (개발 중)
+// app.use('/api/', limiter);
 
 // 정적 파일 제공 설정
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
@@ -141,6 +169,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bobmap', 
   app.use('/api/restaurants', restaurantRoutes);
   app.use('/api/playlists', playlistRoutes);
   app.use('/api/admin', adminRoutes);
+  app.use('/api/search', searchRoutes);
   app.use('/api/taste-profile', tasteProfileRoutes);
   app.use('/api/global-discovery', globalDiscoveryRoutes);
   app.use('/api/matching', matchingRoutes);

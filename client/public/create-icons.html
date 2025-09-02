@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Icons</title>
+</head>
+<body>
+    <canvas id="canvas192" width="192" height="192"></canvas>
+    <canvas id="canvas512" width="512" height="512"></canvas>
+    
+    <script>
+        function createIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // 그라데이션 배경
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#FF6B35');
+            gradient.addColorStop(1, '#F23E5C');
+            
+            // 둥근 사각형 배경
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, size * 0.2);
+            ctx.fill();
+            
+            // B 텍스트
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size * 0.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('B', size / 2, size / 2);
+            
+            // PNG로 변환
+            return canvas.toDataURL('image/png');
+        }
+        
+        // 아이콘 생성
+        const icon192 = createIcon('canvas192', 192);
+        const icon512 = createIcon('canvas512', 512);
+        
+        // 다운로드 링크 생성
+        const link192 = document.createElement('a');
+        link192.download = 'logo192.png';
+        link192.href = icon192;
+        link192.textContent = 'Download 192x192';
+        document.body.appendChild(link192);
+        
+        const link512 = document.createElement('a');
+        link512.download = 'logo512.png';
+        link512.href = icon512;
+        link512.textContent = 'Download 512x512';
+        document.body.appendChild(link512);
+        
+        console.log('Icon 192 data URL:', icon192.substring(0, 100) + '...');
+        console.log('Icon 512 data URL:', icon512.substring(0, 100) + '...');
+    </script>
+</body>
+</html>
