@@ -20,7 +20,7 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
-import { getCommunityImage, getAvatarColor, getPostVisual } from '../utils/communityImages';
+import { getCommunityImage, getAvatarColor, getPostVisual, getRealFoodImage } from '../utils/communityImages';
 
 interface CommunityPost {
   id: string;
@@ -402,11 +402,18 @@ const Community: React.FC = () => {
                     <h3 className="text-xl font-bold mb-2">{post.title}</h3>
                     <p className="text-gray-600 mb-4">{post.content}</p>
 
-                    {/* 이미지 대신 이모지 플레이스홀더 */}
+                    {/* 실제 음식 이미지 */}
                     <div className="mb-4">
-                      <div className={`w-full h-64 bg-gradient-to-br ${getPostVisual(post.type, parseInt(post.id) - 1).gradient} rounded-lg flex items-center justify-center`}>
-                        <span className="text-7xl">{getPostVisual(post.type, parseInt(post.id) - 1).emoji}</span>
-                      </div>
+                      <img
+                        src={getRealFoodImage(post.type, post.title)}
+                        alt={post.title}
+                        className="w-full h-64 object-cover rounded-lg"
+                        onError={(e) => {
+                          // 이미지 로드 실패시 폴백
+                          const target = e.target as HTMLImageElement;
+                          target.src = getCommunityImage(post.type, parseInt(post.id) - 1);
+                        }}
+                      />
                     </div>
 
                     {/* Recipe Details */}
