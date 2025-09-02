@@ -17,6 +17,7 @@ import {
   EyeIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
+import { getCommunityImage, getAvatarColor } from '../utils/communityImages';
 
 interface CommunityPost {
   id: string;
@@ -68,7 +69,7 @@ const MobileCommunity: React.FC = () => {
       },
       category: '레시피',
       tags: ['김치찌개', '백종원', '한식'],
-      images: ['https://images.unsplash.com/photo-1583224994076-b8922d9ad566?w=400'],
+      images: [getCommunityImage('recipe', 0)],
       likes: 3421,
       comments: 234,
       saves: 1892,
@@ -95,7 +96,7 @@ const MobileCommunity: React.FC = () => {
       },
       category: '레시피',
       tags: ['볶음밥', '자취요리', '간단요리'],
-      images: ['https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400'],
+      images: [getCommunityImage('recipe', 1)],
       likes: 892,
       comments: 45,
       saves: 678,
@@ -121,7 +122,7 @@ const MobileCommunity: React.FC = () => {
       },
       category: '레시피',
       tags: ['에어프라이어', '치킨', '다이어트'],
-      images: ['https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400'],
+      images: [getCommunityImage('recipe', 2)],
       likes: 5678,
       comments: 456,
       saves: 3421,
@@ -259,7 +260,7 @@ const MobileCommunity: React.FC = () => {
       },
       category: '할인',
       tags: ['이마트', '1+1', '라면'],
-      images: ['https://images.unsplash.com/photo-1540340061722-9293d5163008?w=400'],
+      images: [getCommunityImage('deal', 0)],
       likes: 8901,
       comments: 567,
       saves: 6789,
