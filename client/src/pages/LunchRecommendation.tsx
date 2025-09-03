@@ -106,7 +106,49 @@ export default function LunchRecommendation() {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       setShowResult(true);
+      
+      // Save to localStorage
+      const gameRecords = JSON.parse(localStorage.getItem('gameRecords') || '{}');
+      gameRecords.lunchRecommendation = {
+        answers: newAnswers,
+        completedAt: new Date().toISOString()
+      };
+      localStorage.setItem('gameRecords', JSON.stringify(gameRecords));
+      
+      // Update completed games count
+      const completedGames = parseInt(localStorage.getItem('completedGames') || '0');
+      localStorage.setItem('completedGames', String(completedGames + 1));
     }
+  };
+
+  const getRestaurantsByFood = (foodName: string) => {
+    const restaurantMap: { [key: string]: Array<{ name: string; location: string; rating: number }> } = {
+      '김치찌개': [
+        { name: '김치찌개 전문점', location: '종로', rating: 4.6 },
+        { name: '집밥 한상', location: '강남', rating: 4.5 },
+        { name: '할머니 김치찌개', location: '홍대', rating: 4.7 }
+      ],
+      '쌀국수': [
+        { name: '포메인', location: '강남', rating: 4.3 },
+        { name: '에머이', location: '이태원', rating: 4.5 },
+        { name: '미스사이공', location: '홍대', rating: 4.4 }
+      ],
+      '햄버거': [
+        { name: '수제버거 맛집', location: '홍대', rating: 4.6 },
+        { name: '버거파크', location: '강남', rating: 4.5 },
+        { name: '쉐이크쉑', location: '강남', rating: 4.5 }
+      ],
+      '샐러드': [
+        { name: '샐러디', location: '강남', rating: 4.2 },
+        { name: '스윗밸런스', location: '성수', rating: 4.4 },
+        { name: '그린테이블', location: '홍대', rating: 4.3 }
+      ]
+    };
+    
+    return restaurantMap[foodName] || [
+      { name: '맛집 추천 1', location: '강남', rating: 4.5 },
+      { name: '맛집 추천 2', location: '홍대', rating: 4.4 }
+    ];
   };
 
   const getRecommendation = () => {
@@ -145,16 +187,31 @@ export default function LunchRecommendation() {
                   transition={{ delay: index * 0.1 }}
                   className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">{item.emoji}</div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-800 mb-1">{item.name}</h3>
-                      <p className="text-gray-600 text-sm mb-2">{item.description}</p>
-                      <div className="flex gap-2">
-                        {item.categories.map((cat, i) => (
-                          <span key={i} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                            {cat}
-                          </span>
+                  <div>
+                    <div className="flex items-start gap-4">
+                      <div className="text-4xl">{item.emoji}</div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-800 mb-1">{item.name}</h3>
+                        <p className="text-gray-600 text-sm mb-2">{item.description}</p>
+                        <div className="flex gap-2">
+                          {item.categories.map((cat, i) => (
+                            <span key={i} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Restaurant Recommendations */}
+                    <div className="mt-4 pt-4 border-t border-blue-100">
+                      <h4 className="text-sm font-semibold mb-2 text-gray-700">🍴 추천 맛집</h4>
+                      <div className="space-y-1">
+                        {getRestaurantsByFood(item.name).map((restaurant, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-gray-700">{restaurant.name}</span>
+                            <span className="text-gray-500">{restaurant.location} · ⭐{restaurant.rating}</span>
+                          </div>
                         ))}
                       </div>
                     </div>

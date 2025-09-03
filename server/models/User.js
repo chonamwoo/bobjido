@@ -2,12 +2,27 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+  userId: {
+    type: String,
+    required: [true, '아이디는 필수입니다'],
+    unique: true,
+    trim: true,
+    lowercase: true,
+    minlength: [4, '아이디는 최소 4자 이상이어야 합니다'],
+    maxlength: [20, '아이디는 최대 20자까지 가능합니다'],
+    validate: {
+      validator: function(v) {
+        // 영문 소문자, 숫자, 언더스코어만 허용
+        return /^[a-z0-9_]+$/.test(v);
+      },
+      message: '아이디는 영문 소문자, 숫자, 언더스코어(_)만 사용 가능합니다'
+    }
+  },
   username: {
     type: String,
     required: [true, '사용자명은 필수입니다'],
-    unique: true,
     trim: true,
-    minlength: [3, '사용자명은 최소 3자 이상이어야 합니다'],
+    minlength: [2, '사용자명은 최소 2자 이상이어야 합니다'],
     maxlength: [30, '사용자명은 최대 30자까지 가능합니다']
   },
   email: {
@@ -220,6 +235,7 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
+userSchema.index({ userId: 1 });
 userSchema.index({ username: 1 });
 userSchema.index({ email: 1 });
 userSchema.index({ 'tasteProfile.cuisineExpertise': 1 });

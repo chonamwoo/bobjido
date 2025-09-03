@@ -35,14 +35,19 @@ export const getCommunityImage = (type: string, index: number = 0): string => {
 
 // Alternative: Get real Korean food images
 export const getRealFoodImage = (type: string, title: string): string => {
-  // Map specific titles to actual food images
+  // Map specific titles to actual food images - 고품질 음식 이미지
   const specificImages: { [key: string]: string } = {
-    '백종원 김치찌개 황금레시피': 'https://images.pexels.com/photos/2313686/pexels-photo-2313686.jpeg?auto=compress&w=400&h=300',
-    '5분 완성 계란볶음밥': 'https://images.pexels.com/photos/3926133/pexels-photo-3926133.jpeg?auto=compress&w=400&h=300',
-    '에어프라이어 치킨 완벽 재현': 'https://images.pexels.com/photos/2673353/pexels-photo-2673353.jpeg?auto=compress&w=400&h=300',
-    '백종원도 극찬한 라면 끓이는 꿀팁': 'https://images.pexels.com/photos/1907244/pexels-photo-1907244.jpeg?auto=compress&w=400&h=300',
-    '치킨+콜라 말고 이거 드세요': 'https://images.pexels.com/photos/1059905/pexels-photo-1059905.jpeg?auto=compress&w=400&h=300',
-    '이마트 1+1 행사 총정리': 'https://images.pexels.com/photos/3962285/pexels-photo-3962285.jpeg?auto=compress&w=400&h=300'
+    '백종원 김치찌개 황금레시피': 'https://images.unsplash.com/photo-1583224964978-2257b960c3d3?w=600&h=400&fit=crop&q=80',
+    '5분 완성 계란볶음밥': 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=600&h=400&fit=crop&q=80',
+    '에어프라이어 치킨 완벽 재현': 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=600&h=400&fit=crop&q=80',
+    '백종원도 극찬한 라면 끓이는 꿀팁': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&h=400&fit=crop&q=80',
+    '치킨+콜라 말고 이거 드세요': 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=600&h=400&fit=crop&q=80',
+    '이마트 1+1 행사 총정리': 'https://images.unsplash.com/photo-1543362906-acfc16c67564?w=600&h=400&fit=crop&q=80',
+    // 꿀팁 관련 이미지들 - 고품질 이미지
+    '양파 썰 때 눈물 안나는 방법': 'https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=600&h=400&fit=crop&q=80',
+    '새우 손질 10초 완성법': 'https://images.unsplash.com/photo-1565680018434-b513d5e2fd47?w=600&h=400&fit=crop&q=80',
+    '계란 삶기 시간별 완성도': 'https://images.unsplash.com/photo-1582169505937-b9992bd01ed9?w=600&h=400&fit=crop&q=80',
+    '생선 비린내 제거 꿀팁': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600&h=400&fit=crop&q=80'
   };
 
   // Return specific image if available, otherwise use type-based default
@@ -50,12 +55,12 @@ export const getRealFoodImage = (type: string, title: string): string => {
     return specificImages[title];
   }
 
-  // Default images by type
+  // Default images by type - 고품질 이미지
   const defaultImages: { [key: string]: string } = {
-    recipe: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&w=400&h=300',
-    tip: 'https://images.pexels.com/photos/3298687/pexels-photo-3298687.jpeg?auto=compress&w=400&h=300',
-    combination: 'https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&w=400&h=300',
-    deal: 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&w=400&h=300'
+    recipe: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=400&fit=crop&q=80',
+    tip: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=400&fit=crop&q=80',
+    combination: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&h=400&fit=crop&q=80',
+    deal: 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=600&h=400&fit=crop&q=80'
   };
 
   return defaultImages[type] || defaultImages.recipe;

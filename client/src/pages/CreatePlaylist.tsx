@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../store/authStore';
 import KoreanMap from '../components/KoreanMap';
 import RestaurantSearchModal from '../components/RestaurantSearchModal';
 import { Restaurant } from '../types';
@@ -48,6 +49,7 @@ interface CreatePlaylistData {
 
 const CreatePlaylist: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [selectedRestaurants, setSelectedRestaurants] = useState<Restaurant[]>([]);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [personalNotes, setPersonalNotes] = useState<{ [key: string]: string }>({});
@@ -70,15 +72,64 @@ const CreatePlaylist: React.FC = () => {
 
   const createPlaylistMutation = useMutation({
     mutationFn: async (data: CreatePlaylistData) => {
-      const response = await axios.post('/api/playlists', data);
-      return response.data;
+      // API로 실제 저장 시도
+      try {
+        const response = await axios.post('/api/playlists', {
+          ...data,
+          restaurants: selectedRestaurants.map(r => ({
+            restaurant: r._id || r,
+            personalNote: personalNotes[r._id] || '',
+            mustTry: []
+          }))
+        });
+        return response.data;
+      } catch (error: any) {
+        console.error('API 저장 실패:', error.response?.data || error.message);
+        
+        // 로그인하지 않은 경우에만 로컬 스토리지 사용
+        if (error.response?.status === 401) {
+          toast.error('로그인이 필요합니다. 로컬에만 저장됩니다.');
+        } else {
+          // 다른 에러는 그대로 throw
+          throw error;
+        }
+        
+        // 로컬 스토리지에 저장
+        const newPlaylist = {
+          _id: `local-playlist-${Date.now()}`,
+          ...data,
+          createdBy: user || {
+            _id: 'local-user',
+            username: '나',
+            isVerified: false
+          },
+          restaurants: selectedRestaurants.map(r => ({
+            restaurant: r,
+            personalNote: personalNotes[r._id] || '',
+            mustTry: []
+          })),
+          likeCount: 0,
+          saveCount: 0,
+          viewCount: 0,
+          createdAt: new Date().toISOString(),
+          isPublic: data.isPublic ?? true,
+          restaurantCount: selectedRestaurants.length
+        };
+        
+        const localPlaylists = localStorage.getItem('localPlaylists');
+        const playlists = localPlaylists ? JSON.parse(localPlaylists) : [];
+        playlists.push(newPlaylist);
+        localStorage.setItem('localPlaylists', JSON.stringify(playlists));
+        
+        return newPlaylist;
+      }
     },
     onSuccess: (playlist) => {
       toast.success('맛집리스트가 생성되었습니다!');
       navigate(`/playlist/${playlist._id}`);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || '맛집리스트 생성에 실패했습니다.');
+      toast.error('맛집리스트 생성에 실패했습니다.');
     },
   });
 
@@ -115,16 +166,9 @@ const CreatePlaylist: React.FC = () => {
         estimatedDuration: estimatedDuration
       };
       const playlist = await createPlaylistMutation.mutateAsync(playlistData);
-
-      // 2. 맛집들을 맛집리스트에 추가
-      for (const restaurant of selectedRestaurants) {
-        const restaurantId = restaurant._id;
-        await addRestaurantMutation.mutateAsync({
-          playlistId: playlist._id,
-          restaurantId: restaurantId,
-          personalNote: personalNotes[restaurantId] || '',
-        });
-      }
+      
+      // restaurants가 이미 createPlaylistMutation에서 처리됨
+      // 별도의 추가 작업 불필요
     } catch (error) {
       console.error('Failed to create playlist:', error);
     }

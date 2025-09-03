@@ -33,7 +33,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/google/callback`,
+        callbackURL: `${process.env.SERVER_URL || `http://localhost:${process.env.PORT || 8890}`}/api/auth/google/callback`,
       },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -69,11 +69,14 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 // Kakao OAuth Strategy - only if credentials are provided
 if (process.env.KAKAO_CLIENT_ID) {
+  const kakaoCallbackURL = `${process.env.SERVER_URL || `http://localhost:${process.env.PORT || 8890}`}/api/auth/kakao/callback`;
+  console.log('🔐 Kakao OAuth Callback URL:', kakaoCallbackURL);
+  
   passport.use(
     new KakaoStrategy(
       {
         clientID: process.env.KAKAO_CLIENT_ID,
-        callbackURL: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/kakao/callback`,
+        callbackURL: kakaoCallbackURL,
       },
     async (accessToken, refreshToken, profile, done) => {
       try {

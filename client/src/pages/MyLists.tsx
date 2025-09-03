@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import axios from '../utils/axios';
+import { useAuthStore } from '../store/authStore';
 import {
   PlusCircleIcon,
   BookmarkIcon,
@@ -27,7 +30,39 @@ interface RestaurantList {
 }
 
 const MyLists: React.FC = () => {
-  const [lists] = useState<RestaurantList[]>([
+  const { user } = useAuthStore();
+  
+  // API에서 플레이리스트 가져오기
+  const { data: apiLists, isLoading } = useQuery({
+    queryKey: ['my-playlists', user?._id],
+    queryFn: async () => {
+      if (!user) return [];
+      try {
+        const response = await axios.get(`/api/playlists/user/${user._id}`);
+        return response.data;
+      } catch (error) {
+        console.log('API 호출 실패, 로컬 데이터 사용');
+        return [];
+      }
+    },
+    enabled: !!user
+  });
+  
+  // 로컬 스토리지에서 플레이리스트 가져오기
+  const [localLists, setLocalLists] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const savedLists = localStorage.getItem('localPlaylists');
+    if (savedLists) {
+      setLocalLists(JSON.parse(savedLists));
+    }
+  }, []);
+  
+  // API 데이터와 로컬 데이터 합치기
+  const combinedLists = [...(apiLists || []), ...localLists];
+  
+  // 기본 예시 데이터 (플레이리스트가 없을 때만 표시)
+  const [exampleLists] = useState<RestaurantList[]>([
     {
       id: '1',
       name: '데이트 맛집',
@@ -176,15 +211,15 @@ const MyLists: React.FC = () => {
           transition={{ delay: 0.2 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
         >
-          {lists.map((list, index) => (
+          {(combinedLists.length > 0 ? combinedLists : exampleLists).map((list, index) => (
             <motion.div
-              key={list.id}
+              key={list._id || list.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * index }}
               className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all overflow-hidden group"
             >
-              <Link to={`/lists/${list.id}`}>
+              <Link to={`/playlist/${list._id || list.id}`}>
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="text-4xl">{list.icon}</div>
@@ -202,7 +237,7 @@ const MyLists: React.FC = () => {
                   </div>
                   
                   <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">
-                    {list.name}
+                    {list.title || list.name}
                   </h3>
                   <p className="text-sm text-gray-600 mb-4">{list.description}</p>
                   
@@ -210,7 +245,7 @@ const MyLists: React.FC = () => {
                     <div className="flex items-center gap-3 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
                         <MapPinIcon className="w-4 h-4" />
-                        {list.count}곳
+                        {list.restaurantCount || list.count || 0}곳
                       </span>
                     </div>
                     <ChevronRightIcon className="w-4 h-4 text-gray-400 group-hover:text-orange-600 transition-colors" />

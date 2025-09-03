@@ -4,20 +4,25 @@ import axios from 'axios';
 // API URL 설정 - 8888 포트 사용 (서버 실제 포트)
 // For mobile access through public URLs, use relative URLs or check hostname
 const getBaseURL = () => {
-  // If REACT_APP_API_URL is set, use it
+  const hostname = window.location.hostname;
+  
+  // 모바일 접속 (IP 주소로 접속하는 경우)
+  if (hostname === '172.20.10.4') {
+    return 'http://172.20.10.4:8890';
+  }
+  
+  // PC 접속 (localhost)
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8890';
+  }
+  
+  // 기타 도메인 (프로덕션 등)
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
   
-  // If accessing through a public URL (like localtunnel), use relative URLs
-  const hostname = window.location.hostname;
-  if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-    // Use relative URL for non-localhost access (mobile, public URLs)
-    return '';
-  }
-  
-  // Default to localhost:8888 for local development
-  return 'http://localhost:8888';
+  // Default
+  return 'http://localhost:8890';
 };
 
 const baseURL = getBaseURL();

@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 interface RegisterFormData {
+  userId: string;
   username: string;
   email: string;
   password: string;
@@ -30,7 +31,7 @@ const Register: React.FC = () => {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      await registerUser(data.username, data.email, data.password);
+      await registerUser(data.userId, data.username, data.email, data.password, data.confirmPassword);
       toast.success('회원가입이 완료되었습니다!');
       navigate('/');
     } catch (error: any) {
@@ -39,12 +40,12 @@ const Register: React.FC = () => {
   };
 
   const handleGoogleRegister = () => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8890';
     window.location.href = `${apiUrl}/api/auth/google`;
   };
 
   const handleKakaoRegister = () => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8890';
     window.location.href = `${apiUrl}/api/auth/kakao`;
   };
 
@@ -71,6 +72,36 @@ const Register: React.FC = () => {
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <div>
+              <label htmlFor="userId" className="form-label">
+                아이디
+              </label>
+              <input
+                id="userId"
+                type="text"
+                {...register('userId', {
+                  required: '아이디를 입력해주세요',
+                  minLength: {
+                    value: 4,
+                    message: '아이디는 4자 이상이어야 합니다',
+                  },
+                  maxLength: {
+                    value: 20,
+                    message: '아이디는 20자 이하여야 합니다',
+                  },
+                  pattern: {
+                    value: /^[a-z0-9_]+$/,
+                    message: '영문 소문자, 숫자, 언더스코어(_)만 사용 가능합니다',
+                  },
+                })}
+                className="form-input"
+                placeholder="영문 소문자, 숫자, _ (4-20자)"
+              />
+              {errors.userId && (
+                <p className="error-text">{errors.userId.message}</p>
+              )}
+            </div>
+
             <div>
               <label htmlFor="username" className="form-label">
                 닉네임

@@ -3,13 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import axios from '../utils/axios';
 import PlaylistCard from '../components/PlaylistCard';
+import { useAuthStore } from '../store/authStore';
 import { 
   FunnelIcon,
   MagnifyingGlassIcon,
   FireIcon,
   SparklesIcon,
-  MapPinIcon
+  MapPinIcon,
+  StarIcon,
+  UserGroupIcon,
+  HeartIcon
 } from '@heroicons/react/24/outline';
+import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists';
+import CertificationFilter, { CertificationFilters } from '../components/CertificationFilter';
 
 interface FilterState {
   category: string;
@@ -21,6 +27,19 @@ interface FilterState {
 
 const Discover: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const { user } = useAuthStore();
+  
+  // 로컬 스토리지에서 플레이리스트 가져오기
+  const [localPlaylists, setLocalPlaylists] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const savedLists = localStorage.getItem('localPlaylists');
+    if (savedLists) {
+      const parsed = JSON.parse(savedLists);
+      // 공개 플레이리스트만 필터링
+      setLocalPlaylists(parsed.filter((p: any) => p.isPublic !== false));
+    }
+  }, []);
   
   const [filters, setFilters] = useState<FilterState>({
     category: '',
@@ -257,9 +276,9 @@ const Discover: React.FC = () => {
             </h2>
           </div>
           
-          {playlistsData?.pagination && (
+          {(playlistsData?.pagination || localPlaylists.length > 0) && (
             <div className="text-sm text-gray-500">
-              총 {playlistsData.pagination.total.toLocaleString()}개
+              총 {((playlistsData?.pagination?.total || 0) + localPlaylists.length).toLocaleString()}개
             </div>
           )}
         </div>
@@ -270,16 +289,41 @@ const Discover: React.FC = () => {
               <div key={i} className="card h-64 animate-pulse bg-gray-200"></div>
             ))}
           </div>
-        ) : playlistsData?.playlists?.length > 0 ? (
+        ) : (playlistsData?.playlists?.length > 0 || localPlaylists.length > 0) ? (
           <>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {playlistsData.playlists.map((playlist: any) => (
+              {/* API 플레이리스트 */}
+              {playlistsData?.playlists?.map((playlist: any) => (
                 <PlaylistCard key={playlist._id} playlist={playlist} />
               ))}
+              {/* 로컬 스토리지 플레이리스트 (공개만) */}
+              {localPlaylists
+                .filter((p: any) => {
+                  // 검색어 필터링
+                  if (searchQuery) {
+                    const query = searchQuery.toLowerCase();
+                    return (p.title?.toLowerCase().includes(query) || 
+                            p.description?.toLowerCase().includes(query));
+                  }
+                  // 카테고리 필터링
+                  if (filters.category && p.category !== filters.category) return false;
+                  // 도시 필터링
+                  if (filters.city && p.city !== filters.city) return false;
+                  // 태그 필터링
+                  if (filters.tags) {
+                    const filterTags = filters.tags.toLowerCase().split(',').map(t => t.trim());
+                    const playlistTags = (p.tags || []).map((t: string) => t.toLowerCase());
+                    if (!filterTags.some(tag => playlistTags.includes(tag))) return false;
+                  }
+                  return true;
+                })
+                .map((playlist: any) => (
+                  <PlaylistCard key={playlist._id || `local-${playlist.id}`} playlist={playlist} />
+                ))}
             </div>
 
             {/* 페이지네이션 */}
-            {playlistsData.pagination.pages > 1 && (
+            {playlistsData?.pagination?.pages > 1 && (
               <div className="flex justify-center mt-12">
                 <div className="flex space-x-2">
                   <button

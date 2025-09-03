@@ -1,59 +1,53 @@
-const axios = require('axios');
+require('dotenv').config({ path: './server/.env' });
+const mongoose = require('mongoose');
 
 async function checkPlaylists() {
   try {
-    const response = await axios.get('http://localhost:8888/api/playlists');
-    const playlists = response.data.playlists || response.data;
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bobmap');
+    console.log('✅ MongoDB 연결 성공\n');
     
-    console.log(`총 플레이리스트 수: ${playlists.length}`);
-    console.log('\n한남동 관련 플레이리스트:');
+    const Playlist = require('./server/models/Playlist');
+    const User = require('./server/models/User');
     
-    playlists.forEach((p, index) => {
-      if (p.title?.includes('한남동') || p.name?.includes('한남동')) {
-        console.log(`\n[${index + 1}] ${p.title || p.name}`);
-        console.log(`  ID: ${p._id}`);
-        console.log(`  설명: ${p.description?.substring(0, 50)}`);
-        console.log(`  레스토랑 수: ${p.restaurants?.length || 0}`);
-        
-        if (p.restaurants && p.restaurants.length > 0) {
-          console.log('  레스토랑:');
-          p.restaurants.slice(0, 3).forEach(r => {
-            const restaurant = r.restaurant || r;
-            console.log(`    - ${restaurant.name || restaurant.title || '이름없음'}`);
-          });
-        }
-      }
-    });
+    // 모든 플레이리스트 조회
+    const allPlaylists = await Playlist.find({})
+      .populate('createdBy', 'username userId email')
+      .select('title isPublic isActive createdBy createdAt');
     
-    // Admin API 테스트
-    console.log('\n\nAdmin API 테스트:');
-    const firstPlaylist = playlists[0];
+    console.log('📊 Total playlists in DB:', allPlaylists.length);
+    console.log('=' .repeat(80));
     
-    try {
-      // Admin 권한 없이 시도
-      await axios.put(
-        `http://localhost:8888/api/admin/playlists/${firstPlaylist._id}`,
-        { title: 'test' }
-      );
-      console.log('❌ 보안 문제: Admin 권한 없이 수정 가능!');
-    } catch (err) {
-      console.log('✅ Admin 권한 없이 수정 차단됨');
+    if (allPlaylists.length === 0) {
+      console.log('❌ 데이터베이스에 플레이리스트가 없습니다.\n');
+    } else {
+      allPlaylists.forEach(playlist => {
+        console.log(`
+Title: ${playlist.title}
+ID: ${playlist._id}
+Created By: ${playlist.createdBy ? `${playlist.createdBy.username} (${playlist.createdBy.userId})` : 'Unknown'}
+isPublic: ${playlist.isPublic}
+isActive: ${playlist.isActive}
+Created: ${playlist.createdAt ? new Date(playlist.createdAt).toLocaleString('ko-KR') : 'N/A'}
+${'=' .repeat(80)}`);
+      });
     }
     
-    try {
-      // Admin 권한으로 시도
-      await axios.put(
-        `http://localhost:8888/api/admin/playlists/${firstPlaylist._id}`,
-        { title: firstPlaylist.title || firstPlaylist.name },
-        { headers: { 'X-Admin-Auth': 'true' } }
-      );
-      console.log('✅ Admin 권한으로 수정 성공');
-    } catch (err) {
-      console.log('❌ Admin 권한으로도 실패:', err.response?.data?.message || err.message);
+    // 공개 플레이리스트만 조회
+    const publicPlaylists = await Playlist.find({ isPublic: true, isActive: true });
+    console.log(`\n✅ Public & Active playlists: ${publicPlaylists.length}`);
+    
+    // 사용자별 플레이리스트 수
+    const users = await User.find({}).select('username userId');
+    console.log('\n📊 사용자별 플레이리스트 수:');
+    for (const user of users) {
+      const count = await Playlist.countDocuments({ createdBy: user._id });
+      console.log(`- ${user.username} (${user.userId}): ${count}개`);
     }
     
+    process.exit(0);
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('❌ 오류 발생:', error.message);
+    process.exit(1);
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from '../utils/axios';
@@ -15,7 +15,8 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
-  PlayIcon
+  PlayIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
 import { 
   HeartIcon as HeartSolidIcon, 
@@ -25,6 +26,8 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useAuthStore } from '../store/authStore';
 import { getDefaultAvatar } from '../utils/avatars';
+import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists';
+import { dataManager } from '../utils/dataManager';
 
 const PlaylistDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,59 +35,134 @@ const PlaylistDetail: React.FC = () => {
   const queryClient = useQueryClient();
   const { user, token } = useAuthStore();
   const [showShareModal, setShowShareModal] = useState(false);
-
+  const [isSaved, setIsSaved] = useState(() => id ? dataManager.isPlaylistSaved(id) : false);
+  const [isLiked, setIsLiked] = useState(() => id ? dataManager.isPlaylistLiked(id) : false);
+  const [savedRestaurants, setSavedRestaurants] = useState<string[]>(() => {
+    const savedData = dataManager.getSavedRestaurants();
+    return savedData.map(r => r.restaurantId);
+  });
+  
   const { data: playlist, isLoading, error } = useQuery({
     queryKey: ['playlist', id],
     queryFn: async () => {
-      const response = await axios.get(`/api/playlists/${id}`);
-      return response.data;
+      // Admin에서 수정한 데이터 먼저 확인
+      const adminPlaylists = localStorage.getItem('adminPlaylists');
+      if (adminPlaylists) {
+        const playlists = JSON.parse(adminPlaylists);
+        const adminPlaylist = playlists.find((p: any) => p._id === id);
+        if (adminPlaylist) {
+          return adminPlaylist;
+        }
+      }
+      
+      // certifiedRestaurantLists에서 찾기
+      const certifiedPlaylist = certifiedRestaurantLists.find(p => p._id === id);
+      if (certifiedPlaylist) {
+        return certifiedPlaylist;
+      }
+      
+      // 로컬 스토리지에서 찾기
+      const localPlaylists = localStorage.getItem('localPlaylists');
+      if (localPlaylists) {
+        const playlists = JSON.parse(localPlaylists);
+        const localPlaylist = playlists.find((p: any) => p._id === id);
+        if (localPlaylist) {
+          return localPlaylist;
+        }
+      }
+      
+      // 둘 다 없으면 API 호출
+      try {
+        const response = await axios.get(`/api/playlists/${id}`);
+        return response.data;
+      } catch (err) {
+        throw new Error('맛집 리스트를 찾을 수 없습니다');
+      }
     },
     enabled: !!id,
   });
+  
+  // 저장 상태 동기화
+  useEffect(() => {
+    if (id && playlist) {
+      const saved = dataManager.isPlaylistSaved(id);
+      const liked = dataManager.isPlaylistLiked(id);
+      setIsSaved(saved);
+      setIsLiked(liked);
+      console.log(`PlaylistDetail - Loading state for ${id}: saved=${saved}, liked=${liked}`);
+    }
+  }, [id, playlist]); // playlist가 변경될 때마다 상태 재로드
+  
+  // Listen for dataManager updates
+  useEffect(() => {
+    const handleDataUpdate = () => {
+      if (id) {
+        const saved = dataManager.isPlaylistSaved(id);
+        const liked = dataManager.isPlaylistLiked(id);
+        setIsSaved(saved);
+        setIsLiked(liked);
+        console.log(`PlaylistDetail - Data updated for ${id}: saved=${saved}, liked=${liked}`);
+      }
+      // Update saved restaurants
+      const savedData = dataManager.getSavedRestaurants();
+      setSavedRestaurants(savedData.map(r => r.restaurantId));
+    };
 
-  const likeMutation = useMutation({
-    mutationFn: async () => {
-      const response = await axios.post(
-        `/api/playlists/${id}/like`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      return response.data;
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['playlist', id], (old: any) => ({
-        ...old,
-        isLiked: data.isLiked,
-        likeCount: data.likeCount,
-      }));
-      toast.success(data.message);
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || '오류가 발생했습니다.');
-    },
-  });
+    window.addEventListener('dataManager:update', handleDataUpdate);
+    window.addEventListener('storage', handleDataUpdate);
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const response = await axios.post(
-        `/api/playlists/${id}/save`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      return response.data;
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['playlist', id], (old: any) => ({
-        ...old,
-        isSaved: data.isSaved,
-        saveCount: data.saveCount,
-      }));
-      toast.success(data.message);
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || '오류가 발생했습니다.');
-    },
-  });
+    return () => {
+      window.removeEventListener('dataManager:update', handleDataUpdate);
+      window.removeEventListener('storage', handleDataUpdate);
+    };
+  }, [id]);
+
+  // Mutations removed - using dataManager instead
+
+  const handleSave = () => {
+    console.log('handleSave called - id:', id, 'isSaved:', isSaved);
+    
+    if (!user) {
+      toast.error('로그인이 필요합니다');
+      navigate('/auth');
+      return;
+    }
+    
+    if (id) {
+      if (isSaved) {
+        console.log('Unsaving playlist:', id);
+        dataManager.unsavePlaylist(id);
+        setIsSaved(false);
+        toast.success('저장 취소됨');
+      } else {
+        console.log('Saving playlist:', id);
+        dataManager.savePlaylist(id);
+        setIsSaved(true);
+        toast.success('저장됨!');
+      }
+      
+      // 저장 후 상태 확인
+      const savedData = dataManager.getSavedPlaylists();
+      console.log('After save - Saved playlists:', savedData);
+      
+      // 이벤트 발생시켜 다른 컴포넌트들이 업데이트 되도록
+      window.dispatchEvent(new CustomEvent('dataManager:update'));
+    }
+  };
+  
+  const handleLike = () => {
+    if (!user) {
+      toast.error('로그인이 필요합니다');
+      navigate('/auth');
+      return;
+    }
+    
+    if (id) {
+      const liked = dataManager.togglePlaylistLike(id);
+      setIsLiked(liked);
+      toast.success(liked ? '좋아요!' : '좋아요 취소');
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -160,7 +238,21 @@ const PlaylistDetail: React.FC = () => {
     );
   }
 
-  const restaurants = playlist.restaurants.map((r: any) => r.restaurant);
+  // Handle both old and new data formats
+  const restaurants = playlist.restaurants.map((r: any) => {
+    // If it's already in the new format with restaurant object
+    if (r.restaurant) {
+      return r.restaurant;
+    }
+    // If it's the old format, create a compatible object
+    return {
+      _id: r.name?.replace(/\s/g, '-').toLowerCase() || Math.random().toString(),
+      name: r.name || 'Unknown',
+      category: r.category || 'Unknown',
+      address: r.address || 'Address not available',
+      rating: r.rating || 0
+    };
+  });
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -217,24 +309,22 @@ const PlaylistDetail: React.FC = () => {
             {user && (
               <>
                 <button
-                  onClick={() => likeMutation.mutate()}
-                  disabled={likeMutation.isPending}
+                  onClick={handleLike}
                   className="flex items-center space-x-2 px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
                 >
-                  {playlist.isLiked ? (
+                  {isLiked ? (
                     <HeartSolidIcon className="w-5 h-5 text-red-500" />
                   ) : (
                     <HeartIcon className="w-5 h-5" />
                   )}
-                  <span>{playlist.likeCount}</span>
+                  <span>{playlist.likeCount || 0}</span>
                 </button>
 
                 <button
-                  onClick={() => saveMutation.mutate()}
-                  disabled={saveMutation.isPending}
+                  onClick={handleSave}
                   className="flex items-center space-x-2 px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
                 >
-                  {playlist.isSaved ? (
+                  {isSaved ? (
                     <BookmarkSolidIcon className="w-5 h-5 text-primary-500" />
                   ) : (
                     <BookmarkIcon className="w-5 h-5" />
@@ -322,54 +412,114 @@ const PlaylistDetail: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-xl font-bold mb-4">맛집 목록</h2>
           <div className="space-y-4 max-h-96 overflow-y-auto">
-            {playlist.restaurants.map((item: any, index: number) => (
-              <Link
-                key={item.restaurant._id}
-                to={`/restaurant/${item.restaurant._id}`}
-                className="block p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <span className="text-primary-600 font-bold text-lg">{index + 1}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1">
-                    <h3 className="font-semibold mb-1">{item.restaurant.name}</h3>
-                    <p className="text-gray-600 text-sm mb-2">{item.restaurant.address}</p>
-                    
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
-                        {item.restaurant.category}
-                      </span>
-                    </div>
-
-                    {item.personalNote && (
-                      <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
-                        💭 {item.personalNote}
-                      </p>
-                    )}
-
-                    {item.mustTry && item.mustTry.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-gray-500 mb-1">추천 메뉴:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {item.mustTry.map((menu: string) => (
-                            <span
-                              key={menu}
-                              className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded"
-                            >
-                              {menu}
-                            </span>
-                          ))}
-                        </div>
+            {playlist.restaurants.map((item: any, index: number) => {
+              // Handle both old and new data formats
+              const restaurant = item.restaurant || {
+                _id: item.name?.replace(/\s/g, '-').toLowerCase() || Math.random().toString(),
+                name: item.name || 'Unknown',
+                category: item.category || 'Unknown',
+                address: item.address || 'Address not available',
+                rating: item.rating || 0
+              };
+              
+              return (
+                <div
+                  key={restaurant._id}
+                  className="block p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                        <span className="text-primary-600 font-bold text-lg">{index + 1}</span>
                       </div>
-                    )}
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h3 className="font-semibold mb-1">{restaurant.name}</h3>
+                      <p className="text-gray-600 text-sm mb-2">{restaurant.address}</p>
+                      
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
+                          {restaurant.category}
+                        </span>
+                        {restaurant.rating > 0 && (
+                          <div className="flex items-center gap-1">
+                            <StarIcon className="w-4 h-4 text-yellow-400 fill-current" />
+                            <span className="text-xs font-medium">{restaurant.rating.toFixed(1)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {item.personalNote && (
+                        <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                          💭 {item.personalNote}
+                        </p>
+                      )}
+
+                      {item.mustTry && item.mustTry.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500 mb-1">추천 메뉴:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {item.mustTry.map((menu: string) => (
+                              <span
+                                key={menu}
+                                className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded"
+                              >
+                                {menu}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* 저장 버튼 */}
+                      <div className="mt-3 flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!user) {
+                              toast.error('로그인이 필요합니다.');
+                              return;
+                            }
+                            
+                            const isRestaurantSaved = savedRestaurants.includes(restaurant._id);
+                            if (isRestaurantSaved) {
+                              dataManager.unsaveRestaurant(restaurant._id);
+                              toast.success('저장 취소');
+                              setSavedRestaurants(prev => prev.filter(id => id !== restaurant._id));
+                            } else {
+                              // localRestaurants에도 저장
+                              const localRestaurants = localStorage.getItem('localRestaurants');
+                              const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+                              if (!restaurants.find((r: any) => r._id === restaurant._id)) {
+                                restaurants.push(restaurant);
+                                localStorage.setItem('localRestaurants', JSON.stringify(restaurants));
+                              }
+                              
+                              dataManager.saveRestaurant(restaurant._id, `${playlist.title}에서 저장`);
+                              toast.success('맛집이 저장되었습니다!');
+                              setSavedRestaurants(prev => [...prev, restaurant._id]);
+                            }
+                          }}
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            savedRestaurants.includes(restaurant._id)
+                              ? 'bg-primary-500 text-white hover:bg-primary-600'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {savedRestaurants.includes(restaurant._id) ? (
+                            <BookmarkSolidIcon className="w-4 h-4" />
+                          ) : (
+                            <BookmarkIcon className="w-4 h-4" />
+                          )}
+                          {savedRestaurants.includes(restaurant._id) ? '저장됨' : '저장'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

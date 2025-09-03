@@ -489,6 +489,21 @@ export default function FoodVS() {
         // 우승자 결정
         setWinner(newNextRound[0]);
         setTimeout(() => setShowRecommendations(true), 1500);
+        
+        // Save to localStorage
+        const gameRecords = JSON.parse(localStorage.getItem('gameRecords') || '{}');
+        const recommendations = specificFoodRestaurants[newNextRound[0].name] || restaurantDatabase[newNextRound[0].category] || [];
+        gameRecords.foodVS = {
+          winner: newNextRound[0].name,
+          category: newNextRound[0].category,
+          restaurants: recommendations,
+          completedAt: new Date().toISOString()
+        };
+        localStorage.setItem('gameRecords', JSON.stringify(gameRecords));
+        
+        // Update completed games count
+        const completedGames = parseInt(localStorage.getItem('completedGames') || '0');
+        localStorage.setItem('completedGames', String(completedGames + 1));
       } else {
         // 다음 라운드로
         setCurrentRound(newNextRound);

@@ -10,21 +10,35 @@ class NaverSearchService {
   /**
    * 네이버 검색 API로 맛집 검색
    * @param {string} query - 검색어 (예: "강남 맛집", "홍대 카페")
-   * @param {number} display - 검색 결과 출력 개수 (기본값: 20, 최대: 100)
+   * @param {number} display - 검색 결과 출력 개수 (기본값: 50, 최대: 100)
    * @param {number} start - 검색 시작 위치 (기본값: 1, 최대: 1000)
-   * @param {string} sort - 정렬 옵션 (random: 유사도순, comment: 리뷰 개수순)
+   * @param {string} sort - 정렬 옵션 (sim: 유사도순, date: 날짜순, comment: 리뷰순)
    */
-  async searchRestaurants(query, display = 20, start = 1, sort = 'random') {
+  async searchRestaurants(query, display = 50, start = 1, sort = 'sim') {
     try {
-      // 검색어에 맛집 관련 키워드 추가
-      const enhancedQuery = query.includes('맛집') || query.includes('음식점') || query.includes('카페') 
-        ? query 
-        : `${query} 맛집`;
+      // display 값 검증 (최대 100)
+      const validDisplay = Math.min(Math.max(1, display), 100);
+      
+      // 검색어 처리 - 식당 이름을 정확히 검색할 수 있도록 개선
+      let enhancedQuery = query;
+      
+      // 이미 맛집/음식점/카페가 포함되어 있으면 그대로 사용
+      if (!query.includes('맛집') && !query.includes('음식점') && !query.includes('카페')) {
+        // 한글 2-3글자만 있는 경우 (예: 강남, 홍대) - 지역명으로 판단
+        if (/^[가-힣]{2,3}$/.test(query)) {
+          enhancedQuery = `${query} 음식점`;
+        } else {
+          // 그 외는 그대로 사용 (식당 이름으로 판단)
+          enhancedQuery = query;
+        }
+      }
 
+      console.log(`Naver API 검색: "${enhancedQuery}", display: ${validDisplay}, sort: ${sort}`);
+      
       const response = await axios.get(this.baseUrl, {
         params: {
           query: enhancedQuery,
-          display,
+          display: validDisplay,
           start,
           sort
         },
@@ -34,6 +48,8 @@ class NaverSearchService {
         }
       });
 
+      console.log(`Naver API 응답: total=${response.data.total}, items=${response.data.items?.length}`);
+      
       // 네이버 검색 결과를 우리 형식으로 변환
       const restaurants = response.data.items.map(item => this.formatRestaurant(item));
       

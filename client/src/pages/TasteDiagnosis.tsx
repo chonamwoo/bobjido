@@ -59,7 +59,7 @@ const TasteDiagnosis: React.FC = () => {
   const { user } = useAuthStore();
   
   // TypeScript 타입 확인을 위한 타입 어설션
-  const typedUser = user as User;
+  const typedUser = user as any;
 
   // 현재 사용자의 취향 프로필 정보
   const currentProfile = typeof user?.tasteProfile === 'string' 

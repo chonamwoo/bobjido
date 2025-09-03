@@ -9,8 +9,8 @@ import HomeSoundCloud from './pages/HomeSoundCloud';
 import MobileHomeSoundCloud from './pages/MobileHomeSoundCloud';
 import FoodMBTI from './pages/FoodMBTI';
 import GameHub from './pages/GameHub';
+import GameResults from './pages/GameResults';
 import LunchRecommendation from './pages/LunchRecommendation';
-import MoodFood from './pages/MoodFood';
 import FoodVS from './pages/FoodVS';
 import FoodRoulette from './pages/FoodRoulette';
 import RestaurantQuiz from './pages/RestaurantQuiz';
@@ -73,8 +73,8 @@ function App() {
         <Route index element={<HomePage />} />
         <Route path="game-hub" element={<GameHub />} />
         <Route path="food-mbti" element={<FoodMBTI />} />
+        <Route path="game-results" element={<GameResults />} />
         <Route path="lunch-recommendation" element={<LunchRecommendation />} />
-        <Route path="mood-food" element={<MoodFood />} />
         <Route path="food-vs" element={<FoodVS />} />
         <Route path="food-roulette" element={<FoodRoulette />} />
         <Route path="restaurant-quiz" element={<RestaurantQuiz />} />

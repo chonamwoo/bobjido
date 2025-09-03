@@ -167,7 +167,7 @@ html {
   }
 }
 
-/* Custom slider styles for CreatePlaylist */
+/* Custom slider styles for CreatePlaylist - Hidden thumb */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -178,33 +178,15 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
-  background: linear-gradient(135deg, #FB923C, #EA580C);
-  border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  width: 0;
+  height: 0;
+  opacity: 0;
   cursor: pointer;
-  position: relative;
-  z-index: 10;
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  background: linear-gradient(135deg, #FB923C, #EA580C);
-  border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  width: 0;
+  height: 0;
+  opacity: 0;
   cursor: pointer;
-}
-
-input[type="range"]:hover::-webkit-slider-thumb {
-  transform: scale(1.1);
-  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-}
-
-input[type="range"]:hover::-moz-range-thumb {
-  transform: scale(1.1);
-  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 }

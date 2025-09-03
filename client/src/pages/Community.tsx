@@ -352,15 +352,15 @@ const Community: React.FC = () => {
               </button>
             </div>
 
-            {/* Posts Grid */}
-            <div className="space-y-6">
+            {/* Posts Grid - 이미지 겹침 방지 */}
+            <div className="space-y-8">
               {sortedPosts.map((post, index) => (
                 <motion.div
                   key={post.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-shadow isolate"
                 >
                   <div className="p-6">
                     {/* Post Header */}
@@ -402,12 +402,13 @@ const Community: React.FC = () => {
                     <h3 className="text-xl font-bold mb-2">{post.title}</h3>
                     <p className="text-gray-600 mb-4">{post.content}</p>
 
-                    {/* 실제 음식 이미지 */}
-                    <div className="mb-4">
+                    {/* 실제 음식 이미지 - 겹침 방지 처리 */}
+                    <div className="mb-4 relative rounded-lg overflow-hidden bg-gray-100">
                       <img
                         src={getRealFoodImage(post.type, post.title)}
                         alt={post.title}
-                        className="w-full h-64 object-cover rounded-lg"
+                        className="w-full h-48 object-cover relative z-0"
+                        loading="lazy"
                         onError={(e) => {
                           // 이미지 로드 실패시 폴백
                           const target = e.target as HTMLImageElement;

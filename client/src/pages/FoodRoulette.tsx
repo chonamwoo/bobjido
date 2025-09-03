@@ -57,6 +57,77 @@ const FoodRoulette: React.FC = () => {
     { id: '12', name: '술집', emoji: '🍺', category: '주점', description: '오늘은 한잔 어때요?', tags: ['포차', '호프', '이자카야', '와인바'], color: '#FF8B94' }
   ];
 
+  const getRecommendedRestaurants = (category: string) => {
+    const restaurantsByCategory: { [key: string]: Array<{ name: string; location: string; rating: number }> } = {
+      '한식': [
+        { name: '할머니 레시피', location: '종로', rating: 4.7 },
+        { name: '전통 한정식', location: '강남', rating: 4.8 },
+        { name: '손맛 좋은집', location: '홍대', rating: 4.5 }
+      ],
+      '일식': [
+        { name: '스시 오마카세', location: '강남', rating: 4.9 },
+        { name: '라멘 맛집', location: '홍대', rating: 4.6 },
+        { name: '돈카츠 전문점', location: '성수', rating: 4.5 }
+      ],
+      '중식': [
+        { name: '진짜 마라탕', location: '강남', rating: 4.4 },
+        { name: '중화요리 명가', location: '종로', rating: 4.7 },
+        { name: '딤섬 전문점', location: '이태원', rating: 4.6 }
+      ],
+      '양식': [
+        { name: '파스타 공방', location: '성수', rating: 4.5 },
+        { name: '스테이크 하우스', location: '강남', rating: 4.8 },
+        { name: '이탈리안 레스토랑', location: '이태원', rating: 4.7 }
+      ],
+      '치킨': [
+        { name: '교촌치킨', location: '강남', rating: 4.3 },
+        { name: 'BBQ', location: '홍대', rating: 4.4 },
+        { name: '네네치킨', location: '성수', rating: 4.2 }
+      ],
+      '패스트푸드': [
+        { name: '수제버거 맛집', location: '홍대', rating: 4.6 },
+        { name: '버거킹', location: '강남', rating: 4.0 },
+        { name: '쉐이크쉑', location: '강남', rating: 4.5 }
+      ],
+      '카페': [
+        { name: '블루보틀', location: '성수', rating: 4.7 },
+        { name: '앤티크 카페', location: '홍대', rating: 4.5 },
+        { name: '루프탑 카페', location: '이태원', rating: 4.6 }
+      ],
+      '분식': [
+        { name: '엽기떡볶이', location: '홍대', rating: 4.3 },
+        { name: '김밥천국', location: '종로', rating: 4.1 },
+        { name: '신전떡볶이', location: '강남', rating: 4.2 }
+      ],
+      '고기': [
+        { name: '고기 굽는 남자', location: '강남', rating: 4.7 },
+        { name: '한우 명가', location: '종로', rating: 4.8 },
+        { name: '양꼬치 거리', location: '건대', rating: 4.5 }
+      ],
+      '해산물': [
+        { name: '대게나라', location: '노량진', rating: 4.6 },
+        { name: '회 센터', location: '강남', rating: 4.7 },
+        { name: '조개구이 맛집', location: '인천', rating: 4.5 }
+      ],
+      '아시안': [
+        { name: '포메인', location: '강남', rating: 4.3 },
+        { name: '팟타이 전문점', location: '이태원', rating: 4.5 },
+        { name: '분짜라붐', location: '홍대', rating: 4.4 }
+      ],
+      '주점': [
+        { name: '을지로 포차', location: '을지로', rating: 4.4 },
+        { name: '이자카야', location: '강남', rating: 4.6 },
+        { name: '와인바', location: '이태원', rating: 4.7 }
+      ]
+    };
+    
+    return restaurantsByCategory[category] || [
+      { name: '맛집 1호점', location: '강남', rating: 4.5 },
+      { name: '맛집 2호점', location: '홍대', rating: 4.4 },
+      { name: '맛집 3호점', location: '성수', rating: 4.6 }
+    ];
+  };
+
   const spin = () => {
     if (spinning) return;
 
@@ -67,7 +138,10 @@ const FoodRoulette: React.FC = () => {
     const spins = 5 + Math.random() * 5; // 5-10 full rotations
     const randomIndex = Math.floor(Math.random() * foodOptions.length);
     const anglePerOption = 360 / foodOptions.length;
-    const targetAngle = randomIndex * anglePerOption;
+    
+    // The pointer is at the top (0 degrees), items start from -90 degrees
+    // We need to rotate to align the selected item with the top pointer
+    const targetAngle = 360 - (randomIndex * anglePerOption);
     const totalRotation = spins * 360 + targetAngle;
     
     setRotation(prev => prev + totalRotation);
@@ -79,10 +153,18 @@ const FoodRoulette: React.FC = () => {
       setSelectedOption(selected);
       setHistory(prev => [selected, ...prev.slice(0, 4)]);
       
-      // Save to game history and get recommendations
-      if (user) {
-        saveGameResult(selected);
-      }
+      // Save to localStorage and get recommendations
+      const gameRecords = JSON.parse(localStorage.getItem('gameRecords') || '{}');
+      gameRecords.foodRoulette = {
+        selectedFood: selected.name,
+        category: selected.category,
+        completedAt: new Date().toISOString()
+      };
+      localStorage.setItem('gameRecords', JSON.stringify(gameRecords));
+      
+      // Update completed games count
+      const completedGames = parseInt(localStorage.getItem('completedGames') || '0');
+      localStorage.setItem('completedGames', String(completedGames + 1));
     }, 4000);
   };
 
@@ -215,17 +297,35 @@ const FoodRoulette: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="mt-8 p-6 bg-gradient-to-r from-purple-100 to-orange-100 rounded-xl"
+                  className="mt-8 space-y-4"
                 >
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">{selectedOption.emoji}</div>
-                    <h3 className="text-2xl font-bold mb-2">{selectedOption.name}</h3>
-                    <p className="text-gray-600 mb-4">{selectedOption.description}</p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {selectedOption.tags.map(tag => (
-                        <span key={tag} className="px-3 py-1 bg-white rounded-full text-sm">
-                          {tag}
-                        </span>
+                  <div className="p-6 bg-gradient-to-r from-purple-100 to-orange-100 rounded-xl">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">{selectedOption.emoji}</div>
+                      <h3 className="text-2xl font-bold mb-2">{selectedOption.name}</h3>
+                      <p className="text-gray-600 mb-4">{selectedOption.description}</p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {selectedOption.tags.map(tag => (
+                          <span key={tag} className="px-3 py-1 bg-white rounded-full text-sm">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Restaurant Recommendations */}
+                  <div className="bg-white rounded-xl p-6 shadow-lg">
+                    <h4 className="text-lg font-bold mb-3">🍴 추천 맛집</h4>
+                    <div className="space-y-3">
+                      {getRecommendedRestaurants(selectedOption.category).map((restaurant, idx) => (
+                        <div key={idx} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                          <div className="text-2xl">{selectedOption.emoji}</div>
+                          <div className="flex-1">
+                            <div className="font-semibold">{restaurant.name}</div>
+                            <div className="text-sm text-gray-600">{restaurant.location} · ⭐ {restaurant.rating}</div>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>

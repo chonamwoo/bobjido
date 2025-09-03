@@ -1,3 +1,6 @@
+// Load environment variables FIRST
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -5,7 +8,6 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-require('dotenv').config();
 
 // Import logger
 const { logger, requestLogger, errorLogger, notifyTaskComplete } = require('./utils/logger');
@@ -71,7 +73,10 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
   'http://127.0.0.1:3002',
-  'http://127.0.0.1:5555'
+  'http://127.0.0.1:5555',
+  'http://172.20.10.4:3000',
+  'http://172.20.10.4:3001',
+  'http://172.20.10.4:3002'
 ];
 
 app.use(cors({
@@ -210,7 +215,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 8888;
+const PORT = process.env.PORT || 8890;
 const { createServer } = require('http');
 const { initializeWebSocket } = require('./websocket');
 
@@ -243,7 +248,7 @@ server.listen(PORT, '0.0.0.0', () => {
   if (err.code === 'EADDRINUSE') {
     console.error(`❌ 포트 ${PORT}이 이미 사용 중입니다.`);
     console.error('💡 다른 프로세스를 종료하고 다시 시도해주세요.');
-    console.error('💡 Windows: netstat -ano | findstr :8888 으로 확인 후 taskkill로 종료');
+    console.error(`💡 Windows: netstat -ano | findstr :${PORT} 으로 확인 후 taskkill로 종료`);
     process.exit(1);
   } else {
     console.error('❌ 서버 시작 오류:', err);

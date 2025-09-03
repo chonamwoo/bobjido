@@ -4,6 +4,7 @@ import axiosInstance from '../utils/axios';
 
 interface User {
   _id: string;
+  userId: string;
   username: string;
   email: string;
   profileImage?: string;
@@ -23,8 +24,8 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  login: (loginId: string, password: string) => Promise<void>;
+  register: (userId: string, username: string, email: string, password: string, confirmPassword: string) => Promise<void>;
   logout: () => void;
   updateUser: (user: User) => void;
   updateFollowerCount: (count: number) => void;
@@ -42,11 +43,12 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isLoading: false,
 
-      login: async (email: string, password: string) => {
+      login: async (loginId: string, password: string) => {
         set({ isLoading: true });
         try {
-          const response = await axiosInstance.post('/api/auth/login', { email, password });
-          const { token, ...user } = response.data;
+          const response = await axiosInstance.post('/api/auth/login', { loginId, password });
+          const { data } = response.data;
+          const { token, ...user } = data;
           
           // 카운트 정보가 없으면 기본값 추가
           const userWithCounts = {
@@ -66,15 +68,18 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      register: async (username: string, email: string, password: string) => {
+      register: async (userId: string, username: string, email: string, password: string, confirmPassword: string) => {
         set({ isLoading: true });
         try {
           const response = await axiosInstance.post('/api/auth/register', {
+            userId,
             username,
             email,
             password,
+            confirmPassword,
           });
-          const { token, ...user } = response.data;
+          const { data } = response.data;
+          const { token, ...user } = data;
           
           // 신규 가입자 기본 카운트 설정
           const userWithCounts = {

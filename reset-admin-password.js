@@ -1,43 +1,41 @@
+require('dotenv').config({ path: './server/.env' });
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-require('dotenv').config();
-
-const Admin = require('./server/models/Admin');
 
 async function resetAdminPassword() {
   try {
-    // MongoDB 연결
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bobmap');
     console.log('✅ MongoDB 연결 성공');
-
-    // admin 계정 찾기
-    const admin = await Admin.findOne({ email: 'admin@bobmap.com' });
     
-    if (!admin) {
-      console.log('❌ Admin 계정을 찾을 수 없습니다');
+    const User = require('./server/models/User');
+    
+    // 계정 찾기 (userId를 매개변수로 받을 수 있도록)
+    const userId = process.argv[2] || 'admin';
+    const adminUser = await User.findOne({ userId });
+    
+    if (!adminUser) {
+      console.log(`❌ ${userId} 계정을 찾을 수 없습니다`);
       process.exit(1);
     }
     
-    // 비밀번호를 'admin123'으로 재설정
-    admin.password = 'admin123';  // pre save hook이 자동으로 해싱함
-    await admin.save();
+    // 비밀번호를 plain text로 설정 (모델이 자동으로 해싱함)
+    const newPassword = process.argv[3] || 'admin123';
+    adminUser.password = newPassword;
+    await adminUser.save();
     
-    console.log('✅ Admin 비밀번호가 재설정되었습니다!');
+    console.log(`✅ ${userId} 비밀번호가 재설정되었습니다!`);
     console.log('=====================================');
-    console.log('Email: admin@bobmap.com');
-    console.log('Password: admin123');
-    console.log('Username:', admin.username);
-    console.log('Role:', admin.role);
+    console.log(`UserId (로그인ID): ${userId}`);
+    console.log(`새 비밀번호: ${newPassword}`);
     console.log('=====================================');
-    console.log('');
-    console.log('Admin 로그인 URL: http://localhost:3001/admin/login');
-    console.log('또는 API로 직접 로그인:');
-    console.log('POST http://localhost:8889/api/admin/login');
-    console.log('Body: { "email": "admin@bobmap.com", "password": "admin123" }');
+    
+    // 비밀번호 검증 테스트
+    const isValid = await bcrypt.compare(newPassword, adminUser.password);
+    console.log('비밀번호 검증 테스트:', isValid ? '✅ 성공' : '❌ 실패');
     
     process.exit(0);
   } catch (error) {
-    console.error('❌ 오류 발생:', error);
+    console.error('❌ 오류 발생:', error.message);
     process.exit(1);
   }
 }

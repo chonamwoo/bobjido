@@ -29,14 +29,20 @@ import { getDefaultAvatar } from '../utils/avatars';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists';
+import { dataManager } from '../utils/dataManager';
 
 const MobilePlaylistDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, token } = useAuthStore();
-  const [isLiked, setIsLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isLiked, setIsLiked] = useState(() => id ? dataManager.isPlaylistLiked(id) : false);
+  const [isSaved, setIsSaved] = useState(() => id ? dataManager.isPlaylistSaved(id) : false);
+  const [savedRestaurants, setSavedRestaurants] = useState<string[]>(() => {
+    const savedData = dataManager.getSavedRestaurants();
+    return savedData.map(r => r.restaurantId);
+  });
   const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
   const [showRestaurantPopup, setShowRestaurantPopup] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('map'); // 기본값을 map으로 변경
@@ -44,11 +50,77 @@ const MobilePlaylistDetail: React.FC = () => {
   const { data: playlist, isLoading, error } = useQuery({
     queryKey: ['playlist', id],
     queryFn: async () => {
-      const response = await axios.get(`/api/playlists/${id}`);
-      return response.data;
+      // Admin에서 수정한 데이터 먼저 확인
+      const adminPlaylists = localStorage.getItem('adminPlaylists');
+      if (adminPlaylists) {
+        const playlists = JSON.parse(adminPlaylists);
+        const adminPlaylist = playlists.find((p: any) => p._id === id);
+        if (adminPlaylist) {
+          return adminPlaylist;
+        }
+      }
+      
+      // certifiedRestaurantLists에서 찾기
+      const certifiedPlaylist = certifiedRestaurantLists.find(p => p._id === id);
+      if (certifiedPlaylist) {
+        return certifiedPlaylist;
+      }
+      
+      // 로컬 스토리지에서 찾기
+      const localPlaylists = localStorage.getItem('localPlaylists');
+      if (localPlaylists) {
+        const playlists = JSON.parse(localPlaylists);
+        const localPlaylist = playlists.find((p: any) => p._id === id);
+        if (localPlaylist) {
+          return localPlaylist;
+        }
+      }
+      
+      // 둘 다 없으면 API 호출
+      try {
+        const response = await axios.get(`/api/playlists/${id}`);
+        return response.data;
+      } catch (err) {
+        throw new Error('맛집 리스트를 찾을 수 없습니다');
+      }
     },
     enabled: !!id,
   });
+  
+  // 저장 상태 동기화
+  useEffect(() => {
+    if (id && playlist) {
+      const saved = dataManager.isPlaylistSaved(id);
+      const liked = dataManager.isPlaylistLiked(id);
+      setIsSaved(saved);
+      setIsLiked(liked);
+      console.log(`MobilePlaylistDetail - Loading state for ${id}: saved=${saved}, liked=${liked}`);
+    }
+  }, [id, playlist]); // playlist가 변경될 때마다 상태 재로드
+  
+  // Listen for dataManager updates
+  useEffect(() => {
+    const handleDataUpdate = () => {
+      if (id) {
+        const saved = dataManager.isPlaylistSaved(id);
+        const liked = dataManager.isPlaylistLiked(id);
+        setIsSaved(saved);
+        setIsLiked(liked);
+        console.log(`MobilePlaylistDetail - Data updated for ${id}: saved=${saved}, liked=${liked}`);
+      }
+      // Update saved restaurants
+      const savedData = dataManager.getSavedRestaurants();
+      setSavedRestaurants(savedData.map(r => r.restaurantId));
+    };
+
+    window.addEventListener('dataManager:update', handleDataUpdate);
+    window.addEventListener('storage', handleDataUpdate);
+
+    return () => {
+      window.removeEventListener('dataManager:update', handleDataUpdate);
+      window.removeEventListener('storage', handleDataUpdate);
+    };
+  }, [id]);
 
   // 맛집 목록 - 실제 데이터가 없으면 더미 데이터 사용
   // API에서 restaurants 배열은 { restaurant: {...}, addedBy, reason } 형태로 옴
@@ -216,18 +288,47 @@ const MobilePlaylistDetail: React.FC = () => {
       navigate('/auth');
       return;
     }
-    setIsLiked(!isLiked);
-    toast.success(isLiked ? '좋아요 취소' : '좋아요!');
+    
+    if (id) {
+      const liked = dataManager.togglePlaylistLike(id);
+      setIsLiked(liked);
+      toast.success(liked ? '좋아요!' : '좋아요 취소');
+      console.log(`MobilePlaylistDetail - Like toggled for ${id}: liked=${liked}`);
+      
+      // 이벤트 발생
+      window.dispatchEvent(new CustomEvent('dataManager:update'));
+    }
   };
 
   const handleSave = () => {
+    console.log('Mobile - handleSave called - id:', id, 'isSaved:', isSaved);
+    
     if (!user) {
       toast.error('로그인이 필요합니다');
       navigate('/auth');
       return;
     }
-    setIsSaved(!isSaved);
-    toast.success(isSaved ? '저장 취소' : '저장됨!');
+    
+    if (id) {
+      if (isSaved) {
+        console.log('Mobile - Unsaving playlist:', id);
+        dataManager.unsavePlaylist(id);
+        setIsSaved(false);
+        toast.success('저장 취소됨');
+      } else {
+        console.log('Mobile - Saving playlist:', id);
+        dataManager.savePlaylist(id);
+        setIsSaved(true);
+        toast.success('저장됨!');
+      }
+      
+      // 저장 후 상태 확인
+      const savedData = dataManager.getSavedPlaylists();
+      console.log('Mobile - After save - Saved playlists:', savedData);
+      
+      // 이벤트 발생시켜 다른 컴포넌트들이 업데이트 되도록
+      window.dispatchEvent(new CustomEvent('dataManager:update'));
+    }
   };
 
   const handleShare = () => {
@@ -528,6 +629,50 @@ const MobilePlaylistDetail: React.FC = () => {
                     💬 "{restaurant.reason}"
                   </p>
                 )}
+                
+                {/* 저장 버튼 */}
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!user) {
+                        toast.error('로그인이 필요합니다.');
+                        return;
+                      }
+                      
+                      const isRestaurantSaved = savedRestaurants.includes(restaurant._id);
+                      if (isRestaurantSaved) {
+                        dataManager.unsaveRestaurant(restaurant._id);
+                        toast.success('저장 취소');
+                        setSavedRestaurants(prev => prev.filter(id => id !== restaurant._id));
+                      } else {
+                        // localRestaurants에도 저장
+                        const localRestaurants = localStorage.getItem('localRestaurants');
+                        const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+                        if (!restaurants.find((r: any) => r._id === restaurant._id)) {
+                          restaurants.push(restaurant);
+                          localStorage.setItem('localRestaurants', JSON.stringify(restaurants));
+                        }
+                        
+                        dataManager.saveRestaurant(restaurant._id, `${playlist?.title || '플레이리스트'}에서 저장`);
+                        toast.success('맛집이 저장되었습니다!');
+                        setSavedRestaurants(prev => [...prev, restaurant._id]);
+                      }
+                    }}
+                    className={`w-full flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      savedRestaurants.includes(restaurant._id)
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {savedRestaurants.includes(restaurant._id) ? (
+                      <BookmarkSolidIcon className="w-4 h-4" />
+                    ) : (
+                      <BookmarkIcon className="w-4 h-4" />
+                    )}
+                    {savedRestaurants.includes(restaurant._id) ? '저장됨' : '맛집 저장'}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

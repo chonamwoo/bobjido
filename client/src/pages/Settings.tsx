@@ -15,7 +15,7 @@ import {
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user, logout, updateUser } = useAuthStore();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +33,8 @@ const Settings: React.FC = () => {
     },
     onSuccess: (data) => {
       toast.success('프로필이 업데이트되었습니다');
-      // authStore 업데이트는 여기서 할 수 있음
+      // authStore 업데이트 - 헤더의 이름도 즉시 변경됨
+      updateUser(data.user);
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || '업데이트에 실패했습니다');

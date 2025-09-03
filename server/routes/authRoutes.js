@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const { register, login, getMe, updateProfile, changePassword } = require('../controllers/authController');
+const { register, login, checkUserId, checkEmail, getMe, updateProfile, changePassword } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { passport, generateToken } = require('../config/passport');
 
@@ -13,26 +13,15 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-router.post(
-  '/register',
-  [
-    body('username').isLength({ min: 3 }).withMessage('사용자명은 최소 3자 이상이어야 합니다'),
-    body('email').isEmail().withMessage('유효한 이메일을 입력하세요'),
-    body('password').isLength({ min: 6 }).withMessage('비밀번호는 최소 6자 이상이어야 합니다'),
-  ],
-  handleValidationErrors,
-  register
-);
+// 아이디 중복 체크
+router.get('/check-userid/:userId', checkUserId);
 
-router.post(
-  '/login',
-  [
-    body('email').isEmail().withMessage('유효한 이메일을 입력하세요'),
-    body('password').notEmpty().withMessage('비밀번호를 입력하세요'),
-  ],
-  handleValidationErrors,
-  login
-);
+// 이메일 중복 체크
+router.get('/check-email/:email', checkEmail);
+
+router.post('/register', register);
+
+router.post('/login', login);
 
 router.get('/me', protect, getMe);
 
@@ -80,22 +69,25 @@ router.get('/google/callback',
     
     // auth-bridge.html로 리다이렉트 (토큰과 사용자 정보 포함)
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3001';
-    res.redirect(`${clientUrl}/auth-bridge.html?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
+    const redirectUrl = `${clientUrl}/auth-bridge.html?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`;
+    console.log('🔍 Google Redirecting to:', redirectUrl);
+    res.redirect(redirectUrl);
   }
 );
 
-// Kakao OAuth routes
-router.get('/kakao', passport.authenticate('kakao'));
+// Kakao OAuth routes - only if KAKAO_CLIENT_ID is configured
+if (process.env.KAKAO_CLIENT_ID) {
+  router.get('/kakao', passport.authenticate('kakao'));
 
-router.get('/kakao/callback',
-  passport.authenticate('kakao', { session: false }),
-  (req, res) => {
-    console.log('🔍 Kakao callback hit!');
-    console.log('CLIENT_URL from env:', process.env.CLIENT_URL);
-    
-    const token = generateToken(req.user._id);
-    const user = {
-      _id: req.user._id,
+  router.get('/kakao/callback',
+    passport.authenticate('kakao', { session: false }),
+    (req, res) => {
+      console.log('🔍 Kakao callback hit!');
+      console.log('CLIENT_URL from env:', process.env.CLIENT_URL);
+      
+      const token = generateToken(req.user._id);
+      const user = {
+        _id: req.user._id,
       username: req.user.username,
       email: req.user.email,
       profileImage: req.user.profileImage,
@@ -104,9 +96,11 @@ router.get('/kakao/callback',
     
     // auth-bridge.html로 리다이렉트 (토큰과 사용자 정보 포함)
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3001';
-    console.log('🔍 Redirecting to:', clientUrl);
-    res.redirect(`${clientUrl}/auth-bridge.html?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
+    const redirectUrl = `${clientUrl}/auth-bridge.html?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`;
+    console.log('🔍 Redirecting to:', redirectUrl);
+    res.redirect(redirectUrl);
   }
-);
+  );
+}
 
 module.exports = router;

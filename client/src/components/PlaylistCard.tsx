@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HeartIcon, BookmarkIcon, MapPinIcon, ShareIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
@@ -7,6 +7,7 @@ import { ko } from 'date-fns/locale';
 import { getDefaultAvatar } from '../utils/avatars';
 import { getPlaylistCoverImage, getPlaylistGradient, handleImageError } from '../utils/imageUtils';
 import toast from 'react-hot-toast';
+import { dataManager } from '../utils/dataManager';
 
 interface PlaylistCardProps {
   playlist: {
@@ -39,16 +40,33 @@ interface PlaylistCardProps {
 }
 
 const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, horizontal = false }) => {
-  const [imageError, setImageError] = React.useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  
+  useEffect(() => {
+    setIsSaved(dataManager.isPlaylistSaved(playlist._id));
+    setIsLiked(dataManager.isPlaylistLiked(playlist._id));
+  }, [playlist._id]);
   
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
-    // TODO: Implement like functionality
+    const newLikedState = dataManager.togglePlaylistLike(playlist._id);
+    setIsLiked(newLikedState);
+    toast.success(newLikedState ? '좋아요를 누르셨습니다!' : '좋아요를 취소하셨습니다.');
   };
 
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault();
-    // TODO: Implement save functionality
+    if (isSaved) {
+      dataManager.unsavePlaylist(playlist._id);
+      setIsSaved(false);
+      toast.success('저장을 취소하셨습니다.');
+    } else {
+      dataManager.savePlaylist(playlist._id);
+      setIsSaved(true);
+      toast.success('맛집리스트가 저장되었습니다!');
+    }
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -131,8 +149,8 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, horizontal = fals
           {/* Content - 가로 레이아웃 */}
           <div className="flex-1 p-4 flex flex-col justify-between">
             <div>
-              <h3 className="font-bold text-gray-900 line-clamp-1 mb-1">{playlist.title}</h3>
-              <p className="text-sm text-gray-600 line-clamp-1 mb-2">{playlist.description}</p>
+              <h3 className="font-bold text-gray-900 mb-1">{playlist.title}</h3>
+              <p className="text-sm text-gray-600 mb-2">{playlist.description}</p>
               
               <div className="flex items-center space-x-4 text-xs text-gray-500">
                 <span className="flex items-center">
@@ -159,7 +177,7 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, horizontal = fals
                   onClick={handleLike}
                   className="p-1"
                 >
-                  {playlist.isLiked ? (
+                  {isLiked ? (
                     <HeartSolidIcon className="w-4 h-4 text-red-500" />
                   ) : (
                     <HeartIcon className="w-4 h-4 text-gray-400" />
@@ -169,7 +187,7 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, horizontal = fals
                   onClick={handleSave}
                   className="p-1"
                 >
-                  {playlist.isSaved ? (
+                  {isSaved ? (
                     <BookmarkSolidIcon className="w-4 h-4 text-primary-500" />
                   ) : (
                     <BookmarkIcon className="w-4 h-4 text-gray-400" />
@@ -218,7 +236,7 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, horizontal = fals
               onClick={handleLike}
               className="p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
             >
-              {playlist.isLiked ? (
+              {isLiked ? (
                 <HeartSolidIcon className="w-5 h-5 text-red-500" />
               ) : (
                 <HeartIcon className="w-5 h-5 text-gray-700" />
@@ -228,7 +246,7 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, horizontal = fals
               onClick={handleSave}
               className="p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
             >
-              {playlist.isSaved ? (
+              {isSaved ? (
                 <BookmarkSolidIcon className="w-5 h-5 text-primary-500" />
               ) : (
                 <BookmarkIcon className="w-5 h-5 text-gray-700" />

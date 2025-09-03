@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import axios from '../utils/axios';
+// import axios from '../utils/axios'; // TODO: 백엔드 API 구현 후 주석 해제
 import toast from 'react-hot-toast';
 import {
   FireIcon,
@@ -132,16 +132,17 @@ const FoodMBTI: React.FC = () => {
     }, 500);
 
     // 백엔드에 답변 저장 (로그인한 경우)
-    if (user) {
-      try {
-        await axios.post('/api/food-mbti/answer', {
-          questionId: currentQuestion.id,
-          answer,
-        });
-      } catch (error) {
-        console.error('답변 저장 실패:', error);
-      }
-    }
+    // TODO: 백엔드 API 구현 후 주석 해제
+    // if (user) {
+    //   try {
+    //     await axios.post('/api/food-mbti/answer', {
+    //       questionId: currentQuestion.id,
+    //       answer,
+    //     });
+    //   } catch (error) {
+    //     console.error('답변 저장 실패:', error);
+    //   }
+    // }
   };
 
   const completeTest = async (finalAnswers: Record<string, string>) => {
@@ -150,24 +151,25 @@ const FoodMBTI: React.FC = () => {
     // 결과 계산 및 타입 결정
     const mbtiType = calculateMBTIType(finalAnswers);
     
-    if (user) {
-      try {
-        const response = await axios.post('/api/food-mbti/complete', {
-          answers: finalAnswers,
-          mbtiType,
-        });
-        setResult(response.data);
-      } catch (error) {
-        console.error('결과 저장 실패:', error);
-      }
-    } else {
-      // 비로그인 사용자를 위한 임시 결과
-      setResult({
-        mbtiType,
-        description: getMBTIDescription(mbtiType),
-        matchingUsers: [],
-      });
-    }
+    // TODO: 백엔드 API 구현 후 주석 해제
+    // if (user) {
+    //   try {
+    //     const response = await axios.post('/api/food-mbti/complete', {
+    //       answers: finalAnswers,
+    //       mbtiType,
+    //     });
+    //     setResult(response.data);
+    //   } catch (error) {
+    //     console.error('결과 저장 실패:', error);
+    //   }
+    // }
+    
+    // 로컬에서 결과 처리
+    setResult({
+      mbtiType,
+      description: getMBTIDescription(mbtiType),
+      matchingUsers: [],
+    });
   };
 
   const calculateMBTIType = (answers: Record<string, string>): string => {
@@ -211,7 +213,157 @@ const FoodMBTI: React.FC = () => {
     return descriptions[type] || '독특한 입맛의 소유자';
   };
 
+  // MBTI별 추천 레스토랑 데이터
+  const getRecommendedRestaurants = (mbtiType: string) => {
+    const recommendations: { [key: string]: Array<{ name: string; category: string; location: string; reason: string; image: string; rating: number; price: string }> } = {
+      'INTJ': [
+        { 
+          name: '스시 오마카세', 
+          category: '일식', 
+          location: '강남구 청담동', 
+          reason: '정교한 맛과 체계적인 코스',
+          image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&h=300&fit=crop',
+          rating: 4.8,
+          price: '₩₩₩₩'
+        },
+        { 
+          name: '모던 한식 레스토랑', 
+          category: '한식', 
+          location: '종로구 북촌', 
+          reason: '전통과 혁신의 조화',
+          image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=300&fit=crop',
+          rating: 4.7,
+          price: '₩₩₩'
+        },
+        { 
+          name: '와인 바', 
+          category: '주류', 
+          location: '이태원동', 
+          reason: '깊이있는 맛의 탐구',
+          image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400&h=300&fit=crop',
+          rating: 4.6,
+          price: '₩₩₩'
+        }
+      ],
+      'ENFP': [
+        { 
+          name: '세계음식 뷔페', 
+          category: '뷔페', 
+          location: '중구 명동', 
+          reason: '다양한 맛의 모험',
+          image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
+          rating: 4.5,
+          price: '₩₩₩'
+        },
+        { 
+          name: '퓨전 타파스 바', 
+          category: '스페인', 
+          location: '마포구 홍대', 
+          reason: '창의적인 조합',
+          image: 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?w=400&h=300&fit=crop',
+          rating: 4.6,
+          price: '₩₩'
+        },
+        { 
+          name: '스트리트 푸드 마켓', 
+          category: '길거리', 
+          location: '종로구 광장시장', 
+          reason: '활기찬 분위기와 다양성',
+          image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop',
+          rating: 4.4,
+          price: '₩'
+        }
+      ],
+      'ISFJ': [
+        { 
+          name: '할머니 레시피', 
+          category: '한식', 
+          location: '종로구 인사동', 
+          reason: '정성스러운 집밥',
+          image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=300&fit=crop',
+          rating: 4.7,
+          price: '₩₩'
+        },
+        { 
+          name: '오래된 빵집', 
+          category: '베이커리', 
+          location: '성동구 성수동', 
+          reason: '따뜻하고 편안한 분위기',
+          image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop',
+          rating: 4.5,
+          price: '₩₩'
+        },
+        { 
+          name: '전통 찻집', 
+          category: '카페', 
+          location: '종로구 인사동', 
+          reason: '조용하고 아늑한 공간',
+          image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop',
+          rating: 4.6,
+          price: '₩'
+        }
+      ]
+    };
+    
+    // 기본 추천 (해당 MBTI가 없을 경우)
+    const defaultRecommendations = [
+      { 
+        name: '맛집 탐방 1호점', 
+        category: '한식', 
+        location: '강남구 역삼동', 
+        reason: '모두가 좋아하는 맛',
+        image: 'https://images.unsplash.com/photo-1583224964978-2257b960c3d3?w=400&h=300&fit=crop',
+        rating: 4.5,
+        price: '₩₩'
+      },
+      { 
+        name: '인기 브런치 카페', 
+        category: '브런치', 
+        location: '성동구 성수동', 
+        reason: '트렌디한 맛집',
+        image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop',
+        rating: 4.4,
+        price: '₩₩'
+      },
+      { 
+        name: '소문난 국밥집', 
+        category: '한식', 
+        location: '중구 을지로', 
+        reason: '든든한 한 끼',
+        image: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=400&h=300&fit=crop',
+        rating: 4.6,
+        price: '₩'
+      }
+    ];
+    
+    return recommendations[mbtiType] || defaultRecommendations;
+  };
+
+  // 게임 완료시 기록 저장
+  React.useEffect(() => {
+    if (isComplete && result) {
+      // 로컬 스토리지에 게임 기록 저장
+      const gameRecords = JSON.parse(localStorage.getItem('gameRecords') || '{}');
+      gameRecords.foodMBTI = {
+        type: result.mbtiType,
+        completedAt: new Date().toISOString(),
+        restaurants: getRecommendedRestaurants(result.mbtiType),
+        choices: answers  // 선택한 답변들 저장
+      };
+      localStorage.setItem('gameRecords', JSON.stringify(gameRecords));
+      
+      // 완료한 게임 수 업데이트
+      const completedGames = parseInt(localStorage.getItem('completedGames') || '0');
+      localStorage.setItem('completedGames', String(completedGames + 1));
+      
+      // 자동 이동 제거 - 사용자가 결과를 충분히 볼 수 있도록 함
+      // 필요시 버튼으로 이동 가능
+    }
+  }, [isComplete, result, navigate, answers]);
+
   if (isComplete && result) {
+    const recommendedRestaurants = getRecommendedRestaurants(result.mbtiType);
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 py-12 px-4">
         <div className="max-w-2xl mx-auto">
@@ -232,40 +384,104 @@ const FoodMBTI: React.FC = () => {
             </div>
 
             <div className="space-y-4 mb-8">
-              <h3 className="font-bold text-xl">당신의 음식 취향</h3>
+              <h3 className="font-bold text-xl">🎯 당신이 선택한 음식들</h3>
               <div className="grid grid-cols-2 gap-3">
-                {Object.entries(answers).slice(0, 6).map(([key, value]) => {
+                {Object.entries(answers).map(([key, value]) => {
                   const question = questions.find(q => q.id === key);
                   const option = value === question?.optionA.value ? question.optionA : question?.optionB;
-                  return (
-                    <div key={key} className="bg-gray-50 rounded-lg p-3 flex items-center gap-2">
-                      <span className="text-2xl">{option?.emoji}</span>
-                      <span className="text-sm">{option?.text}</span>
+                  return question ? (
+                    <div key={key} className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">{option?.emoji}</span>
+                        <div>
+                          <div className="font-semibold text-sm text-gray-800">{option?.text}</div>
+                          <div className="text-xs text-gray-500">{question.question.split(' ')[0]}</div>
+                        </div>
+                      </div>
                     </div>
-                  );
+                  ) : null;
                 })}
+              </div>
+            </div>
+
+            {/* 추천 레스토랑 섹션 */}
+            <div className="space-y-4 mb-8">
+              <h3 className="font-bold text-xl">🍽️ 맞춤 레스토랑 추천</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {recommendedRestaurants.map((restaurant, index) => (
+                  <motion.div 
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-xl transition-all cursor-pointer group"
+                  >
+                    <div className="relative">
+                      <img 
+                        src={restaurant.image} 
+                        alt={restaurant.name}
+                        className="w-full h-48 object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop';
+                        }}
+                      />
+                      <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg">
+                        <div className="flex items-center gap-1">
+                          <span className="text-yellow-400">★</span>
+                          <span className="text-sm font-bold">{restaurant.rating}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h4 className="font-bold text-lg text-gray-800 mb-2">{restaurant.name}</h4>
+                      <div className="space-y-1 mb-3">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <span className="font-medium">{restaurant.category}</span>
+                          <span className="mx-2">·</span>
+                          <span>{restaurant.price}</span>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          📍 {restaurant.location}
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-2 mb-3">
+                        <p className="text-xs text-orange-700 font-medium">
+                          💡 {restaurant.reason}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <button className="flex-1 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all">
+                          자세히 보기
+                        </button>
+                        <div className="ml-3 p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
+                          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </div>
 
             <div className="flex gap-4">
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/game-hub')}
                 className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
               >
-                홈으로
+                다른 게임하기
               </button>
               <button
                 onClick={() => {
-                  if (user) {
-                    navigate('/matches');
-                  } else {
-                    toast.error('로그인 후 매칭을 확인하세요');
-                    navigate('/login');
-                  }
+                  setCurrentQuestionIndex(0);
+                  setAnswers({});
+                  setIsComplete(false);
+                  setResult(null);
                 }}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow"
               >
-                취향 맞는 사람 찾기
+                다시 테스트하기
               </button>
             </div>
           </motion.div>

@@ -151,6 +151,7 @@ const createPlaylist = async (req, res) => {
       targetAudience,
       estimatedCost,
       estimatedDuration,
+      restaurants = [],
     } = req.body;
     
     const playlist = new Playlist({
@@ -164,6 +165,7 @@ const createPlaylist = async (req, res) => {
       estimatedCost,
       estimatedDuration,
       createdBy: req.user._id,
+      restaurants: restaurants || [],
     });
     
     await playlist.save();

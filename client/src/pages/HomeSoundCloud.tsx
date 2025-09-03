@@ -18,6 +18,7 @@ import { useAuthStore } from '../store/authStore';
 import axios from '../utils/axios';
 import toast from 'react-hot-toast';
 import { getPlaylistCoverImage } from '../utils/imageUtils';
+import { certifiedRestaurantLists, getTrendingLists, getLatestLists } from '../data/certifiedRestaurantLists';
 
 const HomeSoundCloud: React.FC = () => {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ const HomeSoundCloud: React.FC = () => {
     local: useRef<HTMLDivElement>(null)
   };
 
-  // 실제 DB에서 플레이리스트 가져오기
+  // 인증 프로그램 맛집 리스트 가져오기
   useEffect(() => {
     fetchPlaylists();
   }, []);
@@ -39,6 +40,13 @@ const HomeSoundCloud: React.FC = () => {
   const fetchPlaylists = async () => {
     try {
       setLoading(true);
+      // Admin에서 수정한 데이터가 있으면 사용, 없으면 기본 데이터 사용
+      const adminPlaylists = localStorage.getItem('adminPlaylists');
+      const playlistData = adminPlaylists ? JSON.parse(adminPlaylists) : certifiedRestaurantLists;
+      setPlaylists(playlistData);
+      setLoading(false);
+      return;
+      
       const response = await axios.get(
         `/api/playlists`,
         {
@@ -54,43 +62,36 @@ const HomeSoundCloud: React.FC = () => {
         setPlaylists(response.data.playlists);
       }
     } catch (error) {
-      console.error('플레이리스트 가져오기 실패:', error);
-      toast.error('플레이리스트를 불러오는데 실패했습니다');
+      console.error('맛집 리스트 가져오기 실패:', error);
+      toast.error('맛집 리스트를 불러오는데 실패했습니다');
     } finally {
       setLoading(false);
     }
   };
 
-  // 카테고리별로 플레이리스트 필터링
+  // 카테고리별로 맛집 리스트 필터링
   const getCategorizedPlaylists = (category: string) => {
     switch (category) {
       case 'curated':
-        // 데이트코스, 혼밥 카테고리
+        // 공식 인증 맛집 (미쉐린, 백년가게)
         return playlists.filter(p => 
-          p.category === '데이트코스' || p.category === '혼밥'
+          p.certification === '미쉐린스타' || p.certification === '백년가게'
         ).slice(0, 5);
       case 'trending':
-        // 가장 인기 있는 플레이리스트 (유명인 제외)
-        return playlists
-          .filter(p => !p.tags?.some((tag: string) => 
-            ['성시경', '맛있는녀석들', '쯔양', '백종원'].includes(tag))
-          )
-          .sort((a, b) => b.likeCount - a.likeCount)
+        // 가장 인기 있는 맛집 리스트 (좋아요 순)
+        return [...playlists]
+          .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
           .slice(0, 5);
       case 'celebrity':
-        // 유명인 방문 맛집
+        // TV 방송 출연 맛집
         return playlists.filter(p => 
-          p.tags?.some((tag: string) => 
-            ['성시경', '맛있는녀석들', '쯔양', '백종원', '먹을텐데', '먹방', '방송맛집'].includes(tag)
-          )
+          p.certification && ['흑백요리사', '수요미식회', '백종원의3대천왕', '맛있는녀석들', '성시경의먹을텐데'].includes(p.certification)
         ).slice(0, 5);
       case 'local':
-        // 맛집투어 카테고리 (유명인 제외)
-        return playlists.filter(p => 
-          p.category === '맛집투어' &&
-          !p.tags?.some((tag: string) => 
-            ['성시경', '맛있는녀석들', '쯔양', '백종원'].includes(tag))
-        ).slice(0, 5);
+        // 최신 맛집 리스트
+        return [...playlists]
+          .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+          .slice(0, 5);
       default:
         return [];
     }
@@ -108,7 +109,7 @@ const HomeSoundCloud: React.FC = () => {
 
   const PlaylistCard = ({ playlist, type }: { playlist: any, type: string }) => {
     const [liked, setLiked] = useState(playlist.isLiked || false);
-    const [localLikeCount, setLocalLikeCount] = useState(playlist.likeCount || 0);
+    const [localLikeCount, setLocalLikeCount] = useState(playlist.likes || playlist.likeCount || 0);
 
     const handleLike = async (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -132,8 +133,8 @@ const HomeSoundCloud: React.FC = () => {
     };
 
     const getPlaylistImage = () => {
-      // 플레이리스트별 고유 이미지 사용
-      return getPlaylistCoverImage(playlist);
+      // 맛집 리스트별 고유 이미지 사용
+      return playlist.coverImage || getPlaylistCoverImage(playlist);
     };
 
     const getRestaurantNames = () => {
@@ -173,9 +174,9 @@ const HomeSoundCloud: React.FC = () => {
               <PlayIcon className="w-6 h-6 text-gray-800 group-hover:text-orange-600" />
             </button>
             
-            {/* 플레이리스트 정보 */}
+            {/* 맛집 리스트 정보 */}
             <div className="absolute bottom-3 left-3 text-white">
-              <p className="text-sm opacity-90">{playlist.category}</p>
+              <p className="text-sm opacity-90">{playlist.certification || playlist.category}</p>
               <h3 className="font-bold text-lg">{playlist.title}</h3>
             </div>
           </div>
@@ -185,7 +186,7 @@ const HomeSoundCloud: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-orange-400 to-red-500 rounded-full" />
                 <span className="text-sm text-gray-600">
-                  {playlist.createdBy?.username || 'BobMap'}
+                  {playlist.creator?.username || playlist.createdBy?.username || 'BobMap'}
                 </span>
               </div>
               <button 
@@ -206,8 +207,8 @@ const HomeSoundCloud: React.FC = () => {
             </p>
             
             <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>{playlist.restaurantCount || 0}개 맛집</span>
-              <span>{playlist.viewCount || 0}회 재생</span>
+              <span>{playlist.restaurants?.length || playlist.restaurantCount || 0}개 맛집</span>
+              <span>{playlist.views || playlist.viewCount || 0}회 조회</span>
             </div>
             
             {/* 실제 맛집 이름들 표시 */}
@@ -227,7 +228,7 @@ const HomeSoundCloud: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">플레이리스트 로딩 중...</p>
+          <p className="mt-4 text-gray-600">맛집 리스트 로딩 중...</p>
         </div>
       </div>
     );
@@ -280,7 +281,7 @@ const HomeSoundCloud: React.FC = () => {
                 onClick={() => navigate('/create-playlist')}
                 className="px-8 py-3 bg-white/10 backdrop-blur-sm text-white rounded-full font-medium border border-white/30 hover:bg-white/20 transition-all"
               >
-                플레이리스트 만들기
+                맛집 리스트 만들기
               </button>
             </motion.div>
           </div>
@@ -294,9 +295,9 @@ const HomeSoundCloud: React.FC = () => {
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
                 <SparklesIcon className="w-6 h-6 inline mr-2 text-orange-500" />
-                당신을 위한 맞춤 맛집리스트
+                공식 인증 맛집 리스트
               </h2>
-              <p className="text-gray-600 mt-1">취향 분석 기반 추천</p>
+              <p className="text-gray-600 mt-1">미쉐린 & 백년가게 선정</p>
             </div>
             <div className="flex space-x-2">
               <button
@@ -332,7 +333,7 @@ const HomeSoundCloud: React.FC = () => {
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
                 <FireIcon className="w-6 h-6 inline mr-2 text-red-500" />
-                실시간 인기 플레이리스트
+                실시간 인기 맛집 리스트
               </h2>
               <p className="text-gray-600 mt-1">지금 가장 핫한 맛집 리스트</p>
             </div>
@@ -370,9 +371,9 @@ const HomeSoundCloud: React.FC = () => {
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
                 <StarIcon className="w-6 h-6 inline mr-2 text-yellow-500" />
-                유명인이 방문한 맛집
+                방송 출연 맛집
               </h2>
-              <p className="text-gray-600 mt-1">성시경, 맛있는 녀석들, 쯔양이 찾은 맛집</p>
+              <p className="text-gray-600 mt-1">흑백요리사, 수요미식회, 백종원의 맛집</p>
             </div>
             <div className="flex space-x-2">
               <button
@@ -408,9 +409,9 @@ const HomeSoundCloud: React.FC = () => {
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
                 <MapPinIcon className="w-6 h-6 inline mr-2 text-blue-500" />
-                지역별 맛집 지도
+                최신 맛집 리스트
               </h2>
-              <p className="text-gray-600 mt-1">동네별 숨은 맛집 탐방</p>
+              <p className="text-gray-600 mt-1">새로 등록된 인증 맛집</p>
             </div>
             <div className="flex space-x-2">
               <button
