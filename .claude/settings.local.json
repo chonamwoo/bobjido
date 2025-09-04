@@ -125,7 +125,9 @@
       "Read(/C:\\Users\\mchon\\PycharmProjects\\BobsMap\\client\\src\\components/**)",
       "Read(/C:\\Users\\mchon\\PycharmProjects\\BobsMap\\client\\src/**)",
       "Read(/C:\\Users\\mchon\\PycharmProjects\\BobsMap\\client\\src\\components/**)",
-      "Read(/C:\\Users\\mchon\\PycharmProjects\\BobsMap\\client\\src\\components/**)"
+      "Read(/C:\\Users\\mchon\\PycharmProjects\\BobsMap\\client\\src\\components/**)",
+      "Read(/C:\\Users\\mchon\\PycharmProjects\\BobsMap/**)",
+      "Read(/C:\\Users\\mchon\\PycharmProjects\\BobsMap\\client/**)"
     ],
     "deny": [],
     "ask": []
