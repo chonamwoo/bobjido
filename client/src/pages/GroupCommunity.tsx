@@ -399,7 +399,7 @@ const GroupCommunity: React.FC = () => {
                     ) : (
                       <HeartIcon className="w-5 h-5" />
                     )}
-                    <span className="text-sm">{post.likes}</span>
+                    <span className="text-sm">{Array.isArray(post.likes) ? post.likes.length : post.likes || 0}</span>
                   </button>
                   <button className="flex items-center gap-1 text-gray-600 hover:text-purple-600 transition-colors">
                     <ChatBubbleLeftRightIcon className="w-5 h-5" />

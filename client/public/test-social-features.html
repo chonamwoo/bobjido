@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Features Test - BobMap</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        
+        .test-section {
+            margin-bottom: 20px;
+        }
+        
+        .test-users {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .user-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+        }
+        
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .user-bio {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        }
+        
+        button.unfollow {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .log {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+        
+        .log-item {
+            padding: 5px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #333;
+        }
+        
+        .log-item.success {
+            color: #28a745;
+        }
+        
+        .log-item.error {
+            color: #dc3545;
+        }
+        
+        .restaurants {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .restaurant-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .restaurant-image {
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(135deg, #ffd93d, #ff6b6b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+        }
+        
+        .restaurant-info {
+            padding: 15px;
+        }
+        
+        .restaurant-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .restaurant-category {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Social Features Test Dashboard</h1>
+        
+        <!-- Current User Stats -->
+        <div class="card">
+            <h2>📊 Current User Stats</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="following-count">0</div>
+                    <div class="stat-label">팔로잉</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="followers-count">0</div>
+                    <div class="stat-label">팔로워</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="saved-restaurants-count">0</div>
+                    <div class="stat-label">저장한 맛집</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="saved-playlists-count">0</div>
+                    <div class="stat-label">저장한 플레이리스트</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Users -->
+        <div class="card">
+            <h2>👥 Test Users - Follow/Unfollow</h2>
+            <div class="test-users" id="test-users"></div>
+        </div>
+        
+        <!-- Sample Restaurants -->
+        <div class="card">
+            <h2>🍽️ Sample Restaurants - Save/Unsave</h2>
+            <div class="restaurants" id="restaurants"></div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="card">
+            <h2>🎮 Quick Actions</h2>
+            <div class="action-buttons">
+                <button onclick="addRandomFollowers()">Add 5 Random Followers</button>
+                <button onclick="clearAllFollowing()">Clear All Following</button>
+                <button onclick="clearAllFollowers()">Clear All Followers</button>
+                <button onclick="saveRandomRestaurants()">Save 3 Random Restaurants</button>
+                <button onclick="clearSavedRestaurants()">Clear Saved Restaurants</button>
+                <button onclick="refreshStats()">Refresh Stats</button>
+                <button onclick="openProfile()">Open Profile Page</button>
+            </div>
+        </div>
+        
+        <!-- Activity Log -->
+        <div class="card">
+            <h2>📝 Activity Log</h2>
+            <div class="log" id="activity-log"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Sample test users
+        const testUsers = [
+            { id: 'user1', username: '김맛집러', bio: '강남 맛집 전문가' },
+            { id: 'user2', username: '이푸디', bio: '디저트 카페 탐방' },
+            { id: 'user3', username: '박미식가', bio: '한식 마니아' },
+            { id: 'user4', username: '최요리사', bio: '홈쿠킹 & 맛집' },
+            { id: 'user5', username: '정카페인', bio: '커피 덕후' },
+            { id: 'user6', username: '한식도락', bio: '전국 맛집 투어' }
+        ];
+        
+        // Sample restaurants
+        const sampleRestaurants = [
+            { id: 'rest1', name: '수육국밥집', category: '한식', location: '강남구', rating: 4.5 },
+            { id: 'rest2', name: '파스타 부띠끄', category: '이탈리안', location: '성수동', rating: 4.7 },
+            { id: 'rest3', name: '스시 오마카세', category: '일식', location: '청담동', rating: 4.8 },
+            { id: 'rest4', name: '육회비빔밥', category: '한식', location: '종로', rating: 4.6 },
+            { id: 'rest5', name: '타코 트럭', category: '멕시칸', location: '이태원', rating: 4.4 },
+            { id: 'rest6', name: '딤섬 하우스', category: '중식', location: '명동', rating: 4.5 }
+        ];
+        
+        // Initialize
+        function init() {
+            renderTestUsers();
+            renderRestaurants();
+            refreshStats();
+            addLog('Test dashboard initialized', 'success');
+        }
+        
+        // Render test users
+        function renderTestUsers() {
+            const container = document.getElementById('test-users');
+            const followingUsers = JSON.parse(localStorage.getItem('followedUsers') || '[]');
+            
+            container.innerHTML = testUsers.map(user => `
+                <div class="user-card">
+                    <div class="user-avatar">${user.username[0]}</div>
+                    <div class="user-name">${user.username}</div>
+                    <div class="user-bio">${user.bio}</div>
+                    <button 
+                        class="${followingUsers.includes(user.id) ? 'unfollow' : ''}"
+                        onclick="toggleFollow('${user.id}', '${user.username}')"
+                    >
+                        ${followingUsers.includes(user.id) ? '언팔로우' : '팔로우'}
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        // Render restaurants
+        function renderRestaurants() {
+            const container = document.getElementById('restaurants');
+            const savedRestaurants = JSON.parse(localStorage.getItem('bobmap_user_data') || '{}').savedRestaurants || [];
+            const savedIds = savedRestaurants.map(r => r.restaurantId);
+            
+            container.innerHTML = sampleRestaurants.map(rest => `
+                <div class="restaurant-card">
+                    <div class="restaurant-image">🍽️</div>
+                    <div class="restaurant-info">
+                        <div class="restaurant-name">${rest.name}</div>
+                        <div class="restaurant-category">${rest.category} • ${rest.location}</div>
+                        <div style="margin-top: 10px;">
+                            <button 
+                                class="${savedIds.includes(rest.id) ? 'unfollow' : ''}"
+                                onclick="toggleSaveRestaurant('${rest.id}', '${rest.name}')"
+                            >
+                                ${savedIds.includes(rest.id) ? '저장 취소' : '저장'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Toggle follow
+        function toggleFollow(userId, username) {
+            const followingUsers = JSON.parse(localStorage.getItem('followedUsers') || '[]');
+            const userData = JSON.parse(localStorage.getItem('bobmap_user_data') || '{}');
+            
+            if (followingUsers.includes(userId)) {
+                // Unfollow
+                const index = followingUsers.indexOf(userId);
+                followingUsers.splice(index, 1);
+                
+                // Update followingUserDetails
+                if (userData.followingUserDetails) {
+                    userData.followingUserDetails = userData.followingUserDetails.filter(u => u._id !== userId);
+                }
+                
+                addLog(`Unfollowed ${username}`, 'success');
+            } else {
+                // Follow
+                followingUsers.push(userId);
+                
+                // Add to followingUserDetails
+                if (!userData.followingUserDetails) {
+                    userData.followingUserDetails = [];
+                }
+                const user = testUsers.find(u => u.id === userId);
+                userData.followingUserDetails.push({
+                    _id: userId,
+                    username: user.username,
+                    bio: user.bio,
+                    followedAt: new Date().toISOString()
+                });
+                
+                addLog(`Followed ${username}`, 'success');
+            }
+            
+            userData.followingUsers = followingUsers;
+            localStorage.setItem('followedUsers', JSON.stringify(followingUsers));
+            localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
+            
+            renderTestUsers();
+            refreshStats();
+        }
+        
+        // Toggle save restaurant
+        function toggleSaveRestaurant(restId, restName) {
+            const userData = JSON.parse(localStorage.getItem('bobmap_user_data') || '{}');
+            if (!userData.savedRestaurants) userData.savedRestaurants = [];
+            
+            const index = userData.savedRestaurants.findIndex(r => r.restaurantId === restId);
+            
+            if (index > -1) {
+                // Unsave
+                userData.savedRestaurants.splice(index, 1);
+                addLog(`Unsaved ${restName}`, 'success');
+            } else {
+                // Save
+                const restaurant = sampleRestaurants.find(r => r.id === restId);
+                userData.savedRestaurants.push({
+                    restaurantId: restId,
+                    savedAt: new Date().toISOString(),
+                    restaurant: restaurant
+                });
+                addLog(`Saved ${restName}`, 'success');
+            }
+            
+            localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
+            renderRestaurants();
+            refreshStats();
+        }
+        
+        // Add random followers
+        function addRandomFollowers() {
+            const userData = JSON.parse(localStorage.getItem('bobmap_user_data') || '{}');
+            if (!userData.followers) userData.followers = [];
+            if (!userData.followerDetails) userData.followerDetails = [];
+            
+            const randomUsers = [...testUsers].sort(() => Math.random() - 0.5).slice(0, 5);
+            
+            randomUsers.forEach(user => {
+                if (!userData.followers.includes(user.id)) {
+                    userData.followers.push(user.id);
+                    userData.followerDetails.push({
+                        _id: user.id,
+                        username: user.username,
+                        bio: user.bio,
+                        followedAt: new Date().toISOString()
+                    });
+                }
+            });
+            
+            localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
+            addLog('Added 5 random followers', 'success');
+            refreshStats();
+        }
+        
+        // Clear all following
+        function clearAllFollowing() {
+            const userData = JSON.parse(localStorage.getItem('bobmap_user_data') || '{}');
+            userData.followingUsers = [];
+            userData.followingUserDetails = [];
+            localStorage.setItem('followedUsers', '[]');
+            localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
+            renderTestUsers();
+            refreshStats();
+            addLog('Cleared all following', 'success');
+        }
+        
+        // Clear all followers
+        function clearAllFollowers() {
+            const userData = JSON.parse(localStorage.getItem('bobmap_user_data') || '{}');
+            userData.followers = [];
+            userData.followerDetails = [];
+            localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
+            refreshStats();
+            addLog('Cleared all followers', 'success');
+        }
+        
+        // Save random restaurants
+        function saveRandomRestaurants() {
+            const userData = JSON.parse(localStorage.getItem('bobmap_user_data') || '{}');
+            if (!userData.savedRestaurants) userData.savedRestaurants = [];
+            
+            const randomRestaurants = [...sampleRestaurants].sort(() => Math.random() - 0.5).slice(0, 3);
+            
+            randomRestaurants.forEach(rest => {
+                if (!userData.savedRestaurants.find(r => r.restaurantId === rest.id)) {
+                    userData.savedRestaurants.push({
+                        restaurantId: rest.id,
+                        savedAt: new Date().toISOString(),
+                        restaurant: rest
+                    });
+                }
+            });
+            
+            localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
+            renderRestaurants();
+            refreshStats();
+            addLog('Saved 3 random restaurants', 'success');
+        }
+        
+        // Clear saved restaurants
+        function clearSavedRestaurants() {
+            const userData = JSON.parse(localStorage.getItem('bobmap_user_data') || '{}');
+            userData.savedRestaurants = [];
+            localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
+            renderRestaurants();
+            refreshStats();
+            addLog('Cleared all saved restaurants', 'success');
+        }
+        
+        // Refresh stats
+        function refreshStats() {
+            const userData = JSON.parse(localStorage.getItem('bobmap_user_data') || '{}');
+            const followingUsers = JSON.parse(localStorage.getItem('followedUsers') || '[]');
+            
+            document.getElementById('following-count').textContent = 
+                (userData.followingUsers || followingUsers || []).length;
+            document.getElementById('followers-count').textContent = 
+                (userData.followers || []).length;
+            document.getElementById('saved-restaurants-count').textContent = 
+                (userData.savedRestaurants || []).length;
+            document.getElementById('saved-playlists-count').textContent = 
+                (userData.savedPlaylists || []).length;
+        }
+        
+        // Add log
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('activity-log');
+            const time = new Date().toLocaleTimeString();
+            const logItem = document.createElement('div');
+            logItem.className = `log-item ${type}`;
+            logItem.textContent = `[${time}] ${message}`;
+            logContainer.insertBefore(logItem, logContainer.firstChild);
+            
+            // Keep only last 20 logs
+            while (logContainer.children.length > 20) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+        
+        // Open profile
+        function openProfile() {
+            window.open('http://localhost:3000/profile', '_blank');
+        }
+        
+        // Initialize on load
+        window.onload = init;
+        
+        // Auto refresh every 2 seconds
+        setInterval(refreshStats, 2000);
+    </script>
+</body>
+</html>

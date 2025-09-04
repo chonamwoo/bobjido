@@ -305,7 +305,7 @@ const Trending: React.FC = () => {
           <div className="bg-white rounded-lg p-4 text-center">
             <HeartIcon className="w-6 h-6 text-red-400 mx-auto mb-2" />
             <p className="text-2xl font-bold text-gray-900">
-              {filteredRestaurants.reduce((sum, r) => sum + r.likes, 0).toLocaleString()}
+              {filteredRestaurants.reduce((sum, r) => sum + (Array.isArray(r.likes) ? r.likes.length : (r.likes || 0)), 0).toLocaleString()}
             </p>
             <p className="text-sm text-gray-600">총 좋아요</p>
           </div>
@@ -382,7 +382,7 @@ const Trending: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <HeartIcon className="w-4 h-4" />
-                        <span>{restaurant.likes}</span>
+                        <span>{Array.isArray(restaurant.likes) ? restaurant.likes.length : restaurant.likes || 0}</span>
                       </div>
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <ShareIcon className="w-4 h-4" />

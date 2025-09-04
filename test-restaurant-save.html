@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>맛집 저장 기능 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        .success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .data-display {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #e5e7eb;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .restaurant-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .restaurant-info {
+            flex: 1;
+        }
+        .restaurant-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .restaurant-category {
+            color: #666;
+            font-size: 14px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .test-result.pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-result.fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍽️ 맛집 저장 기능 테스트 센터</h1>
+        
+        <!-- 현재 저장된 데이터 표시 -->
+        <div class="test-section">
+            <h2>📊 현재 저장된 데이터</h2>
+            <button onclick="loadCurrentData()">데이터 새로고침</button>
+            <button onclick="clearAllData()" class="error">모든 데이터 삭제</button>
+            <div id="current-data" class="data-display">
+                <pre>데이터를 로드하려면 '데이터 새로고침' 버튼을 클릭하세요.</pre>
+            </div>
+        </div>
+
+        <!-- 맛집 저장 테스트 -->
+        <div class="test-section">
+            <h2>🏪 맛집 저장 테스트</h2>
+            <button onclick="saveTestRestaurant()">테스트 맛집 저장</button>
+            <button onclick="saveMultipleRestaurants()">여러 맛집 한번에 저장</button>
+            <button onclick="testDuplicateSave()" class="warning">중복 저장 테스트</button>
+            <div id="save-result" class="data-display" style="display:none;"></div>
+        </div>
+
+        <!-- 저장된 맛집 목록 -->
+        <div class="test-section">
+            <h2>📋 저장된 맛집 목록</h2>
+            <button onclick="displaySavedRestaurants()">목록 보기</button>
+            <div id="restaurant-list" class="data-display" style="display:none;"></div>
+        </div>
+
+        <!-- 자동화 테스트 -->
+        <div class="test-section">
+            <h2>🤖 자동화 테스트</h2>
+            <button onclick="runAllTests()" class="success">모든 테스트 실행</button>
+            <div id="test-results" class="data-display" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 데이터 관리 함수들
+        function getSavedRestaurants() {
+            const data = localStorage.getItem('bobmap_user_data');
+            if (data) {
+                const parsed = JSON.parse(data);
+                return parsed.savedRestaurants || [];
+            }
+            return [];
+        }
+
+        function saveRestaurant(restaurantId, restaurantData) {
+            const data = localStorage.getItem('bobmap_user_data');
+            const userData = data ? JSON.parse(data) : { savedRestaurants: [], savedPlaylists: [] };
+            
+            if (!userData.savedRestaurants) {
+                userData.savedRestaurants = [];
+            }
+            
+            // 중복 체크
+            const existing = userData.savedRestaurants.find(r => r.restaurantId === restaurantId);
+            if (!existing) {
+                userData.savedRestaurants.push({
+                    restaurantId: restaurantId,
+                    savedAt: new Date().toISOString(),
+                    notes: ''
+                });
+                
+                // localRestaurants에도 저장
+                const localRestaurants = localStorage.getItem('localRestaurants');
+                const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+                if (!restaurants.find(r => r._id === restaurantId)) {
+                    restaurants.push(restaurantData);
+                    localStorage.setItem('localRestaurants', JSON.stringify(restaurants));
+                }
+                
+                localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
+                
+                // 이벤트 발생
+                window.dispatchEvent(new CustomEvent('dataManager:update'));
+                window.dispatchEvent(new StorageEvent('storage', {
+                    key: 'bobmap_user_data',
+                    newValue: JSON.stringify(userData),
+                    url: window.location.href
+                }));
+                
+                return true;
+            }
+            return false;
+        }
+
+        // UI 업데이트 함수들
+        function loadCurrentData() {
+            const savedRestaurants = getSavedRestaurants();
+            const localRestaurants = localStorage.getItem('localRestaurants');
+            const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+            
+            const display = document.getElementById('current-data');
+            display.innerHTML = `<pre>
+<strong>저장된 맛집 수:</strong> ${savedRestaurants.length}개
+<strong>로컬 맛집 데이터:</strong> ${restaurants.length}개
+
+<strong>저장된 맛집 ID 목록:</strong>
+${savedRestaurants.map(r => `- ${r.restaurantId} (${new Date(r.savedAt).toLocaleString()})`).join('\n') || '없음'}
+
+<strong>전체 데이터:</strong>
+${JSON.stringify({ savedRestaurants, localRestaurants: restaurants }, null, 2)}
+</pre>`;
+        }
+
+        function clearAllData() {
+            if (confirm('정말로 모든 저장된 데이터를 삭제하시겠습니까?')) {
+                const userData = { savedRestaurants: [], savedPlaylists: [] };
+                localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
+                localStorage.removeItem('localRestaurants');
+                
+                window.dispatchEvent(new CustomEvent('dataManager:update'));
+                alert('모든 데이터가 삭제되었습니다.');
+                loadCurrentData();
+            }
+        }
+
+        function saveTestRestaurant() {
+            const testRestaurant = {
+                _id: 'test_' + Date.now(),
+                name: '테스트 맛집 ' + new Date().toLocaleTimeString(),
+                category: '한식',
+                address: '서울시 강남구 테스트로 123',
+                rating: 4.5,
+                image: 'https://source.unsplash.com/400x300/?korean,food'
+            };
+            
+            const success = saveRestaurant(testRestaurant._id, testRestaurant);
+            
+            const resultDiv = document.getElementById('save-result');
+            resultDiv.style.display = 'block';
+            if (success) {
+                resultDiv.innerHTML = `<div class="test-result pass">✅ 맛집 저장 성공: ${testRestaurant.name}</div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="test-result fail">❌ 맛집이 이미 저장되어 있습니다: ${testRestaurant.name}</div>`;
+            }
+            
+            loadCurrentData();
+        }
+
+        function saveMultipleRestaurants() {
+            const restaurants = [
+                { _id: 'multi_1', name: '김밥천국', category: '분식', address: '서울시 종로구' },
+                { _id: 'multi_2', name: '스시하나', category: '일식', address: '서울시 강남구' },
+                { _id: 'multi_3', name: '파스타집', category: '양식', address: '서울시 마포구' }
+            ];
+            
+            let successCount = 0;
+            restaurants.forEach(r => {
+                if (saveRestaurant(r._id, r)) {
+                    successCount++;
+                }
+            });
+            
+            const resultDiv = document.getElementById('save-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<div class="test-result pass">✅ ${successCount}개 맛집 저장 완료</div>`;
+            
+            loadCurrentData();
+        }
+
+        function testDuplicateSave() {
+            const testRestaurant = {
+                _id: 'duplicate_test',
+                name: '중복 테스트 맛집',
+                category: '중식',
+                address: '서울시 중구'
+            };
+            
+            const first = saveRestaurant(testRestaurant._id, testRestaurant);
+            const second = saveRestaurant(testRestaurant._id, testRestaurant);
+            
+            const resultDiv = document.getElementById('save-result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="test-result ${first ? 'pass' : 'fail'}">첫 번째 저장: ${first ? '✅ 성공' : '❌ 실패'}</div>
+                <div class="test-result ${!second ? 'pass' : 'fail'}">두 번째 저장 (중복): ${!second ? '✅ 정상적으로 차단됨' : '❌ 중복 저장됨 (오류)'}</div>
+            `;
+            
+            loadCurrentData();
+        }
+
+        function displaySavedRestaurants() {
+            const savedRestaurants = getSavedRestaurants();
+            const localRestaurants = localStorage.getItem('localRestaurants');
+            const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+            
+            const listDiv = document.getElementById('restaurant-list');
+            listDiv.style.display = 'block';
+            
+            if (savedRestaurants.length === 0) {
+                listDiv.innerHTML = '<p>저장된 맛집이 없습니다.</p>';
+                return;
+            }
+            
+            let html = '';
+            savedRestaurants.forEach(saved => {
+                const restaurant = restaurants.find(r => r._id === saved.restaurantId);
+                html += `
+                    <div class="restaurant-card">
+                        <div class="restaurant-info">
+                            <div class="restaurant-name">${restaurant?.name || saved.restaurantId}</div>
+                            <div class="restaurant-category">${restaurant?.category || '정보 없음'} | ${restaurant?.address || '주소 없음'}</div>
+                            <div style="color: #999; font-size: 12px; margin-top: 5px;">저장일: ${new Date(saved.savedAt).toLocaleString()}</div>
+                        </div>
+                        <button onclick="removeRestaurant('${saved.restaurantId}')" class="error">삭제</button>
+                    </div>
+                `;
+            });
+            
+            listDiv.innerHTML = html;
+        }
+
+        function removeRestaurant(restaurantId) {
+            const data = localStorage.getItem('bobmap_user_data');
+            const userData = data ? JSON.parse(data) : { savedRestaurants: [], savedPlaylists: [] };
+            
+            userData.savedRestaurants = userData.savedRestaurants.filter(r => r.restaurantId !== restaurantId);
+            localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
+            
+            window.dispatchEvent(new CustomEvent('dataManager:update'));
+            
+            displaySavedRestaurants();
+            loadCurrentData();
+        }
+
+        function runAllTests() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<h3>테스트 실행 중...</h3>';
+            
+            const tests = [];
+            
+            // Test 1: 저장 기능
+            const testId1 = 'auto_test_' + Date.now();
+            const testData1 = { _id: testId1, name: '자동 테스트 맛집 1', category: '테스트' };
+            const saveResult = saveRestaurant(testId1, testData1);
+            tests.push({
+                name: '맛집 저장 기능',
+                passed: saveResult === true,
+                message: saveResult ? '정상 작동' : '저장 실패'
+            });
+            
+            // Test 2: 중복 방지
+            const duplicateResult = saveRestaurant(testId1, testData1);
+            tests.push({
+                name: '중복 저장 방지',
+                passed: duplicateResult === false,
+                message: duplicateResult === false ? '중복 방지 정상 작동' : '중복 저장됨 (오류)'
+            });
+            
+            // Test 3: 데이터 조회
+            const savedData = getSavedRestaurants();
+            const found = savedData.find(r => r.restaurantId === testId1);
+            tests.push({
+                name: '저장된 데이터 조회',
+                passed: !!found,
+                message: found ? '데이터 조회 성공' : '데이터 조회 실패'
+            });
+            
+            // Test 4: 로컬 레스토랑 데이터
+            const localRestaurants = localStorage.getItem('localRestaurants');
+            const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+            const localFound = restaurants.find(r => r._id === testId1);
+            tests.push({
+                name: '로컬 맛집 데이터 저장',
+                passed: !!localFound,
+                message: localFound ? '로컬 데이터 저장 성공' : '로컬 데이터 저장 실패'
+            });
+            
+            // 결과 표시
+            let html = '<h3>테스트 결과</h3>';
+            let passedCount = 0;
+            
+            tests.forEach((test, index) => {
+                if (test.passed) passedCount++;
+                html += `
+                    <div class="test-result ${test.passed ? 'pass' : 'fail'}">
+                        ${index + 1}. ${test.name}: ${test.passed ? '✅ PASS' : '❌ FAIL'} - ${test.message}
+                    </div>
+                `;
+            });
+            
+            html = `
+                <div style="font-size: 20px; font-weight: bold; margin-bottom: 20px; color: ${passedCount === tests.length ? '#10b981' : '#ef4444'};">
+                    총 ${tests.length}개 테스트 중 ${passedCount}개 통과
+                </div>
+            ` + html;
+            
+            resultsDiv.innerHTML = html;
+            
+            // 테스트 후 데이터 새로고침
+            loadCurrentData();
+        }
+
+        // 페이지 로드 시 데이터 표시
+        window.onload = function() {
+            loadCurrentData();
+        };
+    </script>
+</body>
+</html>

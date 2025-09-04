@@ -184,6 +184,10 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bobmap', 
   app.use('/api/recommendations', recommendationsRoutes);
   app.use('/api/follow', followRoutes);
   app.use('/api/notifications', notificationRoutes);
+  
+  // New social routes
+  const socialRoutes = require('./routes/socialRoutes');
+  app.use('/api/social', socialRoutes);
   console.log('✅ 라우트 등록 완료');
 })
 .catch((err) => {

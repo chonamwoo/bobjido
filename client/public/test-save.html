@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Save Test</title>
+</head>
+<body>
+    <h1>LocalStorage Save Test</h1>
+    <div id="output"></div>
+    
+    <script>
+        // dataManager의 저장 기능을 테스트
+        const storageKey = 'bobmap_user_data';
+        
+        // 현재 저장된 데이터 확인
+        const currentData = localStorage.getItem(storageKey);
+        const output = document.getElementById('output');
+        
+        if (currentData) {
+            const data = JSON.parse(currentData);
+            output.innerHTML = `
+                <h2>현재 저장된 데이터:</h2>
+                <p>저장된 플레이리스트: ${data.savedPlaylists ? data.savedPlaylists.length : 0}개</p>
+                <p>저장된 맛집: ${data.savedRestaurants ? data.savedRestaurants.length : 0}개</p>
+                <h3>상세 데이터:</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        } else {
+            output.innerHTML = '<p>저장된 데이터가 없습니다.</p>';
+        }
+        
+        // 테스트 데이터 추가
+        function addTestData() {
+            const testData = {
+                savedRestaurants: [
+                    { restaurantId: 'test-restaurant-1', savedAt: new Date(), notes: '테스트 노트' }
+                ],
+                savedPlaylists: [
+                    { playlistId: 'playlist-1', savedAt: new Date() }
+                ],
+                likedRestaurants: [],
+                likedPlaylists: [],
+                visitedRestaurants: [],
+                reviews: [],
+                gameResults: [],
+                tasteProfile: null
+            };
+            
+            localStorage.setItem(storageKey, JSON.stringify(testData));
+            location.reload();
+        }
+    </script>
+    
+    <button onclick="addTestData()">테스트 데이터 추가</button>
+    <button onclick="localStorage.clear(); location.reload()">모든 데이터 삭제</button>
+</body>
+</html>

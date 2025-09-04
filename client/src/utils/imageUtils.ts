@@ -157,10 +157,16 @@ export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, fall
   const currentSrc = img.src;
   
   // 이미 fallback 이미지인 경우 더 이상 시도하지 않음
-  if (currentSrc.includes('images.unsplash.com')) {
+  if (currentSrc.includes('ui-avatars.com') || currentSrc.includes('data:image')) {
     return;
   }
   
-  // fallback 이미지로 변경
-  img.src = fallbackImage || 'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=400&h=300&fit=crop&q=80';
+  // UI Avatars를 사용한 안전한 fallback 이미지
+  const imageName = img.alt || 'Food';
+  const safeBackground = 'FED7AA';
+  const safeColor = 'C2410C';
+  img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(imageName)}&size=400&background=${safeBackground}&color=${safeColor}&bold=true`;
+  
+  // 중복 에러 방지
+  img.onerror = null;
 };

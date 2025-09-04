@@ -65,19 +65,9 @@ const RestaurantSearchModal: React.FC<RestaurantSearchModalProps> = ({
           return response.data.restaurants;
         }
         
-        // 백업: API가 실패하면 mock 데이터 반환
-        console.log('Using fallback data for Naver search');
-        return [
-          {
-            id: `naver-fallback-1-${Date.now()}`,
-            name: searchQuery + ' 맛집',
-            address: '서울특별시 강남구 테헤란로 123',
-            roadAddress: '서울특별시 강남구 테헤란로 123',
-            category: '한식',
-            phone: '02-1234-5678',
-            coordinates: { lat: 37.5665 + Math.random() * 0.01, lng: 126.9780 + Math.random() * 0.01 }
-          }
-        ];
+        // 네이버 API 응답이 없을 때 빈 배열 반환
+        console.log('No results from Naver search API');
+        return [];
       } catch (error) {
         console.error('Naver search error:', error);
         // 에러 발생 시 빈 배열 반환
@@ -88,45 +78,63 @@ const RestaurantSearchModal: React.FC<RestaurantSearchModalProps> = ({
   });
 
   const handleAddNewRestaurant = async (place: KakaoPlace) => {
-    // 로컬 스토리지에 직접 저장 (백엔드 API 대신)
-    const newRestaurant: Restaurant = {
-      _id: place.id || `local-${Date.now()}`,
-      name: place.name,
-      address: place.address,
-      roadAddress: place.roadAddress || place.address,
-      coordinates: place.coordinates,
-      category: place.category,
-      phoneNumber: place.phone || place.telephone || place.phoneNumber || '',
-      images: [],
-      priceRange: '',
-      averageRating: 0,
-      reviewCount: 0,
-      tags: [],
-      dnaProfile: {
-        atmosphere: [],
-        foodStyle: [],
-        instagramability: 0,
-        dateSpot: 0,
-        groupFriendly: 0,
-        soloFriendly: 0,
-      },
-      features: [],
-      createdBy: {} as any,
-      verifiedBy: [],
-      isVerified: false,
-      viewCount: 0,
-      saveCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    // 로컬 스토리지에 저장
-    const savedRestaurants = localStorage.getItem('localRestaurants');
-    const restaurants = savedRestaurants ? JSON.parse(savedRestaurants) : [];
-    restaurants.push(newRestaurant);
-    localStorage.setItem('localRestaurants', JSON.stringify(restaurants));
-    
-    onSelect(newRestaurant);
+    try {
+      // MongoDB에 새 맛집 추가
+      const restaurantData = {
+        name: place.name,
+        address: place.address,
+        roadAddress: place.roadAddress || place.address,
+        coordinates: place.coordinates,
+        category: place.category || '기타',
+        phoneNumber: place.phone || place.telephone || place.phoneNumber || '',
+        priceRange: '보통', // 기본값
+      };
+
+      const response = await axios.post('/api/restaurants', restaurantData);
+      const newRestaurant: Restaurant = response.data;
+      
+      onSelect(newRestaurant);
+    } catch (error: any) {
+      console.error('맛집 추가 실패:', error);
+      
+      // API 실패 시 임시 객체로 처리 (로그인 안 한 경우 등)
+      if (error.response?.status === 401) {
+        const tempRestaurant: Restaurant = {
+          _id: `temp-${Date.now()}`,
+          name: place.name,
+          address: place.address,
+          roadAddress: place.roadAddress || place.address,
+          coordinates: place.coordinates,
+          category: place.category || '기타',
+          phoneNumber: place.phone || place.telephone || place.phoneNumber || '',
+          priceRange: '보통',
+          averageRating: 0,
+          reviewCount: 0,
+          tags: [],
+          images: [],
+          features: [],
+          dnaProfile: {
+            atmosphere: [],
+            foodStyle: [],
+            instagramability: 3,
+            dateSpot: 3,
+            groupFriendly: 3,
+            soloFriendly: 3,
+          },
+          createdBy: {} as any,
+          verifiedBy: [],
+          isVerified: false,
+          viewCount: 0,
+          saveCount: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        
+        onSelect(tempRestaurant);
+      } else {
+        throw error;
+      }
+    }
   };
 
   const restaurants = searchType === 'existing' 

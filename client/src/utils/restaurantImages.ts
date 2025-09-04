@@ -1,12 +1,15 @@
-// 카테고리별 실제 음식 이미지 URL (고정 이미지 사용)
+// 카테고리별 실제 음식 이미지 URL (고품질 이미지 사용)
 const FOOD_IMAGES = {
-  // 한식
+  // 한식 - 더 다양한 한식 이미지
   korean: [
     'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=800&q=80', // 김치찌개
-    'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=800&q=80', // 비빔밥
+    'https://images.unsplash.com/photo-1635363638580-c2809d049eee?w=800&q=80', // 한식 상차림
     'https://images.unsplash.com/photo-1583224944844-5b268c057b72?w=800&q=80', // 삼겹살
-    'https://images.unsplash.com/photo-1580651214613-f4692d6d1c?w=800&q=80', // 불고기
+    'https://images.unsplash.com/photo-1580651315530-69c8e0026377?w=800&q=80', // 불고기
     'https://images.unsplash.com/photo-1553163147-622ab57be1c7?w=800&q=80', // 전골
+    'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=800&q=80', // 갈비찜
+    'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=800&q=80', // 된장찌개
+    'https://images.unsplash.com/photo-1607013251379-e6eecfffe234?w=800&q=80', // 김밥
   ],
   // 일식
   japanese: [

@@ -9,7 +9,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists';
+import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists_fixed';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();

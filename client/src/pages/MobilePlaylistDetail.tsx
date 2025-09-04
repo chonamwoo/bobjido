@@ -20,7 +20,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { 
   HeartIcon as HeartSolidIcon, 
-  BookmarkIcon as BookmarkSolidIcon 
+  BookmarkIcon as BookmarkSolidIcon,
+  StarIcon as StarSolidIcon 
 } from '@heroicons/react/24/solid';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -29,7 +30,7 @@ import { getDefaultAvatar } from '../utils/avatars';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists';
+import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists_fixed';
 import { dataManager } from '../utils/dataManager';
 
 const MobilePlaylistDetail: React.FC = () => {
@@ -46,6 +47,17 @@ const MobilePlaylistDetail: React.FC = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
   const [showRestaurantPopup, setShowRestaurantPopup] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('map'); // 기본값을 map으로 변경
+  const [likedRestaurants, setLikedRestaurants] = useState<string[]>(() => {
+    const likes = localStorage.getItem('likedRestaurants');
+    return likes ? JSON.parse(likes) : [];
+  });
+  const [restaurantStats, setRestaurantStats] = useState<{[key: string]: {likes: number, saves: number, reviews: number}}>(() => {
+    const stats = localStorage.getItem('restaurantStats');
+    return stats ? JSON.parse(stats) : {};
+  });
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewText, setReviewText] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
 
   const { data: playlist, isLoading, error } = useQuery({
     queryKey: ['playlist', id],
@@ -125,6 +137,16 @@ const MobilePlaylistDetail: React.FC = () => {
   // 맛집 목록 - 실제 데이터가 없으면 더미 데이터 사용
   // API에서 restaurants 배열은 { restaurant: {...}, addedBy, reason } 형태로 옴
   const restaurantList = playlist?.restaurants?.map((item: any) => {
+    // item이 문자열(ID)인 경우 처리
+    if (typeof item === 'string') {
+      return {
+        _id: item,
+        name: `Restaurant ${item.slice(-4)}`,
+        category: '맛집',
+        rating: 4.0 + Math.random(),
+        image: null
+      };
+    }
     const restaurant = item.restaurant || item;
     // coordinates 구조를 lat, lng로 변환
     if (restaurant.coordinates) {
@@ -166,7 +188,7 @@ const MobilePlaylistDetail: React.FC = () => {
           category: '일식', 
           rating: 4.8, 
           price: '₩₩₩₩', 
-          address: '서울 강남구 도산대로49길 39',
+          address: '서울 강남구 도산대로45길 6',
           lat: 37.5226894,  // 실제 좌표
           lng: 127.0423736,
           image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400',
@@ -603,11 +625,32 @@ const MobilePlaylistDetail: React.FC = () => {
                       <span className="mr-3">{restaurant.category}</span>
                       <span className="mr-3">{restaurant.price}</span>
                       {restaurant.rating && (
-                        <div className="flex items-center">
+                        <div className="flex items-center mr-3">
                           <StarIcon className="w-3 h-3 text-yellow-500 mr-1" />
                           <span>{restaurant.rating}</span>
                         </div>
                       )}
+                      {/* 실시간 통계 표시 */}
+                      <div className="flex items-center gap-2">
+                        {restaurantStats[restaurant._id]?.saves > 0 && (
+                          <span className="flex items-center">
+                            <BookmarkSolidIcon className="w-3 h-3 text-orange-500 mr-0.5" />
+                            <span className="text-orange-600 font-medium">{restaurantStats[restaurant._id].saves}</span>
+                          </span>
+                        )}
+                        {restaurantStats[restaurant._id]?.likes > 0 && (
+                          <span className="flex items-center">
+                            <HeartSolidIcon className="w-3 h-3 text-red-500 mr-0.5" />
+                            <span className="text-red-600 font-medium">{restaurantStats[restaurant._id].likes}</span>
+                          </span>
+                        )}
+                        {restaurantStats[restaurant._id]?.reviews > 0 && (
+                          <span className="flex items-center">
+                            <StarSolidIcon className="w-3 h-3 text-yellow-500 mr-0.5" />
+                            <span className="text-yellow-600 font-medium">{restaurantStats[restaurant._id].reviews}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center text-xs text-gray-500">
                       <MapPinIcon className="w-3 h-3 mr-1" />
@@ -615,13 +658,25 @@ const MobilePlaylistDetail: React.FC = () => {
                     </div>
                   </div>
                   
-                  {restaurant.image && (
-                    <img
-                      src={restaurant.image}
-                      alt={restaurant.name}
-                      className="w-20 h-20 rounded-lg object-cover ml-3"
-                    />
-                  )}
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden ml-3 flex-shrink-0">
+                    {restaurant.image ? (
+                      <img
+                        src={restaurant.image}
+                        alt={restaurant.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          // 카테고리 기반 fallback 이미지
+                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(restaurant.name)}&size=160&background=FED7AA&color=C2410C&bold=true`;
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
+                        <span className="text-2xl">🍽️</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 {restaurant.reason && (
@@ -692,11 +747,34 @@ const MobilePlaylistDetail: React.FC = () => {
             <div className="sticky top-0 bg-white p-4 border-b z-[10001]">
               {/* X 버튼 제거하고 드래그 핸들만 표시 */}
               <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-3"></div>
-              <div className="flex items-center justify-center">
-                <h2 className="text-lg font-bold">{selectedRestaurant.name}</h2>
-                {selectedRestaurant.isVerified && (
-                  <span className="ml-2 text-blue-500">✓</span>
-                )}
+              <div className="flex flex-col items-center">
+                <div className="flex items-center">
+                  <h2 className="text-lg font-bold">{selectedRestaurant.name}</h2>
+                  {selectedRestaurant.isVerified && (
+                    <span className="ml-2 text-blue-500">✓</span>
+                  )}
+                </div>
+                {/* 전체 통계 표시 */}
+                <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                  {(restaurantStats[selectedRestaurant._id]?.saves > 0 || savedRestaurants.includes(selectedRestaurant._id)) && (
+                    <span className="flex items-center">
+                      <BookmarkSolidIcon className="w-3 h-3 text-orange-500 mr-0.5" />
+                      <span>{restaurantStats[selectedRestaurant._id]?.saves || 0}명이 저장</span>
+                    </span>
+                  )}
+                  {restaurantStats[selectedRestaurant._id]?.likes > 0 && (
+                    <span className="flex items-center">
+                      <HeartSolidIcon className="w-3 h-3 text-red-500 mr-0.5" />
+                      <span>{restaurantStats[selectedRestaurant._id]?.likes}명이 좋아요</span>
+                    </span>
+                  )}
+                  {restaurantStats[selectedRestaurant._id]?.reviews > 0 && (
+                    <span className="flex items-center">
+                      <StarSolidIcon className="w-3 h-3 text-yellow-500 mr-0.5" />
+                      <span>{restaurantStats[selectedRestaurant._id]?.reviews}개 리뷰</span>
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -729,20 +807,145 @@ const MobilePlaylistDetail: React.FC = () => {
                   )}
                 </div>
                 
-                {/* 조회수, 리뷰수 등 */}
-                <div className="flex items-center justify-around pt-2 border-t text-xs text-gray-600">
-                  <div className="flex items-center">
-                    <EyeIcon className="w-3 h-3 mr-1" />
-                    <span>{selectedRestaurant.viewCount || 0} 조회</span>
-                  </div>
-                  <div className="flex items-center">
-                    <StarIcon className="w-3 h-3 mr-1" />
-                    <span>{selectedRestaurant.reviewCount || 0} 리뷰</span>
-                  </div>
-                  <div className="flex items-center">
-                    <BookmarkIcon className="w-3 h-3 mr-1" />
-                    <span>{selectedRestaurant.saveCount || 0} 저장</span>
-                  </div>
+                {/* 액션 버튼들 - 저장, 좋아요, 리뷰, 지도 */}
+                <div className="flex items-center justify-around pt-2 border-t">
+                  <button 
+                    onClick={() => {
+                      if (savedRestaurants.includes(selectedRestaurant._id)) {
+                        dataManager.unsaveRestaurant(selectedRestaurant._id);
+                        toast.success('저장이 취소되었습니다');
+                        setSavedRestaurants(prev => prev.filter(id => id !== selectedRestaurant._id));
+                        // 저장 카운트 감소
+                        setRestaurantStats(prev => {
+                          const newStats = {
+                            ...prev,
+                            [selectedRestaurant._id]: {
+                              ...prev[selectedRestaurant._id],
+                              saves: Math.max(0, (prev[selectedRestaurant._id]?.saves || 0) - 1)
+                            }
+                          };
+                          localStorage.setItem('restaurantStats', JSON.stringify(newStats));
+                          return newStats;
+                        });
+                      } else {
+                        const localRestaurants = localStorage.getItem('localRestaurants');
+                        const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+                        if (!restaurants.find((r: any) => r._id === selectedRestaurant._id)) {
+                          restaurants.push(selectedRestaurant);
+                          localStorage.setItem('localRestaurants', JSON.stringify(restaurants));
+                        }
+                        dataManager.saveRestaurant(selectedRestaurant._id, `${playlist?.title || '플레이리스트'}에서 저장`);
+                        toast.success('맛집이 저장되었습니다!');
+                        setSavedRestaurants(prev => [...prev, selectedRestaurant._id]);
+                        // 저장 카운트 증가
+                        setRestaurantStats(prev => {
+                          const newStats = {
+                            ...prev,
+                            [selectedRestaurant._id]: {
+                              ...prev[selectedRestaurant._id],
+                              saves: (prev[selectedRestaurant._id]?.saves || 0) + 1
+                            }
+                          };
+                          localStorage.setItem('restaurantStats', JSON.stringify(newStats));
+                          return newStats;
+                        });
+                      }
+                    }}
+                    className="flex flex-col items-center py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors relative"
+                  >
+                    {savedRestaurants.includes(selectedRestaurant._id) ? (
+                      <BookmarkSolidIcon className="w-5 h-5 text-orange-500 mb-1" />
+                    ) : (
+                      <BookmarkIcon className="w-5 h-5 text-gray-600 mb-1" />
+                    )}
+                    <span className="text-xs text-gray-700">저장</span>
+                    {restaurantStats[selectedRestaurant._id]?.saves > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                        {restaurantStats[selectedRestaurant._id].saves}
+                      </span>
+                    )}
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      const isLiked = likedRestaurants.includes(selectedRestaurant._id);
+                      if (isLiked) {
+                        setLikedRestaurants(prev => prev.filter(id => id !== selectedRestaurant._id));
+                        toast('좋아요 취소');
+                        // 좋아요 카운트 감소
+                        setRestaurantStats(prev => {
+                          const newStats = {
+                            ...prev,
+                            [selectedRestaurant._id]: {
+                              ...prev[selectedRestaurant._id],
+                              likes: Math.max(0, (prev[selectedRestaurant._id]?.likes || 0) - 1)
+                            }
+                          };
+                          localStorage.setItem('restaurantStats', JSON.stringify(newStats));
+                          return newStats;
+                        });
+                      } else {
+                        setLikedRestaurants(prev => [...prev, selectedRestaurant._id]);
+                        toast.success('좋아요!');
+                        // 좋아요 카운트 증가
+                        setRestaurantStats(prev => {
+                          const newStats = {
+                            ...prev,
+                            [selectedRestaurant._id]: {
+                              ...prev[selectedRestaurant._id],
+                              likes: (prev[selectedRestaurant._id]?.likes || 0) + 1
+                            }
+                          };
+                          localStorage.setItem('restaurantStats', JSON.stringify(newStats));
+                          return newStats;
+                        });
+                      }
+                      const updatedLikedRestaurants = isLiked 
+                        ? likedRestaurants.filter(id => id !== selectedRestaurant._id)
+                        : [...likedRestaurants, selectedRestaurant._id];
+                      localStorage.setItem('likedRestaurants', JSON.stringify(updatedLikedRestaurants));
+                    }}
+                    className="flex flex-col items-center py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors relative"
+                  >
+                    {likedRestaurants.includes(selectedRestaurant._id) ? (
+                      <HeartSolidIcon className="w-5 h-5 text-red-500 mb-1" />
+                    ) : (
+                      <HeartIcon className="w-5 h-5 text-gray-600 mb-1" />
+                    )}
+                    <span className="text-xs text-gray-700">좋아요</span>
+                    {restaurantStats[selectedRestaurant._id]?.likes > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                        {restaurantStats[selectedRestaurant._id].likes}
+                      </span>
+                    )}
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      setShowReviewModal(true);
+                    }}
+                    className="flex flex-col items-center py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors relative"
+                  >
+                    <StarIcon className="w-5 h-5 text-gray-600 mb-1" />
+                    <span className="text-xs text-gray-700">리뷰</span>
+                    {restaurantStats[selectedRestaurant._id]?.reviews > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                        {restaurantStats[selectedRestaurant._id].reviews}
+                      </span>
+                    )}
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      // 지도 앱으로 이동 (카카오맵 우선, 없으면 네이버맵)
+                      const address = encodeURIComponent(selectedRestaurant.address || selectedRestaurant.location);
+                      window.open(`https://map.kakao.com/link/search/${address}`, '_blank');
+                    }}
+                    className="flex flex-col items-center py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    <MapPinIcon className="w-5 h-5 text-gray-600 mb-1" />
+                    <span className="text-xs text-gray-700">지도</span>
+                  </button>
                 </div>
               </div>
 
@@ -900,14 +1103,14 @@ const MobilePlaylistDetail: React.FC = () => {
                 </div>
               )}
 
-              {/* 액션 버튼들 */}
+              {/* 하단 액션 버튼들 */}
               <div className="grid grid-cols-3 gap-2 pt-4">
                 <button 
                   onClick={() => {
                     setShowRestaurantPopup(false);
                     navigate(`/restaurant/${selectedRestaurant._id || selectedRestaurant.id}`);
                   }}
-                  className="bg-orange-500 text-white py-3 rounded-lg font-medium text-sm"
+                  className="border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors"
                 >
                   상세 보기
                 </button>
@@ -916,9 +1119,9 @@ const MobilePlaylistDetail: React.FC = () => {
                     navigator.clipboard.writeText(window.location.origin + `/restaurant/${selectedRestaurant._id || selectedRestaurant.id}`);
                     toast.success('링크가 복사되었습니다!');
                   }}
-                  className="border border-orange-500 text-orange-600 py-3 rounded-lg font-medium text-sm"
+                  className="border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors"
                 >
-                  공유
+                  공유하기
                 </button>
                 <button 
                   onClick={() => {
@@ -928,11 +1131,109 @@ const MobilePlaylistDetail: React.FC = () => {
                       toast.error('전화번호가 없습니다');
                     }
                   }}
-                  className="border border-gray-300 text-gray-600 py-3 rounded-lg font-medium text-sm"
+                  className="border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors"
                 >
-                  전화
+                  전화하기
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 리뷰 작성 모달 */}
+      {showReviewModal && selectedRestaurant && (
+        <div className="fixed inset-0 bg-black/50 z-[10001] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl p-6">
+            <h3 className="text-lg font-bold mb-4">{selectedRestaurant.name} 리뷰 작성</h3>
+            
+            {/* 별점 선택 */}
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">평점을 선택해주세요</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setReviewRating(star)}
+                    className="transition-transform hover:scale-110"
+                  >
+                    {star <= reviewRating ? (
+                      <StarSolidIcon className="w-8 h-8 text-yellow-400" />
+                    ) : (
+                      <StarIcon className="w-8 h-8 text-gray-300" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 리뷰 텍스트 */}
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">리뷰 내용</p>
+              <textarea
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                placeholder="맛집에 대한 솔직한 리뷰를 남겨주세요..."
+                className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+              />
+            </div>
+
+            {/* 버튼들 */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowReviewModal(false);
+                  setReviewText('');
+                  setReviewRating(5);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  if (!reviewText.trim()) {
+                    toast.error('리뷰 내용을 입력해주세요');
+                    return;
+                  }
+                  
+                  // 리뷰 저장
+                  const reviews = JSON.parse(localStorage.getItem('restaurantReviews') || '{}');
+                  if (!reviews[selectedRestaurant._id]) {
+                    reviews[selectedRestaurant._id] = [];
+                  }
+                  reviews[selectedRestaurant._id].push({
+                    id: Date.now(),
+                    author: user?.username || '익명',
+                    rating: reviewRating,
+                    text: reviewText,
+                    date: new Date().toISOString(),
+                    helpful: 0
+                  });
+                  localStorage.setItem('restaurantReviews', JSON.stringify(reviews));
+                  
+                  // 리뷰 카운트 증가
+                  setRestaurantStats(prev => {
+                    const newStats = {
+                      ...prev,
+                      [selectedRestaurant._id]: {
+                        ...prev[selectedRestaurant._id],
+                        reviews: (prev[selectedRestaurant._id]?.reviews || 0) + 1
+                      }
+                    };
+                    localStorage.setItem('restaurantStats', JSON.stringify(newStats));
+                    return newStats;
+                  });
+                  
+                  toast.success('리뷰가 등록되었습니다!');
+                  setShowReviewModal(false);
+                  setReviewText('');
+                  setReviewRating(5);
+                }}
+                className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600"
+              >
+                리뷰 등록
+              </button>
             </div>
           </div>
         </div>

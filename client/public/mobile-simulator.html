@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BobMap Mobile Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .simulator-container {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+
+        /* iPhone 14 Pro Frame */
+        .phone-frame {
+            position: relative;
+            width: 390px;
+            height: 844px;
+            background: #1c1c1e;
+            border-radius: 60px;
+            padding: 12px;
+            box-shadow: 
+                0 0 0 12px #1c1c1e,
+                0 0 0 14px #3a3a3c,
+                0 50px 100px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .phone-frame:hover {
+            transform: translateY(-10px);
+        }
+
+        /* Dynamic Island */
+        .dynamic-island {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 126px;
+            height: 35px;
+            background: #000;
+            border-radius: 20px;
+            z-index: 10;
+        }
+
+        /* Screen */
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 48px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .phone-screen iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 48px;
+        }
+
+        /* Volume Buttons */
+        .volume-buttons {
+            position: absolute;
+            left: -3px;
+            top: 180px;
+        }
+
+        .volume-button {
+            width: 4px;
+            height: 66px;
+            background: #3a3a3c;
+            border-radius: 2px;
+            margin-bottom: 8px;
+        }
+
+        /* Power Button */
+        .power-button {
+            position: absolute;
+            right: -3px;
+            top: 200px;
+            width: 4px;
+            height: 100px;
+            background: #3a3a3c;
+            border-radius: 2px;
+        }
+
+        /* Controls */
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+        }
+
+        .controls h2 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .device-selector {
+            margin-bottom: 25px;
+        }
+
+        .device-selector label {
+            display: block;
+            color: #666;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .device-selector select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            background: #fff;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .device-selector select:hover {
+            border-color: #FF6B6B;
+        }
+
+        .device-selector select:focus {
+            outline: none;
+            border-color: #FF6B6B;
+        }
+
+        .app-selector {
+            margin-bottom: 25px;
+        }
+
+        .app-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .app-button {
+            padding: 12px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8B8B 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .app-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .app-button.secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .app-button.secondary:hover {
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .orientation-toggle {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .orientation-button {
+            flex: 1;
+            padding: 10px;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 20px;
+        }
+
+        .orientation-button.active {
+            background: #FF6B6B;
+            color: white;
+            border-color: #FF6B6B;
+        }
+
+        /* Landscape Mode */
+        .phone-frame.landscape {
+            width: 844px;
+            height: 390px;
+        }
+
+        .phone-frame.landscape .dynamic-island {
+            display: none;
+        }
+
+        /* iPad Frame */
+        .phone-frame.ipad {
+            width: 768px;
+            height: 1024px;
+            border-radius: 40px;
+        }
+
+        .phone-frame.ipad .dynamic-island {
+            display: none;
+        }
+
+        .phone-frame.ipad .phone-screen {
+            border-radius: 28px;
+        }
+
+        /* Android Frame */
+        .phone-frame.android {
+            background: #2c2c2c;
+            box-shadow: 
+                0 0 0 12px #2c2c2c,
+                0 0 0 14px #4a4a4a,
+                0 50px 100px rgba(0, 0, 0, 0.5);
+        }
+
+        .phone-frame.android .dynamic-island {
+            width: 100%;
+            height: 30px;
+            border-radius: 0;
+            top: 0;
+            background: transparent;
+        }
+
+        .info {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .info-label {
+            color: #999;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .simulator-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="simulator-container">
+        <div class="phone-frame" id="phoneFrame">
+            <div class="dynamic-island"></div>
+            <div class="volume-buttons">
+                <div class="volume-button"></div>
+                <div class="volume-button"></div>
+            </div>
+            <div class="power-button"></div>
+            <div class="phone-screen">
+                <iframe id="appFrame" src="http://localhost:3001" title="BobMap Mobile App"></iframe>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h2>📱 BobMap Simulator</h2>
+            
+            <div class="device-selector">
+                <label for="deviceSelect">디바이스 선택</label>
+                <select id="deviceSelect" onchange="changeDevice(this.value)">
+                    <option value="iphone">iPhone 14 Pro</option>
+                    <option value="android">Android Phone</option>
+                    <option value="ipad">iPad</option>
+                </select>
+            </div>
+
+            <div class="app-selector">
+                <label style="display: block; color: #666; margin-bottom: 8px; font-size: 14px; font-weight: 500;">앱 전환</label>
+                <div class="app-buttons">
+                    <button class="app-button" onclick="loadApp('mobile')">
+                        모바일 앱 (Expo)
+                    </button>
+                    <button class="app-button secondary" onclick="loadApp('web')">
+                        웹 버전 (React)
+                    </button>
+                </div>
+            </div>
+
+            <div class="orientation-toggle">
+                <button class="orientation-button active" onclick="setOrientation('portrait')" title="세로 모드">
+                    📱
+                </button>
+                <button class="orientation-button" onclick="setOrientation('landscape')" title="가로 모드">
+                    📱↻
+                </button>
+            </div>
+
+            <div class="info">
+                <div class="info-item">
+                    <span class="info-label">상태</span>
+                    <span class="info-value"><span class="status-indicator"></span>실행 중</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">포트</span>
+                    <span class="info-value" id="portInfo">3001</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">해상도</span>
+                    <span class="info-value" id="resolutionInfo">390x844</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">플랫폼</span>
+                    <span class="info-value" id="platformInfo">iOS</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDevice = 'iphone';
+        let currentOrientation = 'portrait';
+
+        function changeDevice(device) {
+            const frame = document.getElementById('phoneFrame');
+            const platformInfo = document.getElementById('platformInfo');
+            const resolutionInfo = document.getElementById('resolutionInfo');
+            
+            // Remove all device classes
+            frame.classList.remove('iphone', 'android', 'ipad');
+            
+            currentDevice = device;
+            
+            switch(device) {
+                case 'iphone':
+                    platformInfo.textContent = 'iOS';
+                    if (currentOrientation === 'portrait') {
+                        resolutionInfo.textContent = '390x844';
+                    } else {
+                        resolutionInfo.textContent = '844x390';
+                    }
+                    break;
+                case 'android':
+                    frame.classList.add('android');
+                    platformInfo.textContent = 'Android';
+                    if (currentOrientation === 'portrait') {
+                        resolutionInfo.textContent = '390x844';
+                    } else {
+                        resolutionInfo.textContent = '844x390';
+                    }
+                    break;
+                case 'ipad':
+                    frame.classList.add('ipad');
+                    platformInfo.textContent = 'iPadOS';
+                    resolutionInfo.textContent = '768x1024';
+                    // iPad doesn't support landscape in this simulator
+                    setOrientation('portrait');
+                    break;
+            }
+        }
+
+        function setOrientation(orientation) {
+            const frame = document.getElementById('phoneFrame');
+            const buttons = document.querySelectorAll('.orientation-button');
+            const resolutionInfo = document.getElementById('resolutionInfo');
+            
+            // Don't allow landscape for iPad
+            if (currentDevice === 'ipad' && orientation === 'landscape') {
+                return;
+            }
+            
+            currentOrientation = orientation;
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (orientation === 'landscape') {
+                frame.classList.add('landscape');
+                if (currentDevice !== 'ipad') {
+                    resolutionInfo.textContent = '844x390';
+                }
+            } else {
+                frame.classList.remove('landscape');
+                if (currentDevice === 'ipad') {
+                    resolutionInfo.textContent = '768x1024';
+                } else {
+                    resolutionInfo.textContent = '390x844';
+                }
+            }
+        }
+
+        function loadApp(type) {
+            const iframe = document.getElementById('appFrame');
+            const portInfo = document.getElementById('portInfo');
+            
+            if (type === 'mobile') {
+                iframe.src = 'http://localhost:8085';
+                portInfo.textContent = '8085';
+            } else {
+                iframe.src = 'http://localhost:3001';
+                portInfo.textContent = '3001';
+            }
+        }
+
+        // Reload iframe on error
+        document.getElementById('appFrame').onerror = function() {
+            console.log('Failed to load app, retrying...');
+            setTimeout(() => {
+                this.src = this.src;
+            }, 2000);
+        };
+    </script>
+</body>
+</html>

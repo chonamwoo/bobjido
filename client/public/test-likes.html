@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Likes and Save</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+        button { margin: 5px; padding: 10px 15px; cursor: pointer; }
+        pre { background: #f0f0f0; padding: 10px; overflow: auto; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>좋아요 및 저장 기능 테스트</h1>
+    
+    <div class="section">
+        <h2>현재 상태 확인</h2>
+        <button onclick="checkCurrentState()">현재 상태 확인</button>
+        <div id="currentState"></div>
+    </div>
+    
+    <div class="section">
+        <h2>좋아요 테스트</h2>
+        <button onclick="testLikePlaylist('playlist-1')">playlist-1 좋아요</button>
+        <button onclick="testUnlikePlaylist('playlist-1')">playlist-1 좋아요 취소</button>
+        <div id="likeResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>저장 테스트</h2>
+        <button onclick="testSaveRestaurant('1')">Restaurant ID: 1 저장</button>
+        <button onclick="testSaveRestaurant('rest-1')">Restaurant ID: rest-1 저장</button>
+        <button onclick="testSavePlaylist('playlist-1')">Playlist ID: playlist-1 저장</button>
+        <div id="saveResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Raw Data</h2>
+        <pre id="rawData"></pre>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'bobmap_user_data';
+        
+        function checkCurrentState() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            const stateDiv = document.getElementById('currentState');
+            
+            if (data) {
+                const parsed = JSON.parse(data);
+                stateDiv.innerHTML = `
+                    <p class="success">✅ 데이터 존재</p>
+                    <p>좋아한 플레이리스트: ${parsed.likedPlaylists?.length || 0}개</p>
+                    <ul>${(parsed.likedPlaylists || []).map(id => `<li>${id}</li>`).join('')}</ul>
+                    <p>좋아한 맛집: ${parsed.likedRestaurants?.length || 0}개</p>
+                    <ul>${(parsed.likedRestaurants || []).map(id => `<li>${id}</li>`).join('')}</ul>
+                    <p>저장한 플레이리스트: ${parsed.savedPlaylists?.length || 0}개</p>
+                    <ul>${(parsed.savedPlaylists || []).map(s => `<li>${s.playlistId} (${new Date(s.savedAt).toLocaleString()})</li>`).join('')}</ul>
+                    <p>저장한 맛집: ${parsed.savedRestaurants?.length || 0}개</p>
+                    <ul>${(parsed.savedRestaurants || []).map(s => `<li>${s.restaurantId} (${new Date(s.savedAt).toLocaleString()})</li>`).join('')}</ul>
+                `;
+                
+                document.getElementById('rawData').textContent = JSON.stringify(parsed, null, 2);
+            } else {
+                stateDiv.innerHTML = '<p class="error">❌ 데이터 없음</p>';
+                document.getElementById('rawData').textContent = '데이터 없음';
+            }
+        }
+        
+        function getUserData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : {
+                savedRestaurants: [],
+                savedPlaylists: [],
+                likedRestaurants: [],
+                likedPlaylists: [],
+                visitedRestaurants: [],
+                reviews: [],
+                gameResults: [],
+                tasteProfile: null
+            };
+        }
+        
+        function saveUserData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            window.dispatchEvent(new CustomEvent('dataManager:update'));
+            window.dispatchEvent(new Event('storage'));
+        }
+        
+        function testLikePlaylist(playlistId) {
+            const userData = getUserData();
+            if (!userData.likedPlaylists.includes(playlistId)) {
+                userData.likedPlaylists.push(playlistId);
+                saveUserData(userData);
+                document.getElementById('likeResult').innerHTML = 
+                    `<p class="success">✅ ${playlistId} 좋아요 추가됨</p>`;
+            } else {
+                document.getElementById('likeResult').innerHTML = 
+                    `<p class="error">이미 좋아요한 플레이리스트입니다</p>`;
+            }
+            checkCurrentState();
+        }
+        
+        function testUnlikePlaylist(playlistId) {
+            const userData = getUserData();
+            const index = userData.likedPlaylists.indexOf(playlistId);
+            if (index > -1) {
+                userData.likedPlaylists.splice(index, 1);
+                saveUserData(userData);
+                document.getElementById('likeResult').innerHTML = 
+                    `<p class="success">✅ ${playlistId} 좋아요 취소됨</p>`;
+            } else {
+                document.getElementById('likeResult').innerHTML = 
+                    `<p class="error">좋아요하지 않은 플레이리스트입니다</p>`;
+            }
+            checkCurrentState();
+        }
+        
+        function testSaveRestaurant(restaurantId) {
+            const userData = getUserData();
+            const exists = userData.savedRestaurants.some(r => r.restaurantId === restaurantId);
+            if (!exists) {
+                userData.savedRestaurants.push({
+                    restaurantId: restaurantId,
+                    savedAt: new Date().toISOString(),
+                    notes: '테스트 저장'
+                });
+                saveUserData(userData);
+                document.getElementById('saveResult').innerHTML = 
+                    `<p class="success">✅ Restaurant ${restaurantId} 저장됨</p>`;
+            } else {
+                document.getElementById('saveResult').innerHTML = 
+                    `<p class="error">이미 저장된 맛집입니다</p>`;
+            }
+            checkCurrentState();
+        }
+        
+        function testSavePlaylist(playlistId) {
+            const userData = getUserData();
+            const exists = userData.savedPlaylists.some(p => p.playlistId === playlistId);
+            if (!exists) {
+                userData.savedPlaylists.push({
+                    playlistId: playlistId,
+                    savedAt: new Date().toISOString()
+                });
+                saveUserData(userData);
+                document.getElementById('saveResult').innerHTML = 
+                    `<p class="success">✅ Playlist ${playlistId} 저장됨</p>`;
+            } else {
+                document.getElementById('saveResult').innerHTML = 
+                    `<p class="error">이미 저장된 플레이리스트입니다</p>`;
+            }
+            checkCurrentState();
+        }
+        
+        // 페이지 로드시 자동 확인
+        window.onload = () => {
+            checkCurrentState();
+        };
+    </script>
+</body>
+</html>

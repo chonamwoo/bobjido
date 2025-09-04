@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Save Function</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { margin: 5px; padding: 10px; }
+        pre { background: #f0f0f0; padding: 10px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>저장 기능 디버깅</h1>
+    
+    <div class="section">
+        <h2>현재 localStorage 상태</h2>
+        <button onclick="checkStorage()">localStorage 확인</button>
+        <button onclick="clearStorage()">모든 데이터 삭제</button>
+        <div id="storageStatus"></div>
+    </div>
+    
+    <div class="section">
+        <h2>테스트 저장</h2>
+        <button onclick="saveTestPlaylist()">플레이리스트 저장 테스트</button>
+        <button onclick="saveTestRestaurant()">맛집 저장 테스트</button>
+        <div id="testResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>실제 저장된 데이터</h2>
+        <pre id="rawData"></pre>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'bobmap_user_data';
+        
+        function checkStorage() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            const statusDiv = document.getElementById('storageStatus');
+            
+            if (data) {
+                const parsed = JSON.parse(data);
+                statusDiv.innerHTML = `
+                    <p>✅ 데이터 존재</p>
+                    <p>저장된 플레이리스트: ${parsed.savedPlaylists?.length || 0}개</p>
+                    <p>저장된 맛집: ${parsed.savedRestaurants?.length || 0}개</p>
+                `;
+                
+                // Raw 데이터 표시
+                document.getElementById('rawData').textContent = JSON.stringify(parsed, null, 2);
+            } else {
+                statusDiv.innerHTML = '<p>❌ 저장된 데이터 없음</p>';
+                document.getElementById('rawData').textContent = '데이터 없음';
+            }
+        }
+        
+        function clearStorage() {
+            localStorage.removeItem(STORAGE_KEY);
+            alert('모든 데이터가 삭제되었습니다');
+            checkStorage();
+        }
+        
+        function saveTestPlaylist() {
+            let data = localStorage.getItem(STORAGE_KEY);
+            let userData = data ? JSON.parse(data) : {
+                savedRestaurants: [],
+                savedPlaylists: [],
+                likedRestaurants: [],
+                likedPlaylists: [],
+                visitedRestaurants: [],
+                reviews: [],
+                gameResults: [],
+                tasteProfile: null
+            };
+            
+            // 테스트 플레이리스트 추가
+            const testPlaylist = {
+                playlistId: 'playlist-' + Date.now(),
+                savedAt: new Date().toISOString()
+            };
+            
+            userData.savedPlaylists.push(testPlaylist);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+            
+            document.getElementById('testResult').innerHTML = 
+                `<p>✅ 플레이리스트 저장됨: ${testPlaylist.playlistId}</p>`;
+            
+            // 이벤트 발생
+            window.dispatchEvent(new CustomEvent('dataManager:update'));
+            window.dispatchEvent(new Event('storage'));
+            
+            checkStorage();
+        }
+        
+        function saveTestRestaurant() {
+            let data = localStorage.getItem(STORAGE_KEY);
+            let userData = data ? JSON.parse(data) : {
+                savedRestaurants: [],
+                savedPlaylists: [],
+                likedRestaurants: [],
+                likedPlaylists: [],
+                visitedRestaurants: [],
+                reviews: [],
+                gameResults: [],
+                tasteProfile: null
+            };
+            
+            // 테스트 맛집 추가
+            const testRestaurant = {
+                restaurantId: 'restaurant-' + Date.now(),
+                savedAt: new Date().toISOString(),
+                notes: '테스트 맛집'
+            };
+            
+            userData.savedRestaurants.push(testRestaurant);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+            
+            document.getElementById('testResult').innerHTML = 
+                `<p>✅ 맛집 저장됨: ${testRestaurant.restaurantId}</p>`;
+            
+            // 이벤트 발생
+            window.dispatchEvent(new CustomEvent('dataManager:update'));
+            window.dispatchEvent(new Event('storage'));
+            
+            checkStorage();
+        }
+        
+        // 페이지 로드시 자동 확인
+        window.onload = () => {
+            checkStorage();
+            
+            // 이벤트 리스너 등록
+            window.addEventListener('dataManager:update', () => {
+                console.log('dataManager:update 이벤트 감지됨');
+                checkStorage();
+            });
+            
+            window.addEventListener('storage', () => {
+                console.log('storage 이벤트 감지됨');
+                checkStorage();
+            });
+        };
+    </script>
+</body>
+</html>

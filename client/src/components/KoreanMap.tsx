@@ -88,10 +88,12 @@ const KoreanMap: React.FC<KoreanMapProps> = ({
           mapInstanceRef.current = null;
         }
         
-        // 컨테이너 초기화 확인
+        // 컨테이너 초기화 확인 - 모든 Leaflet 관련 속성 제거
         if ((mapRef.current as any)._leaflet_id) {
           delete (mapRef.current as any)._leaflet_id;
         }
+        // innerHTML 초기화로 모든 하위 요소 제거
+        mapRef.current.innerHTML = '';
         
         // 컨테이너가 DOM에 있는지 확인
         if (!document.body.contains(mapRef.current)) {
@@ -115,11 +117,12 @@ const KoreanMap: React.FC<KoreanMapProps> = ({
           }
         }
         
-        // 맵 초기화
+        // 맵 초기화 - preferCanvas 옵션 추가로 성능 향상
         const newMap = L.map(mapRef.current, {
           center: [center.lat, center.lng],
           zoom: zoom,
           zoomControl: true,
+          preferCanvas: true,
         });
 
         // OpenStreetMap 타일 레이어 추가 (한국어 지원)
@@ -162,10 +165,14 @@ const KoreanMap: React.FC<KoreanMapProps> = ({
   useEffect(() => {
     if (mapInstanceRef.current && center) {
       try {
-        mapInstanceRef.current.setView([center.lat, center.lng], zoom, {
-          animate: true,
-          duration: 1
-        });
+        // 맵이 유효한지 확인
+        const container = mapInstanceRef.current.getContainer();
+        if (container && document.body.contains(container)) {
+          mapInstanceRef.current.setView([center.lat, center.lng], zoom, {
+            animate: true,
+            duration: 1
+          });
+        }
       } catch (err) {
         console.warn('Error updating map center:', err);
       }

@@ -41,7 +41,7 @@
       }
     },
     "development": {
-      "port": 8888,
+      "port": 8889,
       "clientPort": 3000,
       "hotReload": true,
       "clearConsoleOnRestart": false,

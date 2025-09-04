@@ -477,7 +477,7 @@ const Community: React.FC = () => {
                           ) : (
                             <HeartIcon className="w-5 h-5" />
                           )}
-                          <span className="text-sm">{post.likes}</span>
+                          <span className="text-sm">{Array.isArray(post.likes) ? post.likes.length : post.likes || 0}</span>
                         </button>
                         <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
                           <ChatBubbleLeftIcon className="w-5 h-5" />

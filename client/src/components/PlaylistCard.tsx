@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { getDefaultAvatar } from '../utils/avatars';
 import { getPlaylistCoverImage, getPlaylistGradient, handleImageError } from '../utils/imageUtils';
+import { getRestaurantImage } from '../utils/restaurantImages';
 import toast from 'react-hot-toast';
 import { dataManager } from '../utils/dataManager';
 
@@ -111,6 +112,14 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, horizontal = fals
 
   const getCoverImage = () => {
     if (imageError) {
+      // 에러 시 첫 번째 레스토랑 이미지 사용
+      if (playlist.restaurants && playlist.restaurants.length > 0) {
+        const firstRestaurant = playlist.restaurants[0];
+        const restaurantName = firstRestaurant.restaurant?.name;
+        if (restaurantName) {
+          return getRestaurantImage(restaurantName);
+        }
+      }
       return `https://images.unsplash.com/photo-1551218808-94e220e084d2?w=400&h=300&fit=crop&q=80`;
     }
     return getPlaylistCoverImage(playlist);
@@ -133,7 +142,8 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, horizontal = fals
                 <img
                   src={getCoverImage()}
                   alt={playlist.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  loading="lazy"
                   onError={onImageError}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
@@ -219,6 +229,7 @@ const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist, horizontal = fals
                 src={getCoverImage()}
                 alt={playlist.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
                 onError={onImageError}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

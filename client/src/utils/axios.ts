@@ -8,12 +8,12 @@ const getBaseURL = () => {
   
   // 모바일 접속 (IP 주소로 접속하는 경우)
   if (hostname === '172.20.10.4') {
-    return 'http://172.20.10.4:8890';
+    return 'http://172.20.10.4:8888';
   }
   
   // PC 접속 (localhost)
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8890';
+    return 'http://localhost:8888';
   }
   
   // 기타 도메인 (프로덕션 등)
@@ -22,7 +22,7 @@ const getBaseURL = () => {
   }
   
   // Default
-  return 'http://localhost:8890';
+  return 'http://localhost:8888';
 };
 
 const baseURL = getBaseURL();

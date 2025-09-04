@@ -203,7 +203,7 @@ const RestaurantComments: React.FC<RestaurantCommentsProps> = ({
                           ) : (
                             <HeartIcon className="w-4 h-4" />
                           )}
-                          <span>{comment.likes}</span>
+                          <span>{Array.isArray(comment.likes) ? comment.likes.length : comment.likes || 0}</span>
                         </button>
                         
                         <button className="text-xs text-gray-500 hover:text-gray-700">

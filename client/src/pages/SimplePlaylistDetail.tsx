@@ -213,7 +213,7 @@ const SimplePlaylistDetail: React.FC = () => {
             {playlist.saves && (
               <span className="flex items-center gap-1">
                 <BookmarkIcon className="w-4 h-4" />
-                {playlist.saves.toLocaleString()} 저장
+                {(Array.isArray(playlist.saves) ? playlist.saves.length : (playlist.saves || 0)).toLocaleString()} 저장
               </span>
             )}
             {playlist.views && (

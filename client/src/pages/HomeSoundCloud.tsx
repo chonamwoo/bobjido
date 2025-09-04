@@ -11,18 +11,24 @@ import {
   FireIcon,
   MapPinIcon,
   UserGroupIcon,
-  StarIcon
+  StarIcon,
+  UserPlusIcon,
+  UserMinusIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { useAuthStore } from '../store/authStore';
+import { useSocialStore } from '../store/socialStore';
 import axios from '../utils/axios';
 import toast from 'react-hot-toast';
 import { getPlaylistCoverImage } from '../utils/imageUtils';
-import { certifiedRestaurantLists, getTrendingLists, getLatestLists } from '../data/certifiedRestaurantLists';
+import { certifiedRestaurantLists, getTrendingLists, getLatestLists } from '../data/certifiedRestaurantLists_fixed';
+import { getDefaultAvatar } from '../utils/avatars';
+import syncStorage from '../utils/syncStorage';
 
 const HomeSoundCloud: React.FC = () => {
   const navigate = useNavigate();
   const { user, token } = useAuthStore();
+  const { followUser, unfollowUser, isFollowing, syncWithLocalStorage } = useSocialStore();
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRefs = {
@@ -32,38 +38,55 @@ const HomeSoundCloud: React.FC = () => {
     local: useRef<HTMLDivElement>(null)
   };
 
-  // 인증 프로그램 맛집 리스트 가져오기
+  // 플레이리스트와 인증 맛집 데이터 가져오기
   useEffect(() => {
+    syncWithLocalStorage(); // Sync social store on mount
     fetchPlaylists();
+    
+    // 5초마다 자동 새로고침 (실시간 동기화)
+    const interval = setInterval(() => {
+      fetchPlaylists();
+    }, 5000);
+    
+    // 페이지 포커스 시 데이터 새로고침
+    const handleFocus = () => {
+      fetchPlaylists();
+    };
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const fetchPlaylists = async () => {
     try {
       setLoading(true);
-      // Admin에서 수정한 데이터가 있으면 사용, 없으면 기본 데이터 사용
-      const adminPlaylists = localStorage.getItem('adminPlaylists');
-      const playlistData = adminPlaylists ? JSON.parse(adminPlaylists) : certifiedRestaurantLists;
-      setPlaylists(playlistData);
-      setLoading(false);
-      return;
       
-      const response = await axios.get(
-        `/api/playlists`,
-        {
-          params: {
-            limit: 20,
-            sortBy: 'likeCount',
-            sortOrder: 'desc'
-          }
+      // MongoDB에서 실제 사용자 플레이리스트 가져오기
+      const response = await axios.get('/api/playlists', {
+        params: {
+          limit: 50,
+          sortBy: 'popularityScore',
+          sortOrder: 'desc'
         }
-      );
+      });
       
-      if (response.data.playlists) {
-        setPlaylists(response.data.playlists);
+      if (response.data.playlists && response.data.playlists.length > 0) {
+        // 실제 사용자 플레이리스트와 인증 맛집 리스트 결합
+        const userPlaylists = response.data.playlists;
+        const combinedPlaylists = [...certifiedRestaurantLists, ...userPlaylists];
+        setPlaylists(combinedPlaylists);
+      } else {
+        // 사용자 플레이리스트가 없으면 인증 맛집만 사용
+        setPlaylists(certifiedRestaurantLists);
       }
     } catch (error) {
-      console.error('맛집 리스트 가져오기 실패:', error);
-      toast.error('맛집 리스트를 불러오는데 실패했습니다');
+      console.error('플레이리스트 가져오기 실패:', error);
+      // 네트워크 오류 시 인증 맛집 리스트로 폴백
+      setPlaylists(certifiedRestaurantLists);
+      toast.error('일부 데이터를 불러오는데 실패했습니다');
     } finally {
       setLoading(false);
     }
@@ -73,23 +96,26 @@ const HomeSoundCloud: React.FC = () => {
   const getCategorizedPlaylists = (category: string) => {
     switch (category) {
       case 'curated':
-        // 공식 인증 맛집 (미쉐린, 백년가게)
+        // 공식 인증 맛집 (미쉐린, 백년가게) - 인증 맛집 우선
         return playlists.filter(p => 
-          p.certification === '미쉐린스타' || p.certification === '백년가게'
+          p.certification === '미쉐린스타' || p.certification === '백년가게' ||
+          (p.tags && (p.tags.includes('미쉐린') || p.tags.includes('백년가게')))
         ).slice(0, 5);
       case 'trending':
-        // 가장 인기 있는 맛집 리스트 (좋아요 순)
+        // 가장 인기 있는 맛집 리스트 (좋아요 순) - 사용자 플레이리스트 포함
         return [...playlists]
-          .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+          .sort((a, b) => (b.likeCount || b.likes?.length || 0) - (a.likeCount || a.likes?.length || 0))
           .slice(0, 5);
       case 'celebrity':
-        // TV 방송 출연 맛집
+        // TV 방송 출연 맛집 - 인증 맛집 우선
         return playlists.filter(p => 
-          p.certification && ['흑백요리사', '수요미식회', '백종원의3대천왕', '맛있는녀석들', '성시경의먹을텐데'].includes(p.certification)
+          (p.certification && ['흑백요리사', '수요미식회', '백종원의3대천왕', '맛있는녀석들', '성시경의먹을텐데'].includes(p.certification)) ||
+          (p.tags && p.tags.some((tag: string) => ['흑백요리사', '수요미식회', '백종원', '맛있는녀석들', '성시경'].includes(tag)))
         ).slice(0, 5);
       case 'local':
-        // 최신 맛집 리스트
+        // 최신 맛집 리스트 - 사용자가 만든 최신 플레이리스트 우선
         return [...playlists]
+          .filter(p => p.createdAt) // 실제 생성일이 있는 사용자 플레이리스트 우선
           .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
           .slice(0, 5);
       default:
@@ -108,8 +134,43 @@ const HomeSoundCloud: React.FC = () => {
   };
 
   const PlaylistCard = ({ playlist, type }: { playlist: any, type: string }) => {
-    const [liked, setLiked] = useState(playlist.isLiked || false);
-    const [localLikeCount, setLocalLikeCount] = useState(playlist.likes || playlist.likeCount || 0);
+    // syncStorage를 사용하여 초기 상태 설정
+    const [liked, setLiked] = useState(() => {
+      if (!user) return false;
+      const likes = syncStorage.getPlaylistLikes(user._id);
+      return likes.has(playlist._id);
+    });
+    const [localLikeCount, setLocalLikeCount] = useState(() => {
+      const baseCount = Array.isArray(playlist.likes) ? playlist.likes.length : (playlist.likes || playlist.likeCount || 0);
+      const storedCount = syncStorage.getLikeCount(`playlist_${playlist._id}`);
+      return Math.max(baseCount, storedCount);
+    });
+    
+    // Get creator info
+    const creatorUsername = playlist.creator?.username || playlist.createdBy?.username || playlist.createdBy || 'BobMap';
+    const creatorId = playlist.creator?._id || playlist.createdBy?._id || `creator_${playlist._id}`;
+    const isFollowingCreator = isFollowing(creatorId);
+    
+    // 실시간 동기화를 위한 리스너 등록
+    useEffect(() => {
+      if (!user) return;
+      
+      // 좋아요 상태 변경 리스너
+      const unsubscribeLikes = syncStorage.subscribe(`likes_playlist_${user._id}`, (likes: string[]) => {
+        const likesSet = new Set(likes);
+        setLiked(likesSet.has(playlist._id));
+      });
+      
+      // 좋아요 카운트 변경 리스너
+      const unsubscribeCount = syncStorage.subscribe(`like_count_playlist_${playlist._id}`, (count: number) => {
+        setLocalLikeCount(count);
+      });
+      
+      return () => {
+        unsubscribeLikes();
+        unsubscribeCount();
+      };
+    }, [user, playlist._id]);
 
     const handleLike = async (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -119,16 +180,26 @@ const HomeSoundCloud: React.FC = () => {
         return;
       }
 
+      // syncStorage를 통해 즉시 로컬 업데이트
+      const newLiked = syncStorage.togglePlaylistLike(playlist._id, user._id);
+      setLiked(newLiked);
+      setLocalLikeCount(syncStorage.getLikeCount(`playlist_${playlist._id}`));
+      toast.success(newLiked ? '좋아요!' : '좋아요 취소');
+
+      // 서버와 동기화 시도 (비동기)
       try {
         await axios.post(
-          `/api/playlists/${playlist._id}/like`,
+          `/api/social/playlists/${playlist._id}/like`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setLiked(!liked);
-        setLocalLikeCount(liked ? localLikeCount - 1 : localLikeCount + 1);
       } catch (error) {
-        console.error('좋아요 실패:', error);
+        console.error('서버 동기화 실패:', error);
+        // 서버 동기화 실패 시 롤백
+        syncStorage.togglePlaylistLike(playlist._id, user._id);
+        setLiked(!newLiked);
+        setLocalLikeCount(syncStorage.getLikeCount(`playlist_${playlist._id}`));
+        toast.error('좋아요 처리 중 오류가 발생했습니다');
       }
     };
 
@@ -183,15 +254,44 @@ const HomeSoundCloud: React.FC = () => {
           
           <div className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 bg-gradient-to-br from-orange-400 to-red-500 rounded-full" />
+              <div className="flex items-center space-x-2 flex-1">
+                <img 
+                  src={getDefaultAvatar(creatorUsername, 24)}
+                  alt={creatorUsername}
+                  className="w-6 h-6 rounded-full"
+                />
                 <span className="text-sm text-gray-600">
-                  {playlist.creator?.username || playlist.createdBy?.username || 'BobMap'}
+                  {creatorUsername}
                 </span>
+                {creatorUsername !== 'BobMap' && user && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isFollowingCreator) {
+                        unfollowUser(creatorId);
+                        toast.success(`${creatorUsername} 언팔로우`);
+                      } else {
+                        followUser(creatorId, {
+                          _id: creatorId,
+                          username: creatorUsername,
+                          bio: playlist.certification ? `${playlist.certification} 전문가` : '맛집 큐레이터'
+                        });
+                        toast.success(`${creatorUsername} 팔로우!`);
+                      }
+                    }}
+                    className={`ml-auto px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                      isFollowingCreator 
+                        ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
+                        : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-md'
+                    }`}
+                  >
+                    {isFollowingCreator ? '팔로잉' : '팔로우'}
+                  </button>
+                )}
               </div>
               <button 
                 onClick={handleLike}
-                className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors"
+                className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors ml-2"
               >
                 {liked ? (
                   <HeartSolid className="w-5 h-5 text-red-500" />
@@ -208,7 +308,7 @@ const HomeSoundCloud: React.FC = () => {
             
             <div className="flex items-center justify-between text-xs text-gray-500">
               <span>{playlist.restaurants?.length || playlist.restaurantCount || 0}개 맛집</span>
-              <span>{playlist.views || playlist.viewCount || 0}회 조회</span>
+              <span>{typeof playlist.views === 'object' ? (playlist.views?.total || 0) : (playlist.views || playlist.viewCount || 0)}회 조회</span>
             </div>
             
             {/* 실제 맛집 이름들 표시 */}
@@ -402,6 +502,40 @@ const HomeSoundCloud: React.FC = () => {
         </div>
       </section>
 
+      {/* 취향 매칭 섹션 - 로그인한 사용자에게만 표시 */}
+      {user && (
+        <section className="py-12 bg-gradient-to-r from-purple-50 to-pink-50">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  <UserGroupIcon className="w-6 h-6 inline mr-2 text-purple-500" />
+                  당신과 취향이 비슷한 사람들
+                </h2>
+                <p className="text-gray-600 mt-1">팔로잉과 좋아요 기반 추천</p>
+              </div>
+              <button
+                onClick={() => navigate('/matching')}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                더보기
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* 여기에 매칭된 사용자들 표시 */}
+              <div className="bg-white rounded-lg p-4 text-center hover:shadow-lg transition-shadow cursor-pointer">
+                <div className="w-16 h-16 mx-auto mb-2 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                  85%
+                </div>
+                <h4 className="font-medium">매칭 점수</h4>
+                <p className="text-sm text-gray-500">비슷한 취향의 친구 찾기</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 지역별 맛집 지도 */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4">
@@ -440,72 +574,6 @@ const HomeSoundCloud: React.FC = () => {
         </div>
       </section>
 
-      {/* 취향 매칭 섹션 */}
-      <section className="py-12 bg-gradient-to-br from-purple-50 to-pink-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                🎯 취향이 비슷한 사용자들
-              </h2>
-              <p className="text-gray-600 mt-1">AI가 분석한 당신과 비슷한 입맛</p>
-            </div>
-            <button className="text-purple-600 hover:text-purple-700 font-medium">
-              모두 보기 →
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {[
-              { name: '맛집탐험가', username: 'explorer_99', match: 92, followers: 23456, reviews: 892, gradient: 'FF6B6B' },
-              { name: '서울미식가', username: 'seoul_gourmet', match: 88, followers: 18234, reviews: 567, gradient: '4ECDC4' },
-              { name: '카페중독자', username: 'cafe_addict', match: 85, followers: 15678, reviews: 432, gradient: '95E1D3' },
-              { name: '한식전문가', username: 'korean_pro', match: 83, followers: 12345, reviews: 789, gradient: 'F38181' },
-              { name: '매운맛킬러', username: 'spicy_killer', match: 81, followers: 9876, reviews: 234, gradient: 'AA96DA' },
-              { name: '디저트헌터', username: 'dessert_hunt', match: 79, followers: 8765, reviews: 345, gradient: 'FCBAD3' },
-              { name: '브런치러버', username: 'brunch_love', match: 77, followers: 7654, reviews: 123, gradient: 'FDCB6E' },
-              { name: '일식마니아', username: 'japan_mania', match: 75, followers: 6543, reviews: 456, gradient: '6C5CE7' },
-              { name: '중식고수', username: 'chinese_master', match: 73, followers: 5432, reviews: 678, gradient: 'A8E6CF' },
-              { name: '양식천재', username: 'western_genius', match: 71, followers: 4321, reviews: 890, gradient: 'FFD3B6' },
-              { name: '분식애호가', username: 'snack_lover', match: 69, followers: 3210, reviews: 567, gradient: 'FFAAA5' },
-              { name: '혼밥전사', username: 'solo_warrior', match: 67, followers: 2109, reviews: 234, gradient: 'FF8B94' }
-            ].map((user, index) => (
-              <div 
-                key={index}
-                className="bg-white rounded-xl p-4 hover:shadow-lg transition-all cursor-pointer transform hover:scale-105"
-                onClick={() => navigate(`/expert/${user.username}`)}
-              >
-                <div className="relative mb-3">
-                  <img
-                    src={`https://ui-avatars.com/api/?name=${user.name}&background=${user.gradient}&color=fff`}
-                    alt={user.name}
-                    className="w-16 h-16 rounded-full mx-auto"
-                  />
-                  <div className={`absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-xs font-bold text-white ${
-                    user.match >= 85 ? 'bg-red-500' : 
-                    user.match >= 75 ? 'bg-orange-500' : 
-                    'bg-yellow-500'
-                  }`}>
-                    {user.match}%
-                  </div>
-                </div>
-                <h3 className="font-bold text-sm text-center truncate">{user.name}</h3>
-                <p className="text-xs text-gray-500 text-center">@{user.username}</p>
-                <div className="flex justify-between mt-3 pt-3 border-t text-xs text-gray-600">
-                  <div className="text-center">
-                    <p className="font-bold">{user.followers > 10000 ? `${Math.floor(user.followers/1000)}K` : user.followers.toLocaleString()}</p>
-                    <p className="text-gray-400">팔로워</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-bold">{user.reviews}</p>
-                    <p className="text-gray-400">리뷰</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA 섹션 */}
       <section className="py-16 bg-gradient-to-r from-orange-500 to-red-600">

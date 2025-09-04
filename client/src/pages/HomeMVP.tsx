@@ -386,7 +386,7 @@ const HomeMVP: React.FC = () => {
                     <span>by {playlist.curator}</span>
                     <div className="flex items-center gap-1">
                       <StarIcon className="w-4 h-4 text-yellow-500" />
-                      {playlist.likes}
+                      {Array.isArray(playlist.likes) ? playlist.likes.length : playlist.likes || 0}
                     </div>
                   </div>
                 </div>

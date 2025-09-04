@@ -18,6 +18,7 @@ export interface RestaurantList {
       category: string;
       address: string;
       rating?: number;
+      coordinates?: { lat: number; lng: number };
     };
     personalNote?: string;
     mustTry?: string[];
@@ -60,7 +61,8 @@ export const certifiedRestaurantLists: RestaurantList[] = [
           name: '임페리얼 트레져', 
           category: '중식', 
           address: '서울 강남구 테헤란로87길 46',
-          rating: 4.8 
+          rating: 4.8,
+          coordinates: { lat: 37.5089, lng: 127.0631 }
         },
         personalNote: '흑백요리사 우승 셰프의 중식당',
         mustTry: ['마파두부', '깐풍기']
@@ -71,7 +73,8 @@ export const certifiedRestaurantLists: RestaurantList[] = [
           name: '네오포차', 
           category: '주점', 
           address: '서울 마포구 와우산로29길 6',
-          rating: 4.5 
+          rating: 4.5,
+          coordinates: { lat: 37.5547, lng: 126.9245 }
         },
         personalNote: '흑백요리사 출연 안주 맛집'
       },
@@ -81,7 +84,8 @@ export const certifiedRestaurantLists: RestaurantList[] = [
           name: '스시조', 
           category: '일식', 
           address: '서울 강남구 도산대로 317',
-          rating: 4.7 
+          rating: 4.7,
+          coordinates: { lat: 37.5227, lng: 127.0396 }
         },
         personalNote: '오마카세 전문점'
       },
@@ -91,7 +95,8 @@ export const certifiedRestaurantLists: RestaurantList[] = [
           name: '정식당', 
           category: '한식', 
           address: '서울 강남구 선릉로158길 11',
-          rating: 4.9 
+          rating: 4.9,
+          coordinates: { lat: 37.5237, lng: 127.0465 }
         },
         personalNote: '모던 한식의 정수'
       }

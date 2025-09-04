@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BobMap Auth Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .divider {
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+        }
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e0e0e0;
+        }
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            position: relative;
+            color: #999;
+        }
+        .test-accounts {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-accounts h3 {
+            margin-top: 0;
+            color: #666;
+        }
+        .test-accounts p {
+            margin: 5px 0;
+            font-family: monospace;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍜 BobMap 인증 테스트</h1>
+        
+        <div class="test-accounts">
+            <h3>테스트 계정</h3>
+            <p>ID: testbob</p>
+            <p>Password: test1234</p>
+            <p>Email: testbob@bobmap.com</p>
+        </div>
+
+        <div class="form-group">
+            <label for="loginId">아이디 또는 이메일</label>
+            <input type="text" id="loginId" placeholder="testbob 또는 testbob@bobmap.com">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">비밀번호</label>
+            <input type="password" id="password" placeholder="test1234">
+        </div>
+        
+        <button onclick="testLogin()">로그인 테스트</button>
+        
+        <div class="divider">
+            <span>새 계정 만들기</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="newUserId">새 아이디</label>
+            <input type="text" id="newUserId" placeholder="영문 소문자, 숫자, _ (4-20자)">
+        </div>
+        
+        <div class="form-group">
+            <label for="newUsername">닉네임</label>
+            <input type="text" id="newUsername" placeholder="표시될 이름">
+        </div>
+        
+        <div class="form-group">
+            <label for="newEmail">이메일</label>
+            <input type="email" id="newEmail" placeholder="your@email.com">
+        </div>
+        
+        <div class="form-group">
+            <label for="newPassword">비밀번호</label>
+            <input type="password" id="newPassword" placeholder="8자 이상">
+        </div>
+        
+        <div class="form-group">
+            <label for="confirmPassword">비밀번호 확인</label>
+            <input type="password" id="confirmPassword" placeholder="비밀번호 다시 입력">
+        </div>
+        
+        <button onclick="testRegister()">회원가입 테스트</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8890/api/auth';
+        
+        async function testLogin() {
+            const loginId = document.getElementById('loginId').value;
+            const password = document.getElementById('password').value;
+            
+            if (!loginId || !password) {
+                showResult('아이디/이메일과 비밀번호를 입력하세요', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ loginId, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ 로그인 성공!\n사용자: ${data.data.username}\n이메일: ${data.data.email}`, 'success');
+                } else {
+                    showResult(`❌ 로그인 실패: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 오류: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testRegister() {
+            const userId = document.getElementById('newUserId').value;
+            const username = document.getElementById('newUsername').value;
+            const email = document.getElementById('newEmail').value;
+            const password = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!userId || !username || !email || !password || !confirmPassword) {
+                showResult('모든 필드를 입력하세요', 'error');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showResult('비밀번호가 일치하지 않습니다', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userId, username, email, password, confirmPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ 회원가입 성공!\n사용자: ${data.data.username}\n이메일: ${data.data.email}`, 'success');
+                } else {
+                    showResult(`❌ 회원가입 실패: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 오류: ${error.message}`, 'error');
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

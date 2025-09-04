@@ -129,13 +129,48 @@ const userSchema = new mongoose.Schema({
     },
     default: {}
   },
+  // Enhanced social features
   followers: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    followedAt: {
+      type: Date,
+      default: Date.now
+    }
   }],
   following: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    followedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  // Liked restaurants
+  likedRestaurants: [{
+    restaurant: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Restaurant'
+    },
+    likedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  // Saved restaurants
+  savedRestaurants: [{
+    restaurant: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Restaurant'
+    },
+    savedAt: {
+      type: Date,
+      default: Date.now
+    }
   }],
   trustScore: {
     type: Number,

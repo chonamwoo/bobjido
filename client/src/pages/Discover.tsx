@@ -14,7 +14,7 @@ import {
   UserGroupIcon,
   HeartIcon
 } from '@heroicons/react/24/outline';
-import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists';
+import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists_fixed';
 import CertificationFilter, { CertificationFilters } from '../components/CertificationFilter';
 
 interface FilterState {

@@ -8,21 +8,75 @@ import {
   SparklesIcon,
   FireIcon,
   PlusCircleIcon,
-  StarIcon
+  StarIcon,
+  UserPlusIcon,
+  UserMinusIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
-import { certifiedRestaurantLists, getTrendingLists, getLatestLists } from '../data/certifiedRestaurantLists';
+import toast from 'react-hot-toast';
+import { certifiedRestaurantLists, getTrendingLists, getLatestLists } from '../data/certifiedRestaurantLists_fixed';
+import { useSocialStore } from '../store/socialStore';
+import { useAuthStore } from '../store/authStore';
+import axios from '../utils/axios';
+import syncStorage from '../utils/syncStorage';
+import { getRestaurantImage } from '../utils/restaurantImages';
 
 const MobileHomeSoundCloud: React.FC = () => {
   const navigate = useNavigate();
+  const { user, token } = useAuthStore();
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [likedPlaylists, setLikedPlaylists] = useState<Set<string>>(new Set());
   const [activeFilter, setActiveFilter] = useState<'certified' | 'following' | 'similar'>('certified');
+  const { followUser, unfollowUser, isFollowing, syncWithLocalStorage } = useSocialStore();
+  
+  // Sync on mount
+  useEffect(() => {
+    syncWithLocalStorage();
+    
+    // localStorage에서 초기 좋아요 상태 불러오기
+    if (user) {
+      const likes = syncStorage.getPlaylistLikes(user._id);
+      setLikedPlaylists(likes);
+    }
+  }, [syncWithLocalStorage, user]);
+  
+  // 실시간 동기화를 위한 리스너 등록
+  useEffect(() => {
+    if (!user) return;
+    
+    // 좋아요 상태 변경 리스너
+    const unsubscribe = syncStorage.subscribe(`likes_playlist_${user._id}`, (likes: string[]) => {
+      setLikedPlaylists(new Set(likes));
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [user]);
 
   useEffect(() => {
     fetchPlaylists();
   }, [activeFilter]);
+  
+  // 실시간 동기화를 위한 자동 새로고침
+  useEffect(() => {
+    // 5초마다 데이터 새로고침
+    const interval = setInterval(() => {
+      fetchPlaylists();
+    }, 5000);
+    
+    // 페이지 포커스 시 데이터 새로고침
+    const handleFocus = () => {
+      fetchPlaylists();
+    };
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   const fetchPlaylists = async () => {
     try {
@@ -216,21 +270,80 @@ const MobileHomeSoundCloud: React.FC = () => {
     }
   };
 
-  const handleLikeToggle = (playlistId: string) => {
+  const handleLikeToggle = async (playlistId: string) => {
+    if (!user) {
+      toast.error('로그인이 필요합니다');
+      navigate('/login');
+      return;
+    }
+
+    // syncStorage를 통해 즉시 로컬 업데이트
+    const newLiked = syncStorage.togglePlaylistLike(playlistId, user._id);
     setLikedPlaylists(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(playlistId)) {
-        newSet.delete(playlistId);
-      } else {
+      if (newLiked) {
         newSet.add(playlistId);
+      } else {
+        newSet.delete(playlistId);
       }
       return newSet;
     });
+    toast.success(newLiked ? '좋아요!' : '좋아요 취소');
+
+    // 서버와 동기화 시도 (비동기)
+    try {
+      await axios.post(
+        `/api/social/playlists/${playlistId}/like`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.error('서버 동기화 실패:', error);
+      // 서버 동기화 실패 시 롤백
+      syncStorage.togglePlaylistLike(playlistId, user._id);
+      setLikedPlaylists(prev => {
+        const newSet = new Set(prev);
+        if (!newLiked) {
+          newSet.add(playlistId);
+        } else {
+          newSet.delete(playlistId);
+        }
+        return newSet;
+      });
+      toast.error('좋아요 처리 중 오류가 발생했습니다');
+    }
+  };
+
+  const handleFollowUser = (userId: string, username: string, userDetails?: any) => {
+    const isFollowed = isFollowing(userId);
+    
+    if (isFollowed) {
+      unfollowUser(userId);
+      toast.success(`${username}님 팔로우 취소`);
+    } else {
+      followUser(userId, userDetails || { _id: userId, username });
+      toast.success(`${username}님 팔로우 시작! 🎉`);
+    }
   };
 
   const PlaylistCard = ({ playlist }: { playlist: any }) => {
     const isLiked = likedPlaylists.has(playlist._id);
-    const localLikeCount = (playlist.likes || playlist.likeCount || 0) + (isLiked ? 1 : 0);
+    const [localLikeCount, setLocalLikeCount] = useState(() => {
+      const baseCount = Array.isArray(playlist.likes) ? playlist.likes.length : (playlist.likes || playlist.likeCount || 0);
+      const storedCount = syncStorage.getLikeCount(`playlist_${playlist._id}`);
+      return Math.max(baseCount, storedCount);
+    });
+    
+    // 좋아요 카운트 실시간 동기화
+    useEffect(() => {
+      const unsubscribe = syncStorage.subscribe(`like_count_playlist_${playlist._id}`, (count: number) => {
+        setLocalLikeCount(count);
+      });
+      
+      return () => {
+        unsubscribe();
+      };
+    }, [playlist._id]);
 
     const getPlaylistImage = () => {
       if (playlist.coverImage) return playlist.coverImage;
@@ -293,6 +406,18 @@ const MobileHomeSoundCloud: React.FC = () => {
             src={getPlaylistImage()}
             alt={playlist.name}
             className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              // 에러 발생시 첫번째 레스토랑 이미지로 대체
+              if (playlist.restaurants && playlist.restaurants.length > 0) {
+                const firstRestaurant = playlist.restaurants[0];
+                const restaurantName = typeof firstRestaurant === 'object' ? 
+                  (firstRestaurant.restaurant?.name || firstRestaurant.name) : 
+                  firstRestaurant;
+                target.src = getRestaurantImage(restaurantName);
+              }
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none" />
           
@@ -346,17 +471,45 @@ const MobileHomeSoundCloud: React.FC = () => {
             {playlist.description || '맛집 큐레이션'}
           </p>
           
-          {/* 크리에이터 정보 */}
-          {playlist.creator && (
-            <p className="text-xs text-gray-500 mb-1">
-              by {playlist.creator.username}
-              {playlist.creator.isVerified && ' ✓'}
-            </p>
+          {/* 크리에이터 정보 및 팔로우 버튼 */}
+          {(playlist.createdBy || playlist.creator) && (
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-gray-500">
+                by {(playlist.createdBy || playlist.creator).username}
+                {(playlist.createdBy || playlist.creator).isVerified && ' ✓'}
+              </p>
+              {typeof (playlist.createdBy || playlist.creator) === 'object' && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const user = playlist.createdBy || playlist.creator;
+                    handleFollowUser(user._id, user.username, user);
+                  }}
+                  className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all transform hover:scale-105 ${
+                    isFollowing((playlist.createdBy || playlist.creator)._id) ?
+                    'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md' :
+                    'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md hover:shadow-lg'
+                  }`}
+                >
+                  {isFollowing((playlist.createdBy || playlist.creator)._id) ? (
+                    <>
+                      <UserMinusIcon className="w-3 h-3" />
+                      <span>팔로잉</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlusIcon className="w-3 h-3" />
+                      <span>팔로우</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           )}
           
           <div className="flex items-center justify-between text-xs text-gray-500">
             <span>{playlist.restaurants?.length || playlist.restaurantCount || 0}개 맛집</span>
-            <span>{playlist.views || playlist.viewCount || 0}회 조회</span>
+            <span>{typeof playlist.views === 'object' ? (playlist.views?.total || 0) : (playlist.views || playlist.viewCount || 0)}회 조회</span>
           </div>
           
           <div className="mt-2 pt-2 border-t border-gray-100">

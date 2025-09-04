@@ -84,44 +84,17 @@ const CreatePlaylist: React.FC = () => {
         });
         return response.data;
       } catch (error: any) {
-        console.error('API 저장 실패:', error.response?.data || error.message);
+        console.error('플레이리스트 저장 실패:', error.response?.data || error.message);
         
-        // 로그인하지 않은 경우에만 로컬 스토리지 사용
+        // 인증 오류 시 로그인 페이지로 리다이렉트
         if (error.response?.status === 401) {
-          toast.error('로그인이 필요합니다. 로컬에만 저장됩니다.');
-        } else {
-          // 다른 에러는 그대로 throw
-          throw error;
+          toast.error('로그인이 필요합니다.');
+          navigate('/login');
+          return;
         }
         
-        // 로컬 스토리지에 저장
-        const newPlaylist = {
-          _id: `local-playlist-${Date.now()}`,
-          ...data,
-          createdBy: user || {
-            _id: 'local-user',
-            username: '나',
-            isVerified: false
-          },
-          restaurants: selectedRestaurants.map(r => ({
-            restaurant: r,
-            personalNote: personalNotes[r._id] || '',
-            mustTry: []
-          })),
-          likeCount: 0,
-          saveCount: 0,
-          viewCount: 0,
-          createdAt: new Date().toISOString(),
-          isPublic: data.isPublic ?? true,
-          restaurantCount: selectedRestaurants.length
-        };
-        
-        const localPlaylists = localStorage.getItem('localPlaylists');
-        const playlists = localPlaylists ? JSON.parse(localPlaylists) : [];
-        playlists.push(newPlaylist);
-        localStorage.setItem('localPlaylists', JSON.stringify(playlists));
-        
-        return newPlaylist;
+        // 다른 에러는 그대로 throw
+        throw error;
       }
     },
     onSuccess: (playlist) => {

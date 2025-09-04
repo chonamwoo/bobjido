@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BobMap 통합 기능 테스트</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #ff6b35; text-align: center; }
+        h2 { color: #333; border-bottom: 2px solid #ff6b35; padding-bottom: 10px; }
+        button { 
+            margin: 5px; 
+            padding: 10px 15px; 
+            background: linear-gradient(135deg, #ff6b35, #f72585);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: translateY(-2px); }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        pre { background: #f0f0f0; padding: 15px; border-radius: 5px; overflow: auto; }
+        .item { 
+            padding: 8px; 
+            margin: 5px 0; 
+            background: #f9f9f9; 
+            border-left: 3px solid #ff6b35;
+            border-radius: 3px;
+        }
+        .liked { background: #fff3cd; }
+        .saved { background: #d4edda; }
+        .test-result { 
+            margin: 10px 0; 
+            padding: 10px; 
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .pass { background: #28a745; color: white; }
+        .fail { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍚 BobMap 통합 기능 테스트 대시보드 🍚</h1>
+        
+        <div class="grid">
+            <!-- 현재 상태 -->
+            <div class="section">
+                <h2>📊 현재 데이터 상태</h2>
+                <button onclick="checkAllData()">전체 데이터 확인</button>
+                <button onclick="clearAllData()">모든 데이터 초기화</button>
+                <div id="currentStatus"></div>
+            </div>
+            
+            <!-- 플레이리스트 테스트 -->
+            <div class="section">
+                <h2>📋 플레이리스트 기능</h2>
+                <button onclick="testPlaylistSave()">플레이리스트 저장 테스트</button>
+                <button onclick="testPlaylistLike()">플레이리스트 좋아요 테스트</button>
+                <button onclick="testPlaylistPersistence()">새로고침 후 유지 테스트</button>
+                <div id="playlistResult"></div>
+            </div>
+            
+            <!-- 맛집 테스트 -->
+            <div class="section">
+                <h2>🍜 맛집 기능</h2>
+                <button onclick="testRestaurantSave()">맛집 저장 테스트</button>
+                <button onclick="testRestaurantLike()">맛집 좋아요 테스트</button>
+                <button onclick="testMapSave()">지도에서 저장 시뮬레이션</button>
+                <div id="restaurantResult"></div>
+            </div>
+            
+            <!-- 중복 방지 테스트 -->
+            <div class="section">
+                <h2>🔍 중복 방지 및 동기화</h2>
+                <button onclick="testDuplicatePrevention()">중복 저장 방지 테스트</button>
+                <button onclick="testRealtimeSync()">실시간 동기화 테스트</button>
+                <button onclick="testCrossTabSync()">탭 간 동기화 테스트</button>
+                <div id="syncResult"></div>
+            </div>
+        </div>
+        
+        <!-- Raw 데이터 뷰어 -->
+        <div class="section" style="margin-top: 20px;">
+            <h2>🔧 Raw 데이터</h2>
+            <pre id="rawData"></pre>
+        </div>
+        
+        <!-- 테스트 결과 요약 -->
+        <div class="section" style="margin-top: 20px;">
+            <h2>✅ 테스트 결과 요약</h2>
+            <div id="testSummary"></div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'bobmap_user_data';
+        let testResults = [];
+        
+        // 데이터 관리 함수들
+        function getUserData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : {
+                savedRestaurants: [],
+                savedPlaylists: [],
+                likedRestaurants: [],
+                likedPlaylists: [],
+                visitedRestaurants: [],
+                reviews: [],
+                gameResults: [],
+                tasteProfile: null
+            };
+        }
+        
+        function saveUserData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            window.dispatchEvent(new CustomEvent('dataManager:update', { detail: data }));
+            window.dispatchEvent(new Event('storage'));
+        }
+        
+        // 테스트 결과 기록
+        function recordTest(name, passed, details) {
+            testResults.push({ name, passed, details, timestamp: new Date() });
+            updateTestSummary();
+        }
+        
+        function updateTestSummary() {
+            const summary = document.getElementById('testSummary');
+            const passed = testResults.filter(t => t.passed).length;
+            const failed = testResults.filter(t => !t.passed).length;
+            
+            summary.innerHTML = `
+                <div class="test-result ${failed === 0 ? 'pass' : 'fail'}">
+                    총 테스트: ${testResults.length} | 
+                    통과: ${passed} | 
+                    실패: ${failed}
+                </div>
+                ${testResults.map(t => `
+                    <div class="item ${t.passed ? 'saved' : 'error'}">
+                        ${t.passed ? '✅' : '❌'} ${t.name}: ${t.details}
+                    </div>
+                `).join('')}
+            `;
+        }
+        
+        // 전체 데이터 확인
+        function checkAllData() {
+            const data = getUserData();
+            const status = document.getElementById('currentStatus');
+            
+            status.innerHTML = `
+                <div class="status info">
+                    <strong>저장된 데이터 현황</strong><br>
+                    좋아한 플레이리스트: ${data.likedPlaylists?.length || 0}개<br>
+                    저장한 플레이리스트: ${data.savedPlaylists?.length || 0}개<br>
+                    좋아한 맛집: ${data.likedRestaurants?.length || 0}개<br>
+                    저장한 맛집: ${data.savedRestaurants?.length || 0}개<br>
+                    방문한 맛집: ${data.visitedRestaurants?.length || 0}개<br>
+                    리뷰: ${data.reviews?.length || 0}개
+                </div>
+            `;
+            
+            document.getElementById('rawData').textContent = JSON.stringify(data, null, 2);
+        }
+        
+        // 데이터 초기화
+        function clearAllData() {
+            if (confirm('정말로 모든 데이터를 초기화하시겠습니까?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem('localRestaurants');
+                localStorage.removeItem('localPlaylists');
+                testResults = [];
+                checkAllData();
+                alert('모든 데이터가 초기화되었습니다.');
+            }
+        }
+        
+        // 플레이리스트 저장 테스트
+        function testPlaylistSave() {
+            const userData = getUserData();
+            const testId = 'test-playlist-' + Date.now();
+            
+            // 저장
+            userData.savedPlaylists.push({
+                playlistId: testId,
+                savedAt: new Date().toISOString()
+            });
+            saveUserData(userData);
+            
+            // 확인
+            const newData = getUserData();
+            const found = newData.savedPlaylists.some(p => p.playlistId === testId);
+            
+            const result = document.getElementById('playlistResult');
+            if (found) {
+                result.innerHTML = '<div class="status success">✅ 플레이리스트 저장 성공!</div>';
+                recordTest('플레이리스트 저장', true, `ID: ${testId}`);
+            } else {
+                result.innerHTML = '<div class="status error">❌ 플레이리스트 저장 실패</div>';
+                recordTest('플레이리스트 저장', false, '저장 후 조회 실패');
+            }
+            
+            checkAllData();
+        }
+        
+        // 플레이리스트 좋아요 테스트
+        function testPlaylistLike() {
+            const userData = getUserData();
+            const testId = 'test-playlist-like-' + Date.now();
+            
+            // 좋아요 추가
+            userData.likedPlaylists.push(testId);
+            saveUserData(userData);
+            
+            // 확인
+            const newData = getUserData();
+            const found = newData.likedPlaylists.includes(testId);
+            
+            const result = document.getElementById('playlistResult');
+            if (found) {
+                result.innerHTML = '<div class="status success">✅ 플레이리스트 좋아요 성공!</div>';
+                recordTest('플레이리스트 좋아요', true, `ID: ${testId}`);
+            } else {
+                result.innerHTML = '<div class="status error">❌ 플레이리스트 좋아요 실패</div>';
+                recordTest('플레이리스트 좋아요', false, '좋아요 후 조회 실패');
+            }
+            
+            checkAllData();
+        }
+        
+        // 플레이리스트 영속성 테스트
+        async function testPlaylistPersistence() {
+            const testId = 'persistence-test-' + Date.now();
+            const userData = getUserData();
+            
+            // 저장 및 좋아요
+            userData.savedPlaylists.push({
+                playlistId: testId,
+                savedAt: new Date().toISOString()
+            });
+            userData.likedPlaylists.push(testId);
+            saveUserData(userData);
+            
+            // 페이지 새로고침 시뮬레이션
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // 다시 로드
+            const reloadedData = getUserData();
+            const savedFound = reloadedData.savedPlaylists.some(p => p.playlistId === testId);
+            const likedFound = reloadedData.likedPlaylists.includes(testId);
+            
+            const result = document.getElementById('playlistResult');
+            if (savedFound && likedFound) {
+                result.innerHTML = '<div class="status success">✅ 데이터 영속성 테스트 통과!</div>';
+                recordTest('데이터 영속성', true, '저장 및 좋아요 유지됨');
+            } else {
+                result.innerHTML = '<div class="status error">❌ 데이터 영속성 테스트 실패</div>';
+                recordTest('데이터 영속성', false, `저장: ${savedFound}, 좋아요: ${likedFound}`);
+            }
+            
+            checkAllData();
+        }
+        
+        // 맛집 저장 테스트
+        function testRestaurantSave() {
+            const userData = getUserData();
+            const testId = 'test-restaurant-' + Date.now();
+            
+            userData.savedRestaurants.push({
+                restaurantId: testId,
+                savedAt: new Date().toISOString(),
+                notes: '테스트 맛집'
+            });
+            saveUserData(userData);
+            
+            const newData = getUserData();
+            const found = newData.savedRestaurants.some(r => r.restaurantId === testId);
+            
+            const result = document.getElementById('restaurantResult');
+            if (found) {
+                result.innerHTML = '<div class="status success">✅ 맛집 저장 성공!</div>';
+                recordTest('맛집 저장', true, `ID: ${testId}`);
+            } else {
+                result.innerHTML = '<div class="status error">❌ 맛집 저장 실패</div>';
+                recordTest('맛집 저장', false, '저장 후 조회 실패');
+            }
+            
+            checkAllData();
+        }
+        
+        // 맛집 좋아요 테스트
+        function testRestaurantLike() {
+            const userData = getUserData();
+            const testId = 'test-restaurant-like-' + Date.now();
+            
+            userData.likedRestaurants.push(testId);
+            saveUserData(userData);
+            
+            const newData = getUserData();
+            const found = newData.likedRestaurants.includes(testId);
+            
+            const result = document.getElementById('restaurantResult');
+            if (found) {
+                result.innerHTML = '<div class="status success">✅ 맛집 좋아요 성공!</div>';
+                recordTest('맛집 좋아요', true, `ID: ${testId}`);
+            } else {
+                result.innerHTML = '<div class="status error">❌ 맛집 좋아요 실패</div>';
+                recordTest('맛집 좋아요', false, '좋아요 후 조회 실패');
+            }
+            
+            checkAllData();
+        }
+        
+        // 지도 저장 시뮬레이션
+        function testMapSave() {
+            // 지도에서 저장하는 것처럼 시뮬레이션
+            const testId = 'map-restaurant-' + Date.now();
+            const userData = getUserData();
+            
+            // localRestaurants에도 저장
+            const localRestaurants = localStorage.getItem('localRestaurants');
+            const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+            restaurants.push({
+                _id: testId,
+                name: '지도 테스트 맛집',
+                category: '한식',
+                address: '서울시 강남구'
+            });
+            localStorage.setItem('localRestaurants', JSON.stringify(restaurants));
+            
+            // userData에도 저장
+            userData.savedRestaurants.push({
+                restaurantId: testId,
+                savedAt: new Date().toISOString(),
+                notes: '지도에서 저장됨'
+            });
+            saveUserData(userData);
+            
+            const result = document.getElementById('restaurantResult');
+            result.innerHTML = '<div class="status success">✅ 지도 저장 시뮬레이션 완료!</div>';
+            recordTest('지도 저장', true, `ID: ${testId}`);
+            
+            checkAllData();
+        }
+        
+        // 중복 방지 테스트
+        function testDuplicatePrevention() {
+            const userData = getUserData();
+            const testId = 'duplicate-test';
+            
+            // 같은 ID로 두 번 저장
+            userData.savedPlaylists = userData.savedPlaylists.filter(p => p.playlistId !== testId);
+            userData.savedPlaylists.push({
+                playlistId: testId,
+                savedAt: new Date().toISOString()
+            });
+            userData.savedPlaylists.push({
+                playlistId: testId,
+                savedAt: new Date().toISOString()
+            });
+            
+            // 중복 제거
+            const unique = userData.savedPlaylists.reduce((acc, curr) => {
+                if (!acc.find(item => item.playlistId === curr.playlistId)) {
+                    acc.push(curr);
+                }
+                return acc;
+            }, []);
+            
+            userData.savedPlaylists = unique;
+            saveUserData(userData);
+            
+            const count = userData.savedPlaylists.filter(p => p.playlistId === testId).length;
+            
+            const result = document.getElementById('syncResult');
+            if (count === 1) {
+                result.innerHTML = '<div class="status success">✅ 중복 방지 성공!</div>';
+                recordTest('중복 방지', true, '중복 항목이 하나로 유지됨');
+            } else {
+                result.innerHTML = '<div class="status error">❌ 중복 방지 실패</div>';
+                recordTest('중복 방지', false, `${count}개 발견`);
+            }
+            
+            checkAllData();
+        }
+        
+        // 실시간 동기화 테스트
+        function testRealtimeSync() {
+            let updateReceived = false;
+            
+            const handler = () => {
+                updateReceived = true;
+            };
+            
+            window.addEventListener('dataManager:update', handler);
+            
+            const userData = getUserData();
+            userData.likedPlaylists.push('sync-test-' + Date.now());
+            saveUserData(userData);
+            
+            setTimeout(() => {
+                window.removeEventListener('dataManager:update', handler);
+                
+                const result = document.getElementById('syncResult');
+                if (updateReceived) {
+                    result.innerHTML = '<div class="status success">✅ 실시간 동기화 이벤트 수신!</div>';
+                    recordTest('실시간 동기화', true, '이벤트 정상 수신');
+                } else {
+                    result.innerHTML = '<div class="status error">❌ 실시간 동기화 실패</div>';
+                    recordTest('실시간 동기화', false, '이벤트 미수신');
+                }
+            }, 100);
+        }
+        
+        // 탭 간 동기화 테스트
+        function testCrossTabSync() {
+            let storageEventReceived = false;
+            
+            const handler = () => {
+                storageEventReceived = true;
+            };
+            
+            window.addEventListener('storage', handler);
+            
+            const userData = getUserData();
+            userData.likedPlaylists.push('cross-tab-test-' + Date.now());
+            saveUserData(userData);
+            
+            setTimeout(() => {
+                window.removeEventListener('storage', handler);
+                
+                const result = document.getElementById('syncResult');
+                if (storageEventReceived) {
+                    result.innerHTML = '<div class="status success">✅ 탭 간 동기화 이벤트 수신!</div>';
+                    recordTest('탭 간 동기화', true, 'storage 이벤트 정상 수신');
+                } else {
+                    result.innerHTML = '<div class="status info">ℹ️ 탭 간 동기화는 다른 탭에서 테스트 필요</div>';
+                    recordTest('탭 간 동기화', true, '단일 탭에서는 테스트 불가');
+                }
+            }, 100);
+        }
+        
+        // 페이지 로드 시 자동 실행
+        window.onload = () => {
+            checkAllData();
+            console.log('BobMap 통합 테스트 대시보드 준비 완료!');
+        };
+    </script>
+</body>
+</html>

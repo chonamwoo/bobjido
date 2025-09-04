@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BobMap Profile Complete Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: #ff6b6b;
+            margin-bottom: 20px;
+            font-size: 24px;
+            border-bottom: 2px solid #ff6b6b;
+            padding-bottom: 10px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #218838;
+        }
+        .list-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .list-item {
+            background: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 4px solid #ff6b6b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .list-item button {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .log-container {
+            background: #2d3436;
+            color: #dfe6e9;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px 0;
+            border-bottom: 1px solid #636e72;
+        }
+        .log-success {
+            color: #00b894;
+        }
+        .log-error {
+            color: #ff7675;
+        }
+        .log-info {
+            color: #74b9ff;
+        }
+        .timestamp {
+            color: #b2bec3;
+            font-size: 11px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        .status-active {
+            background: #00b894;
+        }
+        .status-inactive {
+            background: #636e72;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ BobMap Profile 완벽 테스트</h1>
+            <p class="subtitle">프로필 저장 기능이 제대로 작동하는지 확인합니다</p>
+            <div style="margin-top: 15px;">
+                <span class="status-indicator status-active"></span>
+                <span id="status">시스템 활성화</span>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- 왼쪽: 데이터 관리 -->
+            <div class="card">
+                <h2>📊 데이터 관리</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-number" id="restaurantCount">0</div>
+                        <div class="stat-label">저장한 맛집</div>
+                    </div>
+                    <div class="stat-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="stat-number" id="playlistCount">0</div>
+                        <div class="stat-label">저장한 리스트</div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button onclick="addSampleRestaurant()">🍴 맛집 추가</button>
+                    <button onclick="addSamplePlaylist()">📋 리스트 추가</button>
+                    <button onclick="addMultiple()">🚀 여러개 추가</button>
+                    <button class="secondary" onclick="clearAll()">🗑️ 전체 삭제</button>
+                </div>
+
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">저장된 맛집</h3>
+                <div class="list-container" id="restaurantList">
+                    <p style="color: #999; text-align: center;">저장된 맛집이 없습니다</p>
+                </div>
+
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">저장된 리스트</h3>
+                <div class="list-container" id="playlistList">
+                    <p style="color: #999; text-align: center;">저장된 리스트가 없습니다</p>
+                </div>
+            </div>
+
+            <!-- 오른쪽: 테스트 도구 -->
+            <div class="card">
+                <h2>🧪 테스트 도구</h2>
+                
+                <div class="alert alert-info">
+                    <strong>테스트 방법:</strong><br>
+                    1. 맛집/리스트를 추가합니다<br>
+                    2. 프로필 페이지를 열어 숫자를 확인합니다<br>
+                    3. 실시간으로 업데이트되는지 확인합니다
+                </div>
+
+                <div class="button-group">
+                    <button class="success" onclick="openProfile()">👤 프로필 열기</button>
+                    <button class="success" onclick="openMobileSimulator()">📱 모바일 시뮬레이터</button>
+                    <button onclick="simulateSaveFromHome()">🏠 홈에서 저장 시뮬레이션</button>
+                    <button onclick="simulateSaveFromMap()">🗺️ 지도에서 저장 시뮬레이션</button>
+                </div>
+
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">실시간 이벤트 모니터</h3>
+                <div class="log-container" id="eventLog">
+                    <div class="log-entry log-info">
+                        <span class="timestamp">[시작]</span> 테스트 시스템 준비 완료
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">데이터 검증</h3>
+                <button onclick="validateData()">🔍 데이터 무결성 검사</button>
+                <button onclick="exportData()">💾 데이터 내보내기</button>
+                <button onclick="importTestData()">📥 테스트 데이터 가져오기</button>
+            </div>
+        </div>
+
+        <!-- 하단: 상세 로그 -->
+        <div class="card" style="margin-top: 30px;">
+            <h2>📝 상세 로그</h2>
+            <div class="log-container" id="detailLog" style="max-height: 400px;">
+                <div class="log-entry log-info">시스템 초기화 중...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DataManager 클래스
+        class DataManager {
+            constructor() {
+                this.storageKey = 'bobmap_user_data';
+            }
+
+            getUserData() {
+                const data = localStorage.getItem(this.storageKey);
+                if (data) {
+                    return JSON.parse(data);
+                }
+                return {
+                    savedRestaurants: [],
+                    savedPlaylists: [],
+                    likedRestaurants: [],
+                    likedPlaylists: [],
+                    visitedRestaurants: [],
+                    reviews: [],
+                    gameResults: [],
+                    tasteProfile: null
+                };
+            }
+
+            saveUserData(data) {
+                localStorage.setItem(this.storageKey, JSON.stringify(data));
+                window.dispatchEvent(new CustomEvent('dataManager:update', { detail: data }));
+                window.dispatchEvent(new Event('storage'));
+                logEvent('데이터 저장됨', 'success');
+            }
+
+            saveRestaurant(restaurantId, notes) {
+                const userData = this.getUserData();
+                const exists = userData.savedRestaurants.some(r => r.restaurantId === restaurantId);
+                if (!exists) {
+                    userData.savedRestaurants.push({
+                        restaurantId,
+                        savedAt: new Date(),
+                        notes: notes || ''
+                    });
+                    this.saveUserData(userData);
+                    logEvent(`맛집 ${restaurantId} 저장됨`, 'success');
+                    return true;
+                }
+                logEvent(`맛집 ${restaurantId}는 이미 저장됨`, 'error');
+                return false;
+            }
+
+            savePlaylist(playlistId) {
+                const userData = this.getUserData();
+                const exists = userData.savedPlaylists.some(p => p.playlistId === playlistId);
+                if (!exists) {
+                    userData.savedPlaylists.push({
+                        playlistId,
+                        savedAt: new Date()
+                    });
+                    this.saveUserData(userData);
+                    logEvent(`플레이리스트 ${playlistId} 저장됨`, 'success');
+                    return true;
+                }
+                logEvent(`플레이리스트 ${playlistId}는 이미 저장됨`, 'error');
+                return false;
+            }
+
+            removeRestaurant(restaurantId) {
+                const userData = this.getUserData();
+                userData.savedRestaurants = userData.savedRestaurants.filter(r => r.restaurantId !== restaurantId);
+                this.saveUserData(userData);
+                logEvent(`맛집 ${restaurantId} 삭제됨`, 'info');
+            }
+
+            removePlaylist(playlistId) {
+                const userData = this.getUserData();
+                userData.savedPlaylists = userData.savedPlaylists.filter(p => p.playlistId !== playlistId);
+                this.saveUserData(userData);
+                logEvent(`플레이리스트 ${playlistId} 삭제됨`, 'info');
+            }
+        }
+
+        const dataManager = new DataManager();
+        let eventCount = 0;
+
+        // 로그 함수
+        function logEvent(message, type = 'info') {
+            eventCount++;
+            const timestamp = new Date().toLocaleTimeString();
+            const eventLog = document.getElementById('eventLog');
+            const detailLog = document.getElementById('detailLog');
+            
+            const eventEntry = document.createElement('div');
+            eventEntry.className = `log-entry log-${type}`;
+            eventEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            
+            eventLog.insertBefore(eventEntry, eventLog.firstChild);
+            if (eventLog.children.length > 10) {
+                eventLog.removeChild(eventLog.lastChild);
+            }
+            
+            const detailEntry = eventEntry.cloneNode(true);
+            detailLog.insertBefore(detailEntry, detailLog.firstChild);
+        }
+
+        // 데이터 새로고침
+        function refreshData() {
+            const userData = dataManager.getUserData();
+            
+            // 중복 제거
+            const uniqueRestaurants = userData.savedRestaurants.reduce((acc, curr) => {
+                if (!acc.find(item => item.restaurantId === curr.restaurantId)) {
+                    acc.push(curr);
+                }
+                return acc;
+            }, []);
+            
+            const uniquePlaylists = userData.savedPlaylists.reduce((acc, curr) => {
+                if (!acc.find(item => item.playlistId === curr.playlistId)) {
+                    acc.push(curr);
+                }
+                return acc;
+            }, []);
+
+            // 숫자 업데이트
+            document.getElementById('restaurantCount').textContent = uniqueRestaurants.length;
+            document.getElementById('playlistCount').textContent = uniquePlaylists.length;
+
+            // 리스트 업데이트
+            const restaurantList = document.getElementById('restaurantList');
+            const playlistList = document.getElementById('playlistList');
+
+            if (uniqueRestaurants.length > 0) {
+                restaurantList.innerHTML = uniqueRestaurants.map(r => `
+                    <div class="list-item">
+                        <div>
+                            <strong>${r.restaurantId}</strong><br>
+                            <small>${new Date(r.savedAt).toLocaleString()}</small>
+                            ${r.notes ? `<br><small>메모: ${r.notes}</small>` : ''}
+                        </div>
+                        <button onclick="removeRestaurant('${r.restaurantId}')">삭제</button>
+                    </div>
+                `).join('');
+            } else {
+                restaurantList.innerHTML = '<p style="color: #999; text-align: center;">저장된 맛집이 없습니다</p>';
+            }
+
+            if (uniquePlaylists.length > 0) {
+                playlistList.innerHTML = uniquePlaylists.map(p => `
+                    <div class="list-item">
+                        <div>
+                            <strong>${p.playlistId}</strong><br>
+                            <small>${new Date(p.savedAt).toLocaleString()}</small>
+                        </div>
+                        <button onclick="removePlaylist('${p.playlistId}')">삭제</button>
+                    </div>
+                `).join('');
+            } else {
+                playlistList.innerHTML = '<p style="color: #999; text-align: center;">저장된 리스트가 없습니다</p>';
+            }
+
+            logEvent(`데이터 새로고침: 맛집 ${uniqueRestaurants.length}개, 리스트 ${uniquePlaylists.length}개`, 'info');
+        }
+
+        // 테스트 함수들
+        function addSampleRestaurant() {
+            const restaurants = [
+                '성수동 파스타집',
+                '강남 스테이크하우스',
+                '홍대 라멘집',
+                '이태원 버거집',
+                '종로 한정식'
+            ];
+            const random = restaurants[Math.floor(Math.random() * restaurants.length)];
+            const id = `restaurant_${Date.now()}`;
+            dataManager.saveRestaurant(id, random);
+            refreshData();
+        }
+
+        function addSamplePlaylist() {
+            const playlists = [
+                '데이트 코스 맛집',
+                '혼밥 맛집 모음',
+                '가성비 최고 맛집',
+                '인스타 감성 카페',
+                '회식 장소 추천'
+            ];
+            const random = playlists[Math.floor(Math.random() * playlists.length)];
+            const id = `playlist_${Date.now()}`;
+            dataManager.savePlaylist(id);
+            refreshData();
+        }
+
+        function addMultiple() {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    if (i % 2 === 0) {
+                        addSampleRestaurant();
+                    } else {
+                        addSamplePlaylist();
+                    }
+                }, i * 200);
+            }
+        }
+
+        function clearAll() {
+            if (confirm('정말로 모든 데이터를 삭제하시겠습니까?')) {
+                localStorage.removeItem('bobmap_user_data');
+                logEvent('모든 데이터 삭제됨', 'success');
+                refreshData();
+            }
+        }
+
+        function removeRestaurant(id) {
+            dataManager.removeRestaurant(id);
+            refreshData();
+        }
+
+        function removePlaylist(id) {
+            dataManager.removePlaylist(id);
+            refreshData();
+        }
+
+        function openProfile() {
+            window.open('http://localhost:3001/profile?debug=true', '_blank');
+            logEvent('프로필 페이지 열림', 'info');
+        }
+
+        function openMobileSimulator() {
+            window.open('http://localhost:5555/mobile-simulator.html', '_blank');
+            logEvent('모바일 시뮬레이터 열림', 'info');
+        }
+
+        function simulateSaveFromHome() {
+            const id = `home_playlist_${Date.now()}`;
+            dataManager.savePlaylist(id);
+            logEvent('홈에서 플레이리스트 저장 시뮬레이션', 'success');
+            refreshData();
+        }
+
+        function simulateSaveFromMap() {
+            const id = `map_restaurant_${Date.now()}`;
+            dataManager.saveRestaurant(id, '지도에서 발견한 맛집');
+            logEvent('지도에서 맛집 저장 시뮬레이션', 'success');
+            refreshData();
+        }
+
+        function validateData() {
+            const userData = dataManager.getUserData();
+            const issues = [];
+            
+            // 중복 체크
+            const restaurantIds = userData.savedRestaurants.map(r => r.restaurantId);
+            const duplicateRestaurants = restaurantIds.filter((id, index) => restaurantIds.indexOf(id) !== index);
+            if (duplicateRestaurants.length > 0) {
+                issues.push(`중복된 맛집: ${duplicateRestaurants.join(', ')}`);
+            }
+            
+            const playlistIds = userData.savedPlaylists.map(p => p.playlistId);
+            const duplicatePlaylists = playlistIds.filter((id, index) => playlistIds.indexOf(id) !== index);
+            if (duplicatePlaylists.length > 0) {
+                issues.push(`중복된 플레이리스트: ${duplicatePlaylists.join(', ')}`);
+            }
+            
+            if (issues.length === 0) {
+                logEvent('✅ 데이터 무결성 검사 통과', 'success');
+                alert('데이터 무결성 검사 통과!\n문제가 발견되지 않았습니다.');
+            } else {
+                logEvent(`❌ 데이터 문제 발견: ${issues.join(', ')}`, 'error');
+                alert('데이터 문제 발견:\n' + issues.join('\n'));
+            }
+        }
+
+        function exportData() {
+            const userData = dataManager.getUserData();
+            const dataStr = JSON.stringify(userData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `bobmap_data_${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            logEvent('데이터 내보내기 완료', 'success');
+        }
+
+        function importTestData() {
+            const testData = {
+                savedRestaurants: [
+                    { restaurantId: 'test_rest_1', savedAt: new Date(), notes: '테스트 맛집 1' },
+                    { restaurantId: 'test_rest_2', savedAt: new Date(), notes: '테스트 맛집 2' },
+                    { restaurantId: 'test_rest_3', savedAt: new Date(), notes: '테스트 맛집 3' }
+                ],
+                savedPlaylists: [
+                    { playlistId: 'test_list_1', savedAt: new Date() },
+                    { playlistId: 'test_list_2', savedAt: new Date() }
+                ],
+                likedRestaurants: [],
+                likedPlaylists: [],
+                visitedRestaurants: [],
+                reviews: [],
+                gameResults: [],
+                tasteProfile: null
+            };
+            
+            dataManager.saveUserData(testData);
+            refreshData();
+            logEvent('테스트 데이터 가져오기 완료', 'success');
+        }
+
+        // 이벤트 리스너
+        window.addEventListener('dataManager:update', (e) => {
+            logEvent('dataManager:update 이벤트 감지', 'info');
+            refreshData();
+        });
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'bobmap_user_data') {
+                logEvent('storage 이벤트 감지 (다른 탭에서 변경)', 'info');
+                refreshData();
+            }
+        });
+
+        // 초기 로드
+        refreshData();
+        logEvent('테스트 시스템 시작', 'success');
+
+        // 주기적 상태 체크
+        setInterval(() => {
+            const userData = dataManager.getUserData();
+            const restaurantCount = userData.savedRestaurants.length;
+            const playlistCount = userData.savedPlaylists.length;
+            document.getElementById('status').textContent = `시스템 활성화 | 맛집: ${restaurantCount} | 리스트: ${playlistCount}`;
+        }, 1000);
+    </script>
+</body>
+</html>

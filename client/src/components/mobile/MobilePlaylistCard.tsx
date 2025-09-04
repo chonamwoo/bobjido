@@ -151,13 +151,13 @@ const MobilePlaylistCard: React.FC<PlaylistCardProps> = ({
             {/* 좋아요 수 */}
             <div className="flex items-center">
               <HeartIcon className="w-4 h-4 mr-1" />
-              <span>{formatCount(playlist.likes.length)}</span>
+              <span>{formatCount(Array.isArray(playlist.likes) ? playlist.likes.length : (playlist.likes || 0))}</span>
             </div>
             
             {/* 저장 수 */}
             <div className="flex items-center">
               <BookmarkIcon className="w-4 h-4 mr-1" />
-              <span>{formatCount(playlist.saves.length)}</span>
+              <span>{formatCount(Array.isArray(playlist.saves) ? playlist.saves.length : (playlist.saves || 0))}</span>
             </div>
           </div>
 

@@ -7,7 +7,6 @@ import {
   MagnifyingGlassIcon, 
   MapPinIcon, 
   PhoneIcon, 
-  PlusIcon, 
   XMarkIcon, 
   BuildingStorefrontIcon, 
   TrashIcon, 
@@ -20,21 +19,34 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
   TagIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  UserPlusIcon,
+  UserMinusIcon,
+  MapIcon
 } from '@heroicons/react/24/outline';
 import { 
   StarIcon as StarSolidIcon,
   BookmarkIcon as BookmarkSolidIcon 
 } from '@heroicons/react/24/solid';
 import { Restaurant } from '../types';
-import { realRestaurants } from '../data/realRestaurants';
-import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists';
+import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists_fixed';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
+import { useSocialStore } from '../store/socialStore';
 import { ShareIcon } from '@heroicons/react/24/outline';
 import { dataManager } from '../utils/dataManager';
-import { sampleRestaurants, getRestaurantById } from '../data/sampleRestaurants';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default markers missing issue in Leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const RestaurantMapV3: React.FC = () => {
   const isMobile = useIsMobile();
@@ -46,7 +58,6 @@ const RestaurantMapV3: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [showAdminMenu, setShowAdminMenu] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [viewMode, setViewMode] = useState<'restaurants' | 'lists'>('lists');
@@ -55,6 +66,14 @@ const RestaurantMapV3: React.FC = () => {
     const savedData = dataManager.getSavedPlaylists();
     return savedData.map(p => p.playlistId);
   });
+  
+  // 소셜 스토어에서 팔로잉 관리
+  const { followUser, unfollowUser, isFollowing, syncWithLocalStorage } = useSocialStore();
+  
+  // 컴포넌트 마운트 시 동기화
+  useEffect(() => {
+    syncWithLocalStorage();
+  }, [syncWithLocalStorage]);
   
   // 필터 상태
   const [filters, setFilters] = useState({
@@ -111,21 +130,12 @@ const RestaurantMapV3: React.FC = () => {
   useEffect(() => {
     const restaurantId = searchParams.get('restaurant');
     if (restaurantId) {
-      // First try to find in sampleRestaurants
-      let restaurant = getRestaurantById(restaurantId);
-      
-      // If not found, try localStorage
-      if (!restaurant) {
-        const localRestaurants = localStorage.getItem('localRestaurants');
-        if (localRestaurants) {
-          const restaurants = JSON.parse(localRestaurants);
-          restaurant = restaurants.find((r: any) => r._id === restaurantId);
-        }
-      }
-      
-      // If still not found, try realRestaurants
-      if (!restaurant) {
-        restaurant = realRestaurants.find(r => r._id === restaurantId);
+      // Try to find in localStorage
+      let restaurant: any = null;
+      const localRestaurants = localStorage.getItem('localRestaurants');
+      if (localRestaurants) {
+        const restaurants = JSON.parse(localRestaurants);
+        restaurant = restaurants.find((r: any) => r._id === restaurantId);
       }
       
       if (restaurant) {
@@ -226,24 +236,25 @@ const RestaurantMapV3: React.FC = () => {
     if (searchKeyword && searchResults) {
       result = searchResults;
     } else {
-      // DB 데이터와 실제 맛집 데이터 합치기
+      // DB 데이터만 사용
       const dbData = dbRestaurants || [];
-      result = [...dbData, ...realRestaurants].filter((restaurant: Restaurant, index: number, self: Restaurant[]) =>
-        index === self.findIndex((r) => r._id === restaurant._id)
-      );
+      result = dbData;
       
-      // Add sampleRestaurants data with proper type conversion
-      const convertedSampleRestaurants = sampleRestaurants.map((r: any) => ({
-        ...r,
-        priceRange: r.priceRange || '',
-        images: r.image ? [r.image] : [],
-        averageRating: r.rating || 0,
-        reviewCount: 0,
-        tags: [],
-        dnaProfile: {
-          atmosphere: [],
-          foodStyle: [],
-          instagramability: 0,
+      // Add local storage restaurants with proper type conversion
+      const localRestaurants = localStorage.getItem('localRestaurants');
+      if (localRestaurants) {
+        const localData = JSON.parse(localRestaurants);
+        const convertedLocalRestaurants = localData.map((r: any) => ({
+          ...r,
+          priceRange: r.priceRange || '',
+          images: r.image ? [r.image] : [],
+          averageRating: r.rating || 0,
+          reviewCount: 0,
+          tags: [],
+          dnaProfile: {
+            atmosphere: [],
+            foodStyle: [],
+            instagramability: 0,
           dateSpot: 0,
           groupFriendly: 0,
           soloFriendly: 0,
@@ -252,15 +263,16 @@ const RestaurantMapV3: React.FC = () => {
         createdBy: {} as any,
         verifiedBy: [],
         isVerified: false,
-        viewCount: 0,
-        saveCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      } as Restaurant));
-      
-      result = [...result, ...convertedSampleRestaurants].filter((restaurant: Restaurant, index: number, self: Restaurant[]) =>
-        index === self.findIndex((r) => r._id === restaurant._id)
-      );
+          viewCount: 0,
+          saveCount: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        } as Restaurant));
+        
+        result = [...result, ...convertedLocalRestaurants].filter((restaurant: Restaurant, index: number, self: Restaurant[]) =>
+          index === self.findIndex((r) => r._id === restaurant._id)
+        );
+      }
     }
     
     // 선택된 레스토랑이 있고 리스트에 없으면 추가
@@ -392,17 +404,17 @@ const RestaurantMapV3: React.FC = () => {
       setSavedRestaurants(prev => prev.filter(id => id !== restaurantId));
     } else {
       // 맛집 정보도 함께 저장 (나중에 표시하기 위해)
-      const restaurantData = sampleRestaurants.find(r => r._id === restaurantId) || 
-                            realRestaurants.find(r => r._id === restaurantId) ||
+      const storedRestaurants = localStorage.getItem('localRestaurants');
+      const localData = storedRestaurants ? JSON.parse(storedRestaurants) : [];
+      const restaurantData = localData.find((r: any) => r._id === restaurantId) ||
                             selectedRestaurant || 
                             { _id: restaurantId, name: '맛집', category: '기타', address: '' };
       
       // localRestaurants에 저장
-      const localRestaurants = localStorage.getItem('localRestaurants');
-      const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
-      if (!restaurants.find((r: any) => r._id === restaurantId)) {
-        restaurants.push(restaurantData);
-        localStorage.setItem('localRestaurants', JSON.stringify(restaurants));
+      const existingRestaurants = storedRestaurants ? JSON.parse(storedRestaurants) : [];
+      if (!existingRestaurants.find((r: any) => r._id === restaurantId)) {
+        existingRestaurants.push(restaurantData);
+        localStorage.setItem('localRestaurants', JSON.stringify(existingRestaurants));
         console.log('Restaurant data saved to localStorage:', restaurantData);
       }
       
@@ -423,7 +435,19 @@ const RestaurantMapV3: React.FC = () => {
     setRefreshKey(prev => prev + 1);
   }, [selectedRestaurant]);
 
-  // 플레이리스트 저장 핸들러
+  // 팔로우 핸들러
+  const handleFollowUser = useCallback((userId: string, username: string, userDetails?: any) => {
+    const isFollowed = isFollowing(userId);
+    
+    if (isFollowed) {
+      unfollowUser(userId);
+      toast.success(`${username}님 팔로우 취소`);
+    } else {
+      followUser(userId, userDetails || { _id: userId, username });
+      toast.success(`${username}님 팔로우 시작! 🎉`);
+    }
+  }, [isFollowing, followUser, unfollowUser]);
+
   const handleSaveList = useCallback((listId: string) => {
     console.log('Map - handleSaveList called - id:', listId);
     
@@ -721,60 +745,7 @@ const RestaurantMapV3: React.FC = () => {
                   center={mapCenter} // 지도 중심 설정
                 />
                 
-                {/* 플로팅 액션 버튼 */}
-                <div className="absolute bottom-8 right-8" style={{ zIndex: 1000 }}>
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowAdminMenu(!showAdminMenu)}
-                      className="group bg-gradient-to-r from-orange-500 to-red-500 text-white p-5 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110"
-                    >
-                      <PlusIcon className="w-8 h-8" />
-                    </button>
-                    
-                    {/* Admin/사용자 메뉴 */}
-                    {showAdminMenu && (
-                      <div className="absolute bottom-20 right-0 bg-white rounded-lg shadow-xl p-2 min-w-[200px]">
-                        {(user as any)?.isAdmin ? (
-                          <>
-                            <button
-                              onClick={() => {
-                                setShowAddModal(true);
-                                setShowAdminMenu(false);
-                              }}
-                              className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3"
-                            >
-                              <PlusIcon className="w-5 h-5 text-green-600" />
-                              <span>맛집 추가</span>
-                            </button>
-                            {selectedRestaurant && (
-                              <button
-                                onClick={() => {
-                                  handleDeleteRestaurant(selectedRestaurant._id);
-                                  setShowAdminMenu(false);
-                                }}
-                                className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3"
-                              >
-                                <TrashIcon className="w-5 h-5 text-red-600" />
-                                <span>선택한 맛집 삭제</span>
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setShowRequestModal(true);
-                              setShowAdminMenu(false);
-                            }}
-                            className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3"
-                          >
-                            <PaperAirplaneIcon className="w-5 h-5 text-blue-600" />
-                            <span>맛집 추가 요청</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {/* 플로팅 액션 버튼 제거 - 맛집 추가 요청 버튼이 이미 있음 */}
 
                 {/* 현재 등록된 맛집 수 표시 */}
                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-lg" style={{ zIndex: 1000 }}>
@@ -797,41 +768,111 @@ const RestaurantMapV3: React.FC = () => {
                   // 리스트 목록
                   <div className="grid grid-cols-1 gap-3">
                     {certifiedRestaurantLists.map((list) => (
-                  <div
-                    key={list._id}
-                    onClick={() => setSelectedList(list)}
-                    className={`p-4 bg-white rounded-xl border-2 cursor-pointer transition-all ${
-                      selectedList?._id === list._id ? 
-                      'border-orange-500 shadow-lg' : 
-                      'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 text-sm">{list.title}</h4>
-                        <p className="text-xs text-gray-500 mt-1">{list.certification || list.category}</p>
+                  <div key={list._id} className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+                    <div
+                      onClick={() => setSelectedList(selectedList?._id === list._id ? null : list)}
+                      className={`p-4 cursor-pointer transition-all ${
+                        selectedList?._id === list._id ? 
+                        'bg-gradient-to-r from-orange-50 to-red-50 border-b-2 border-orange-200' : 
+                        'hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                            {list.title}
+                            <ChevronDownIcon 
+                              className={`w-4 h-4 text-gray-500 transition-transform ${
+                                selectedList?._id === list._id ? 'rotate-180' : ''
+                              }`} 
+                            />
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1">{list.certification || list.category}</p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveList(list._id);
+                          }}
+                          className={`p-2 rounded-lg transition-colors ${
+                            dataManager.isPlaylistSaved(list._id) ?
+                            'bg-orange-100 text-orange-600' :
+                            'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {dataManager.isPlaylistSaved(list._id) ? 
+                            <BookmarkSolidIcon className="w-4 h-4" /> : 
+                            <BookmarkIcon className="w-4 h-4" />}
+                        </button>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSaveList(list._id);
-                        }}
-                        className={`p-2 rounded-lg transition-colors ${
-                          dataManager.isPlaylistSaved(list._id) ?
-                          'bg-orange-100 text-orange-600' :
-                          'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        {dataManager.isPlaylistSaved(list._id) ? 
-                          <BookmarkSolidIcon className="w-4 h-4" /> : 
-                          <BookmarkIcon className="w-4 h-4" />}
-                      </button>
+                      <p className="text-xs text-gray-600 line-clamp-2 mt-1">{list.description}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <span>📍 {list.restaurants?.length || 0}개</span>
+                          <span>👤 {typeof list.createdBy === 'object' ? list.createdBy?.username : list.createdBy}</span>
+                        </div>
+                        {list.createdBy && typeof list.createdBy === 'object' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFollowUser(list.createdBy._id, list.createdBy.username, list.createdBy);
+                            }}
+                            className={`px-2.5 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1 transition-all transform hover:scale-105 ${
+                              isFollowing(list.createdBy._id) ?
+                              'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md' :
+                              'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md hover:shadow-lg'
+                            }`}
+                            title={isFollowing(list.createdBy._id) ? '팔로우 취소' : '팔로우'}
+                          >
+                            {isFollowing(list.createdBy._id) ? (
+                              <>
+                                <UserMinusIcon className="w-3.5 h-3.5" />
+                                <span>팔로잉</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserPlusIcon className="w-3.5 h-3.5" />
+                                <span>팔로우</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-600 line-clamp-2">{list.description}</p>
-                    <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
-                      <span>📍 {list.restaurants?.length || 0}개</span>
-                      <span>👤 {typeof list.createdBy === 'object' ? list.createdBy?.username : list.createdBy}</span>
-                    </div>
+                    
+                    {/* 드롭다운으로 식당 목록 표시 */}
+                    {selectedList?._id === list._id && (
+                      <div className="bg-gray-50 p-3 border-t border-gray-200 max-h-[300px] overflow-y-auto">
+                        <div className="space-y-2">
+                          {list.restaurants?.map((item: any, index: number) => {
+                            const restaurant = item.restaurant || item;
+                            if (!restaurant) return null;
+                            
+                            return (
+                              <div
+                                key={restaurant._id || index}
+                                onClick={() => handleRestaurantClick(restaurant)}
+                                className="bg-white rounded-lg p-3 cursor-pointer hover:shadow-md transition-all flex items-center gap-3 border border-gray-100"
+                              >
+                                <div className="flex-1">
+                                  <h5 className="font-medium text-sm text-gray-900">{restaurant.name}</h5>
+                                  <p className="text-xs text-gray-500">{restaurant.category}</p>
+                                  {restaurant.address && (
+                                    <p className="text-xs text-gray-400 mt-1">{restaurant.address}</p>
+                                  )}
+                                </div>
+                                {restaurant.rating && (
+                                  <div className="flex items-center">
+                                    <StarIcon className="w-4 h-4 text-yellow-500 fill-current" />
+                                    <span className="text-sm ml-1">{restaurant.rating}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                     ))}
                   </div>
@@ -887,48 +928,6 @@ const RestaurantMapV3: React.FC = () => {
                     })}
                   </div>
                 )}
-              </div>
-            )}
-            
-            {/* 선택된 리스트의 식당들 표시 (모바일) */}
-            {isMobile && selectedList && viewMode === 'lists' && (
-              <div className="mt-4 bg-orange-50 rounded-xl p-4">
-                <h3 className="font-bold text-lg mb-3">{selectedList.title} 맛집 목록</h3>
-                <div className="grid grid-cols-1 gap-3">
-                  {selectedList.restaurants?.map((restaurantId: string, index: number) => {
-                    const restaurant = getRestaurantById(restaurantId);
-                    if (!restaurant) return null;
-                    
-                    return (
-                      <div
-                        key={restaurantId}
-                        onClick={() => handleRestaurantClick(restaurant)}
-                        className="bg-white rounded-lg p-3 cursor-pointer hover:shadow-md transition-all flex items-center gap-3"
-                      >
-                        {restaurant.image && (
-                          <img
-                            src={restaurant.image}
-                            alt={restaurant.name}
-                            className="w-16 h-16 rounded-lg object-cover"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h4 className="font-medium text-sm">{restaurant.name}</h4>
-                          <p className="text-xs text-gray-500">{restaurant.category}</p>
-                          {restaurant.address && (
-                            <p className="text-xs text-gray-400 mt-1">{restaurant.address}</p>
-                          )}
-                        </div>
-                        {restaurant.rating && (
-                          <div className="flex items-center">
-                            <StarIcon className="w-4 h-4 text-yellow-500 fill-current" />
-                            <span className="text-sm ml-1">{restaurant.rating}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             )}
             
@@ -999,13 +998,14 @@ const RestaurantMapV3: React.FC = () => {
                   <div className="border-t pt-4">
                     <h3 className="font-semibold text-gray-700 mb-3">맛집 목록 ({selectedList.restaurants?.length || 0}개)</h3>
                     <div className="space-y-3">
-                      {selectedList.restaurants?.map((restaurantId: string) => {
-                        const restaurant = getRestaurantById(restaurantId);
+                      {selectedList.restaurants?.map((item: any, index: number) => {
+                        // restaurants 배열이 { restaurant: {...} } 형태로 중첩되어 있음
+                        const restaurant = item.restaurant || item;
                         if (!restaurant) return null;
                         
                         return (
                           <div
-                            key={restaurantId}
+                            key={restaurant._id || index}
                             onClick={() => handleRestaurantClick(restaurant)}
                             className="bg-gray-50 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-all"
                           >
@@ -1313,8 +1313,8 @@ const RestaurantMapV3: React.FC = () => {
 
         {/* 모바일에서 선택된 맛집 정보 모달 */}
         {isMobile && selectedRestaurant && (
-          <div className="fixed inset-0 bg-black/50 flex items-end z-50">
-            <div className="bg-white w-full max-h-[70vh] rounded-t-3xl p-6 animate-slide-up overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white w-full max-w-lg max-h-[85vh] rounded-3xl p-6 animate-slide-up overflow-y-auto">
               <div className="flex justify-between items-start mb-4">
                 <h2 className="text-xl font-bold">{selectedRestaurant.name}</h2>
                 <button
@@ -1347,6 +1347,54 @@ const RestaurantMapV3: React.FC = () => {
                   </div>
                 )}
                 
+                {/* 미니 지도 */}
+                {(selectedRestaurant.coordinates || (selectedRestaurant as any).coordinates) && (
+                  <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-200 mt-3">
+                    <MapContainer 
+                      center={[
+                        (selectedRestaurant.coordinates || (selectedRestaurant as any).coordinates).lat,
+                        (selectedRestaurant.coordinates || (selectedRestaurant as any).coordinates).lng
+                      ]}
+                      zoom={16}
+                      scrollWheelZoom={false}
+                      className="w-full h-full"
+                      zoomControl={false}
+                      doubleClickZoom={false}
+                      dragging={false}
+                    >
+                      <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                      />
+                      <Marker 
+                        position={[
+                          (selectedRestaurant.coordinates || (selectedRestaurant as any).coordinates).lat,
+                          (selectedRestaurant.coordinates || (selectedRestaurant as any).coordinates).lng
+                        ]}
+                      >
+                        <Popup>{selectedRestaurant.name}</Popup>
+                      </Marker>
+                    </MapContainer>
+                  </div>
+                )}
+                
+                {/* 카카오맵으로 보기 버튼 */}
+                {(selectedRestaurant.coordinates || (selectedRestaurant as any).coordinates) && (
+                  <button
+                    onClick={() => {
+                      const coords = selectedRestaurant.coordinates || (selectedRestaurant as any).coordinates;
+                      window.open(
+                        `https://map.kakao.com/link/map/${encodeURIComponent(selectedRestaurant.name)},${coords.lat},${coords.lng}`,
+                        '_blank'
+                      );
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-medium rounded-xl transition-colors text-sm"
+                  >
+                    <MapIcon className="w-4 h-4" />
+                    카카오맵에서 보기
+                  </button>
+                )}
+                
                 {/* 저장 버튼 */}
                 <button
                   onClick={() => handleSaveRestaurant(selectedRestaurant._id)}
@@ -1373,8 +1421,8 @@ const RestaurantMapV3: React.FC = () => {
           </div>
         )}
 
-        {/* Admin 맛집 등록 모달 */}
-        {showAddModal && (user as any)?.isAdmin && (
+        {/* 맛집 등록 모달 - 모든 사용자가 사용 가능 */}
+        {showAddModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
             <div className="bg-white rounded-2xl p-6 max-w-md w-full">
               <div className="flex justify-between items-center mb-4">
@@ -1486,12 +1534,12 @@ const RestaurantMapV3: React.FC = () => {
           </div>
         )}
 
-        {/* 일반 사용자 맛집 추가 요청 모달 */}
-        {showRequestModal && !(user as any)?.isAdmin && (
+        {/* 일반 사용자도 맛집 추가 가능 */}
+        {showRequestModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
             <div className="bg-white rounded-2xl p-6 max-w-md w-full">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">맛집 추가 요청</h3>
+                <h3 className="text-xl font-bold">새 맛집 등록</h3>
                 <button
                   onClick={() => setShowRequestModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg"
@@ -1501,7 +1549,7 @@ const RestaurantMapV3: React.FC = () => {
               </div>
 
               <p className="text-sm text-gray-600 mb-4">
-                관리자가 검토 후 맛집을 추가해드립니다.
+                지도를 클릭하여 위치를 선택한 후, 맛집 정보를 입력해주세요.
               </p>
 
               <div className="space-y-4">
@@ -1511,9 +1559,9 @@ const RestaurantMapV3: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={requestForm.name}
-                    onChange={(e) => setRequestForm({ ...requestForm, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newRestaurantForm.name}
+                    onChange={(e) => setNewRestaurantForm({ ...newRestaurantForm, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                     placeholder="예: 홍대 맛집"
                   />
                 </div>
@@ -1523,9 +1571,9 @@ const RestaurantMapV3: React.FC = () => {
                     카테고리 *
                   </label>
                   <select
-                    value={requestForm.category}
-                    onChange={(e) => setRequestForm({ ...requestForm, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newRestaurantForm.category}
+                    onChange={(e) => setNewRestaurantForm({ ...newRestaurantForm, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
                     <option value="">선택하세요</option>
                     {categories.map(cat => (
@@ -1540,52 +1588,66 @@ const RestaurantMapV3: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={requestForm.address}
-                    onChange={(e) => setRequestForm({ ...requestForm, address: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newRestaurantForm.address}
+                    onChange={(e) => setNewRestaurantForm({ ...newRestaurantForm, address: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                     placeholder="예: 서울시 마포구 홍대"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    추가 이유
+                    전화번호
                   </label>
-                  <textarea
-                    value={requestForm.reason}
-                    onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={3}
-                    placeholder="이 맛집을 추가하고 싶은 이유를 적어주세요"
+                  <input
+                    type="text"
+                    value={newRestaurantForm.phoneNumber}
+                    onChange={(e) => setNewRestaurantForm({ ...newRestaurantForm, phoneNumber: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="예: 02-1234-5678"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    연락처 (선택)
+                    가격대
                   </label>
-                  <input
-                    type="text"
-                    value={requestForm.contact}
-                    onChange={(e) => setRequestForm({ ...requestForm, contact: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="답변 받을 연락처"
-                  />
+                  <select
+                    value={newRestaurantForm.priceRange}
+                    onChange={(e) => setNewRestaurantForm({ ...newRestaurantForm, priceRange: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="₩">₩ (1만원 미만)</option>
+                    <option value="₩₩">₩₩ (1-3만원)</option>
+                    <option value="₩₩₩">₩₩₩ (3-5만원)</option>
+                    <option value="₩₩₩₩">₩₩₩₩ (5만원 이상)</option>
+                  </select>
                 </div>
               </div>
 
               <div className="flex gap-3 mt-6">
                 <button
-                  onClick={() => setShowRequestModal(false)}
+                  onClick={() => {
+                    setShowRequestModal(false);
+                    setNewRestaurantForm({
+                      name: '',
+                      category: '',
+                      address: '',
+                      phoneNumber: '',
+                      priceRange: ''
+                    });
+                  }}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   취소
                 </button>
                 <button
-                  onClick={handleSubmitRequest}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all"
+                  onClick={handleSubmitRestaurant}
+                  disabled={createRestaurantMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all disabled:opacity-50"
                 >
-                  요청 전송
+                  {createRestaurantMutation.isPending ? '등록 중...' : '맛집 등록'}
                 </button>
               </div>
             </div>

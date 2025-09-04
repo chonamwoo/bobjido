@@ -524,7 +524,7 @@ const MobileCommunity: React.FC = () => {
                     ) : (
                       <HeartIcon className="w-5 h-5 text-gray-400" />
                     )}
-                    <span className="text-xs text-gray-600">{post.likes.toLocaleString()}</span>
+                    <span className="text-xs text-gray-600">{(Array.isArray(post.likes) ? post.likes.length : (post.likes || 0)).toLocaleString()}</span>
                   </button>
                   <button className="flex items-center gap-1">
                     <ChatBubbleLeftIcon className="w-5 h-5 text-gray-400" />

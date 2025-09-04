@@ -568,7 +568,7 @@ const UserProfile: React.FC = () => {
                     <span>{list.createdAt}</span>
                     <span className="flex items-center gap-1">
                       <HeartIcon className="w-4 h-4" />
-                      {list.likes}
+                      {Array.isArray(list.likes) ? list.likes.length : list.likes || 0}
                     </span>
                   </div>
                   <button

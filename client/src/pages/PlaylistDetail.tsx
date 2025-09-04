@@ -26,7 +26,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useAuthStore } from '../store/authStore';
 import { getDefaultAvatar } from '../utils/avatars';
-import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists';
+import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists_fixed';
 import { dataManager } from '../utils/dataManager';
 
 const PlaylistDetail: React.FC = () => {
@@ -35,6 +35,8 @@ const PlaylistDetail: React.FC = () => {
   const queryClient = useQueryClient();
   const { user, token } = useAuthStore();
   const [showShareModal, setShowShareModal] = useState(false);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
+  const [showRestaurantDetail, setShowRestaurantDetail] = useState(false);
   const [isSaved, setIsSaved] = useState(() => id ? dataManager.isPlaylistSaved(id) : false);
   const [isLiked, setIsLiked] = useState(() => id ? dataManager.isPlaylistLiked(id) : false);
   const [savedRestaurants, setSavedRestaurants] = useState<string[]>(() => {
@@ -425,7 +427,11 @@ const PlaylistDetail: React.FC = () => {
               return (
                 <div
                   key={restaurant._id}
-                  className="block p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                  className="block p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => {
+                    setSelectedRestaurant({ ...restaurant, playlistNote: item.personalNote, mustTryMenus: item.mustTry });
+                    setShowRestaurantDetail(true);
+                  }}
                 >
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
@@ -588,6 +594,144 @@ const PlaylistDetail: React.FC = () => {
             >
               취소
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 레스토랑 상세 모달 */}
+      {showRestaurantDetail && selectedRestaurant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">{selectedRestaurant.name}</h2>
+              <button
+                onClick={() => {
+                  setShowRestaurantDetail(false);
+                  setSelectedRestaurant(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* 기본 정보 */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                    {selectedRestaurant.category}
+                  </span>
+                  {selectedRestaurant.rating > 0 && (
+                    <div className="flex items-center gap-1">
+                      <StarIcon className="w-5 h-5 text-yellow-400 fill-current" />
+                      <span className="font-medium">{selectedRestaurant.rating.toFixed(1)}</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-gray-600 flex items-center gap-2">
+                  <MapPinIcon className="w-4 h-4" />
+                  {selectedRestaurant.address}
+                </p>
+              </div>
+
+              {/* 플레이리스트 작성자의 노트 */}
+              {selectedRestaurant.playlistNote && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-orange-800 mb-1">💭 플레이리스트 작성자의 한마디</p>
+                  <p className="text-gray-700">{selectedRestaurant.playlistNote}</p>
+                </div>
+              )}
+
+              {/* 추천 메뉴 */}
+              {selectedRestaurant.mustTryMenus && selectedRestaurant.mustTryMenus.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-2">🍽️ 추천 메뉴</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRestaurant.mustTryMenus.map((menu: string) => (
+                      <span key={menu} className="bg-gray-100 px-3 py-1 rounded-full text-sm">
+                        {menu}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 액션 버튼들 */}
+              <div className="flex gap-3 pt-4 border-t">
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      toast.error('로그인이 필요합니다.');
+                      return;
+                    }
+                    
+                    const isRestaurantSaved = savedRestaurants.includes(selectedRestaurant._id);
+                    if (isRestaurantSaved) {
+                      dataManager.unsaveRestaurant(selectedRestaurant._id);
+                      toast.success('저장 취소');
+                      setSavedRestaurants(prev => prev.filter(id => id !== selectedRestaurant._id));
+                    } else {
+                      // localRestaurants에도 저장
+                      const localRestaurants = localStorage.getItem('localRestaurants');
+                      const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+                      if (!restaurants.find((r: any) => r._id === selectedRestaurant._id)) {
+                        restaurants.push(selectedRestaurant);
+                        localStorage.setItem('localRestaurants', JSON.stringify(restaurants));
+                      }
+                      
+                      dataManager.saveRestaurant(selectedRestaurant._id, `${playlist.title}에서 저장`);
+                      toast.success('맛집이 저장되었습니다!');
+                      setSavedRestaurants(prev => [...prev, selectedRestaurant._id]);
+                    }
+                  }}
+                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+                    savedRestaurants.includes(selectedRestaurant._id)
+                      ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                      : 'bg-orange-500 text-white hover:bg-orange-600'
+                  }`}
+                >
+                  {savedRestaurants.includes(selectedRestaurant._id) ? (
+                    <>
+                      <BookmarkSolidIcon className="w-5 h-5 inline mr-2" />
+                      저장됨
+                    </>
+                  ) : (
+                    <>
+                      <BookmarkIcon className="w-5 h-5 inline mr-2" />
+                      맛집 저장
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    navigate(`/restaurant-map?restaurant=${selectedRestaurant._id}`);
+                  }}
+                  className="flex-1 py-3 px-4 rounded-lg border border-gray-300 font-medium hover:bg-gray-50 transition-colors"
+                >
+                  <MapPinIcon className="w-5 h-5 inline mr-2" />
+                  지도에서 보기
+                </button>
+              </div>
+
+              {/* 리뷰 작성 */}
+              {user && (
+                <div className="pt-4 border-t">
+                  <button
+                    onClick={() => {
+                      toast.success('리뷰 작성 기능은 준비 중입니다.');
+                    }}
+                    className="w-full py-3 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                  >
+                    <PencilIcon className="w-5 h-5 inline mr-2" />
+                    리뷰 작성하기
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
