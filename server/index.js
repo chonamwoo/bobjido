@@ -192,6 +192,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bobmap', 
 })
 .catch((err) => {
   console.error('❌ MongoDB 연결 실패:', err.message);
+  console.error('상세 에러:', err.stack);
   console.log('💡 MongoDB가 설치되어 있지 않다면 https://www.mongodb.com/try/download/community 에서 설치하세요');
   console.log('💡 또는 MongoDB Atlas (클라우드)를 사용하려면 .env 파일의 MONGODB_URI를 변경하세요');
 });
@@ -219,7 +220,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 8890;
+const PORT = process.env.PORT || 8888;
 const { createServer } = require('http');
 const { initializeWebSocket } = require('./websocket');
 

@@ -3,10 +3,10 @@ const router = express.Router();
 const User = require('../models/User');
 const Playlist = require('../models/Playlist');
 const Restaurant = require('../models/Restaurant');
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
 // Follow a user
-router.post('/follow/:userId', auth, async (req, res) => {
+router.post('/follow/:userId', protect, async (req, res) => {
   try {
     const { userId } = req.params;
     const currentUserId = req.userId;
@@ -59,7 +59,7 @@ router.post('/follow/:userId', auth, async (req, res) => {
 });
 
 // Unfollow a user
-router.delete('/unfollow/:userId', auth, async (req, res) => {
+router.delete('/unfollow/:userId', protect, async (req, res) => {
   try {
     const { userId } = req.params;
     const currentUserId = req.userId;
@@ -100,7 +100,7 @@ router.delete('/unfollow/:userId', auth, async (req, res) => {
 });
 
 // Get following list
-router.get('/following', auth, async (req, res) => {
+router.get('/following', protect, async (req, res) => {
   try {
     const user = await User.findById(req.userId)
       .populate('following.user', 'username profileImage bio tasteProfile')
@@ -119,7 +119,7 @@ router.get('/following', auth, async (req, res) => {
 });
 
 // Get followers list
-router.get('/followers', auth, async (req, res) => {
+router.get('/followers', protect, async (req, res) => {
   try {
     const user = await User.findById(req.userId)
       .populate('followers.user', 'username profileImage bio tasteProfile')
@@ -138,7 +138,7 @@ router.get('/followers', auth, async (req, res) => {
 });
 
 // Like a restaurant
-router.post('/restaurants/:restaurantId/like', auth, async (req, res) => {
+router.post('/restaurants/:restaurantId/like', protect, async (req, res) => {
   try {
     const { restaurantId } = req.params;
     const userId = req.userId;
@@ -188,7 +188,7 @@ router.post('/restaurants/:restaurantId/like', auth, async (req, res) => {
 });
 
 // Save a restaurant
-router.post('/restaurants/:restaurantId/save', auth, async (req, res) => {
+router.post('/restaurants/:restaurantId/save', protect, async (req, res) => {
   try {
     const { restaurantId } = req.params;
     const userId = req.userId;
@@ -232,7 +232,7 @@ router.post('/restaurants/:restaurantId/save', auth, async (req, res) => {
 });
 
 // Like a playlist
-router.post('/playlists/:playlistId/like', auth, async (req, res) => {
+router.post('/playlists/:playlistId/like', protect, async (req, res) => {
   try {
     const { playlistId } = req.params;
     const userId = req.userId;
@@ -281,7 +281,7 @@ router.post('/playlists/:playlistId/like', auth, async (req, res) => {
 });
 
 // Save a playlist
-router.post('/playlists/:playlistId/save', auth, async (req, res) => {
+router.post('/playlists/:playlistId/save', protect, async (req, res) => {
   try {
     const { playlistId } = req.params;
     const userId = req.userId;
@@ -320,7 +320,7 @@ router.post('/playlists/:playlistId/save', auth, async (req, res) => {
 });
 
 // Get user's social stats
-router.get('/stats', auth, async (req, res) => {
+router.get('/stats', protect, async (req, res) => {
   try {
     const user = await User.findById(req.userId)
       .select('following followers likedRestaurants likedPlaylists savedRestaurants savedPlaylists')
@@ -341,7 +341,7 @@ router.get('/stats', auth, async (req, res) => {
 });
 
 // Get liked items
-router.get('/likes', auth, async (req, res) => {
+router.get('/likes', protect, async (req, res) => {
   try {
     const user = await User.findById(req.userId)
       .populate('likedRestaurants.restaurant', 'name category location rating image')
@@ -359,7 +359,7 @@ router.get('/likes', auth, async (req, res) => {
 });
 
 // Get saved items
-router.get('/saved', auth, async (req, res) => {
+router.get('/saved', protect, async (req, res) => {
   try {
     const user = await User.findById(req.userId)
       .populate('savedRestaurants.restaurant', 'name category location rating image')

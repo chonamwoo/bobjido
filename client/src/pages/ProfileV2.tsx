@@ -441,6 +441,45 @@ const ProfileV2: React.FC = () => {
     }
   };
   
+  // 프로필 이미지 업로드 핸들러
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 파일 크기 체크 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('이미지 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await axios.post('/api/users/profile-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.profileImage) {
+        // 프로필 이미지 업데이트 - 기존 사용자 정보와 병합
+        if (currentUser) {
+          updateUser({
+            ...currentUser,
+            profileImage: response.data.profileImage
+          });
+        }
+        
+        // 페이지 새로고침
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('프로필 이미지 업로드 실패:', error);
+      alert('프로필 이미지 업로드에 실패했습니다.');
+    }
+  };
+
   // 초기 로드 및 실시간 업데이트
   useEffect(() => {
     loadSavedData();
@@ -561,12 +600,29 @@ const ProfileV2: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm p-4 md:p-8 mb-4 md:mb-8">
         <div className="flex flex-col md:flex-row md:items-start md:space-x-8">
           {/* 프로필 이미지 */}
-          <div className="flex-shrink-0 mb-6 md:mb-0">
+          <div className="flex-shrink-0 mb-6 md:mb-0 relative group">
             <img
               src={profileUser.profileImage || getDefaultAvatar(profileUser.username, 150)}
               alt={profileUser.username}
-              className="w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto md:mx-0"
+              className="w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto md:mx-0 object-cover"
             />
+            {isOwnProfile && (
+              <>
+                <input
+                  type="file"
+                  id="profile-image-upload"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleProfileImageUpload}
+                />
+                <label
+                  htmlFor="profile-image-upload"
+                  className="absolute inset-0 w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto md:mx-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center cursor-pointer transition-all duration-200"
+                >
+                  <CameraIcon className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                </label>
+              </>
+            )}
           </div>
 
           <div className="flex-1">

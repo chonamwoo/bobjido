@@ -22,6 +22,7 @@ const {
   uploadCoverImage,
   updateRestaurantRating,
   getRestaurantRatings,
+  getPlaylistsByUser,
 } = require('../controllers/playlistController');
 
 // Multer 설정
@@ -57,6 +58,7 @@ router.get('/', optionalAuth, getPlaylists);
 router.get('/trending', optionalAuth, getTrendingPlaylists);
 router.get('/themes', optionalAuth, getThemedCollections);
 router.get('/recommended', optionalAuth, getRecommendedPlaylists);
+router.get('/user/:userId', optionalAuth, getPlaylistsByUser);
 router.get('/:id', optionalAuth, getPlaylist);
 router.post('/', protect, createPlaylist);
 router.put('/:id', protect, updatePlaylist);

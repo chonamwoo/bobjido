@@ -1,5 +1,9 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
+const { validatePassword } = require('../utils/passwordValidator');
+const { generateVerificationCode, sendVerificationEmail, sendWelcomeEmail } = require('../services/emailService');
+const emailValidator = require('email-validator');
+const crypto = require('crypto');
 
 const register = async (req, res) => {
   try {
@@ -21,10 +25,14 @@ const register = async (req, res) => {
       });
     }
     
-    // 비밀번호 길이 검증
-    if (password.length < 6) {
+    // 강력한 비밀번호 검증
+    const passwordValidation = validatePassword(password, userId, email);
+    if (!passwordValidation.isValid) {
       return res.status(400).json({ 
-        message: '비밀번호는 최소 6자 이상이어야 합니다' 
+        message: '비밀번호가 보안 요구사항을 충족하지 않습니다',
+        errors: passwordValidation.errors,
+        strength: passwordValidation.strength,
+        feedback: passwordValidation.feedback
       });
     }
     
@@ -35,8 +43,8 @@ const register = async (req, res) => {
       });
     }
     
-    // 이메일 형식 검증
-    if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,10})+$/.test(email)) {
+    // 이메일 형식 검증 (더 엄격한 검증)
+    if (!emailValidator.validate(email)) {
       return res.status(400).json({ 
         message: '올바른 이메일 주소를 입력해주세요' 
       });
@@ -57,13 +65,30 @@ const register = async (req, res) => {
       });
     }
     
-    // 사용자 생성
+    // 이메일 인증 코드 생성
+    const verificationCode = generateVerificationCode();
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10분 후 만료
+    
+    // 사용자 생성 (임시로 이메일 인증 없이)
     const user = await User.create({
       userId: userId.toLowerCase(),
       username,
       email: email.toLowerCase(),
       password,
+      emailVerified: true, // 임시로 true로 설정 (개발 중)
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires
     });
+    
+    // 이메일 발송은 나중에 활성화 (현재 이메일 설정이 없음)
+    // try {
+    //   await sendVerificationEmail(email, username, verificationCode);
+    //   user.emailVerificationToken = verificationCode;
+    //   await user.save();
+    // } catch (emailError) {
+    //   console.error('이메일 발송 실패:', emailError);
+    // }
     
     const token = generateToken(user._id);
     
@@ -71,12 +96,14 @@ const register = async (req, res) => {
     
     res.status(201).json({
       success: true,
-      message: '회원가입이 완료되었습니다',
+      message: '회원가입이 완료되었습니다!',
+      requiresVerification: false, // 임시로 false
       data: {
         _id: user._id,
         userId: user.userId,
         username: user.username,
         email: user.email,
+        emailVerified: true, // 임시로 true
         profileImage: user.profileImage,
         bio: user.bio,
         tasteProfile: user.tasteProfile,
@@ -150,6 +177,15 @@ const login = async (req, res) => {
         message: '아이디/이메일 또는 비밀번호가 올바르지 않습니다' 
       });
     }
+    
+    // 이메일 인증 체크 임시 비활성화 (개발 중)
+    // if (!user.googleId && !user.kakaoId && !user.emailVerified) {
+    //   return res.status(403).json({ 
+    //     message: '이메일 인증이 필요합니다. 이메일을 확인해주세요.',
+    //     requiresVerification: true,
+    //     email: user.email
+    //   });
+    // }
     
     const token = generateToken(user._id);
     
@@ -354,6 +390,114 @@ const changePassword = async (req, res) => {
   }
 };
 
+// 이메일 인증 코드 확인
+const verifyEmail = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    
+    if (!email || !code) {
+      return res.status(400).json({ 
+        message: '이메일과 인증 코드를 입력해주세요' 
+      });
+    }
+    
+    const user = await User.findOne({ 
+      email: email.toLowerCase(),
+      emailVerificationToken: code,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({ 
+        message: '잘못된 인증 코드이거나 만료되었습니다' 
+      });
+    }
+    
+    // 이메일 인증 완료
+    user.emailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+    
+    // 환영 이메일 발송 (비동기)
+    sendWelcomeEmail(user.email, user.username).catch(console.error);
+    
+    const token = generateToken(user._id);
+    
+    res.json({
+      success: true,
+      message: '이메일 인증이 완료되었습니다',
+      data: {
+        _id: user._id,
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+        emailVerified: true,
+        token
+      }
+    });
+  } catch (error) {
+    console.error('Verify email error:', error);
+    res.status(500).json({ 
+      message: '서버 오류가 발생했습니다' 
+    });
+  }
+};
+
+// 이메일 인증 코드 재발송
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ 
+        message: '이메일을 입력해주세요' 
+      });
+    }
+    
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user) {
+      return res.status(404).json({ 
+        message: '등록되지 않은 이메일입니다' 
+      });
+    }
+    
+    if (user.emailVerified) {
+      return res.status(400).json({ 
+        message: '이미 인증된 이메일입니다' 
+      });
+    }
+    
+    // 재발송 제한 체크 (예: 1분에 1번)
+    if (user.emailVerificationExpires && 
+        user.emailVerificationExpires > new Date(Date.now() + 9 * 60 * 1000)) {
+      return res.status(429).json({ 
+        message: '잠시 후 다시 시도해주세요' 
+      });
+    }
+    
+    // 새 인증 코드 생성
+    const verificationCode = generateVerificationCode();
+    user.emailVerificationToken = verificationCode;
+    user.emailVerificationExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+    
+    // 이메일 발송
+    await sendVerificationEmail(user.email, user.username, verificationCode);
+    
+    res.json({
+      success: true,
+      message: '인증 코드가 재발송되었습니다'
+    });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ 
+      message: '서버 오류가 발생했습니다' 
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -362,4 +506,6 @@ module.exports = {
   getMe,
   updateProfile,
   changePassword,
+  verifyEmail,
+  resendVerificationEmail,
 };

@@ -222,7 +222,7 @@ const Auth: React.FC = () => {
 
   // OAuth 로그인
   const handleOAuthLogin = (provider: 'google' | 'kakao') => {
-    window.location.href = `http://localhost:8890/api/auth/${provider}`;
+    window.location.href = `http://localhost:8888/api/auth/${provider}`;
   };
 
   return (

@@ -739,6 +739,41 @@ const updateRestaurantRating = async (req, res) => {
   }
 };
 
+// 특정 사용자의 플레이리스트 조회
+const getPlaylistsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { page = 1, limit = 12 } = req.query;
+    
+    const query = { createdBy: userId };
+    
+    // 다른 사용자가 조회하는 경우 공개 플레이리스트만
+    if (!req.user || req.user._id.toString() !== userId) {
+      query.isPublic = true;
+    }
+    
+    const playlists = await Playlist.find(query)
+      .sort('-createdAt')
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .populate('createdBy', 'username profileImage')
+      .populate('restaurants.restaurant', 'name address images category')
+      .lean();
+    
+    const total = await Playlist.countDocuments(query);
+    
+    res.json({
+      playlists,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    console.error('Get user playlists error:', error);
+    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+  }
+};
+
 // 플레이리스트 내 맛집 평가 조회
 const getRestaurantRatings = async (req, res) => {
   try {
@@ -778,4 +813,5 @@ module.exports = {
   uploadCoverImage,
   updateRestaurantRating,
   getRestaurantRatings,
+  getPlaylistsByUser,
 };

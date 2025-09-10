@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const { register, login, checkUserId, checkEmail, getMe, updateProfile, changePassword } = require('../controllers/authController');
+const { register, login, checkUserId, checkEmail, getMe, updateProfile, changePassword, verifyEmail, resendVerificationEmail } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { passport, generateToken } = require('../config/passport');
 
@@ -22,6 +22,10 @@ router.get('/check-email/:email', checkEmail);
 router.post('/register', register);
 
 router.post('/login', login);
+
+// 이메일 인증 관련 라우트
+router.post('/verify-email', verifyEmail);
+router.post('/resend-verification', resendVerificationEmail);
 
 router.get('/me', protect, getMe);
 
@@ -68,7 +72,7 @@ router.get('/google/callback',
     };
     
     // auth-bridge.html로 리다이렉트 (토큰과 사용자 정보 포함)
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3001';
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
     const redirectUrl = `${clientUrl}/auth-bridge.html?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`;
     console.log('🔍 Google Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
@@ -88,14 +92,14 @@ if (process.env.KAKAO_CLIENT_ID) {
       const token = generateToken(req.user._id);
       const user = {
         _id: req.user._id,
-      username: req.user.username,
-      email: req.user.email,
-      profileImage: req.user.profileImage,
-      onboardingCompleted: true  // MVP에서는 온보딩 없음
-    };
+        username: req.user.username,
+        email: req.user.email,
+        profileImage: req.user.profileImage,
+        onboardingCompleted: true  // MVP에서는 온보딩 없음
+      };
     
     // auth-bridge.html로 리다이렉트 (토큰과 사용자 정보 포함)
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3001';
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
     const redirectUrl = `${clientUrl}/auth-bridge.html?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`;
     console.log('🔍 Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);

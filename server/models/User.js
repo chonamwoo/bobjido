@@ -53,6 +53,19 @@ const userSchema = new mongoose.Schema({
     minlength: [6, '비밀번호는 최소 6자 이상이어야 합니다'],
     select: false
   },
+  // 이메일 인증 관련 필드
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    select: false
+  },
+  emailVerificationExpires: {
+    type: Date,
+    select: false
+  },
   // OAuth 프로바이더 ID
   googleId: {
     type: String,

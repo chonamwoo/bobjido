@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 const Chat = require('./models/Chat');
 const Message = require('./models/Message');
+const Notification = require('./models/Notification');
 
 let io;
 const connectedUsers = new Map(); // userId -> socketId
@@ -200,6 +201,202 @@ function initializeWebSocket(server) {
         });
       } catch (error) {
         console.error('메시지 읽음 처리 실패:', error);
+      }
+    });
+
+    // 알림 생성 및 전송
+    socket.on('create_notification', async (data) => {
+      try {
+        const { recipientId, type, message, relatedData } = data;
+        
+        // 알림 데이터베이스에 저장
+        const notification = new Notification({
+          recipient: recipientId,
+          sender: socket.userId,
+          type,
+          message,
+          ...relatedData
+        });
+        
+        await notification.save();
+        await notification.populate('sender', 'username profileImage');
+        
+        // 수신자가 온라인이면 실시간 전송
+        const targetSocketId = connectedUsers.get(recipientId);
+        if (targetSocketId) {
+          io.to(targetSocketId).emit('new_notification', notification);
+        }
+        
+        console.log(`🔔 알림 전송: ${type} (${socket.user.username} → ${recipientId})`);
+      } catch (error) {
+        console.error('알림 생성 실패:', error);
+        socket.emit('error', { message: '알림 전송에 실패했습니다.' });
+      }
+    });
+    
+    // 팔로우 알림
+    socket.on('notification_follow', async (targetUserId) => {
+      try {
+        const notification = new Notification({
+          recipient: targetUserId,
+          sender: socket.userId,
+          type: 'follow',
+          message: `${socket.user.username}님이 회원님을 팔로우했습니다`
+        });
+        
+        await notification.save();
+        await notification.populate('sender', 'username profileImage');
+        
+        const targetSocketId = connectedUsers.get(targetUserId);
+        if (targetSocketId) {
+          io.to(targetSocketId).emit('new_notification', notification);
+        }
+      } catch (error) {
+        console.error('팔로우 알림 실패:', error);
+      }
+    });
+    
+    // 플레이리스트 좋아요 알림
+    socket.on('notification_playlist_like', async (data) => {
+      try {
+        const { playlistId, ownerId, playlistTitle } = data;
+        
+        const notification = new Notification({
+          recipient: ownerId,
+          sender: socket.userId,
+          type: 'playlist_like',
+          message: `${socket.user.username}님이 "${playlistTitle}" 플레이리스트를 좋아합니다`,
+          relatedPlaylist: playlistId
+        });
+        
+        await notification.save();
+        await notification.populate('sender', 'username profileImage');
+        
+        const targetSocketId = connectedUsers.get(ownerId);
+        if (targetSocketId) {
+          io.to(targetSocketId).emit('new_notification', notification);
+        }
+      } catch (error) {
+        console.error('좋아요 알림 실패:', error);
+      }
+    });
+    
+    // 플레이리스트 저장 알림  
+    socket.on('notification_playlist_save', async (data) => {
+      try {
+        const { playlistId, ownerId, playlistTitle } = data;
+        
+        const notification = new Notification({
+          recipient: ownerId,
+          sender: socket.userId,
+          type: 'playlist_save',
+          message: `${socket.user.username}님이 "${playlistTitle}" 플레이리스트를 저장했습니다`,
+          relatedPlaylist: playlistId
+        });
+        
+        await notification.save();
+        await notification.populate('sender', 'username profileImage');
+        
+        const targetSocketId = connectedUsers.get(ownerId);
+        if (targetSocketId) {
+          io.to(targetSocketId).emit('new_notification', notification);
+        }
+      } catch (error) {
+        console.error('저장 알림 실패:', error);
+      }
+    });
+    
+    // 새 플레이리스트 알림 (팔로워에게)
+    socket.on('notification_new_playlist', async (data) => {
+      try {
+        const { playlistId, playlistTitle } = data;
+        
+        // 사용자의 팔로워 목록 가져오기
+        const user = await User.findById(socket.userId).populate('followers');
+        
+        for (const follower of user.followers || []) {
+          const notification = new Notification({
+            recipient: follower._id,
+            sender: socket.userId,
+            type: 'new_playlist',
+            message: `${socket.user.username}님이 새 플레이리스트 "${playlistTitle}"를 만들었습니다`,
+            relatedPlaylist: playlistId
+          });
+          
+          await notification.save();
+          
+          const targetSocketId = connectedUsers.get(follower._id.toString());
+          if (targetSocketId) {
+            const populatedNotification = await Notification.findById(notification._id)
+              .populate('sender', 'username profileImage');
+            io.to(targetSocketId).emit('new_notification', populatedNotification);
+          }
+        }
+      } catch (error) {
+        console.error('새 플레이리스트 알림 실패:', error);
+      }
+    });
+    
+    // 매칭 추천 알림
+    socket.on('notification_match_suggestion', async (data) => {
+      try {
+        const { matchUserId, matchRate } = data;
+        
+        const notification = new Notification({
+          recipient: socket.userId,
+          sender: matchUserId,
+          type: 'match_suggestion',
+          message: `${matchRate}% 취향 일치! 새로운 매칭을 확인해보세요`
+        });
+        
+        await notification.save();
+        await notification.populate('sender', 'username profileImage');
+        
+        socket.emit('new_notification', notification);
+      } catch (error) {
+        console.error('매칭 추천 알림 실패:', error);
+      }
+    });
+    
+    // 알림 읽음 처리
+    socket.on('mark_notification_read', async (notificationId) => {
+      try {
+        await Notification.findByIdAndUpdate(notificationId, {
+          read: true,
+          readAt: new Date()
+        });
+        
+        socket.emit('notification_marked_read', notificationId);
+      } catch (error) {
+        console.error('알림 읽음 처리 실패:', error);
+      }
+    });
+    
+    // 모든 알림 읽음 처리
+    socket.on('mark_all_notifications_read', async () => {
+      try {
+        await Notification.updateMany(
+          { recipient: socket.userId, read: false },
+          { read: true, readAt: new Date() }
+        );
+        
+        socket.emit('all_notifications_marked_read');
+      } catch (error) {
+        console.error('모든 알림 읽음 처리 실패:', error);
+      }
+    });
+    
+    // 읽지 않은 알림 개수 가져오기
+    socket.on('get_unread_notifications_count', async () => {
+      try {
+        const count = await Notification.countDocuments({
+          recipient: socket.userId,
+          read: false
+        });
+        
+        socket.emit('unread_notifications_count', count);
+      } catch (error) {
+        console.error('읽지 않은 알림 개수 조회 실패:', error);
       }
     });
 

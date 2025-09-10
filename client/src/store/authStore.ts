@@ -25,7 +25,7 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   login: (loginId: string, password: string) => Promise<void>;
-  register: (userId: string, username: string, email: string, password: string, confirmPassword: string) => Promise<void>;
+  register: (userId: string, username: string, email: string, password: string, confirmPassword: string) => Promise<any>;
   logout: () => void;
   updateUser: (user: User) => void;
   updateFollowerCount: (count: number) => void;
@@ -78,7 +78,16 @@ export const useAuthStore = create<AuthState>()(
             password,
             confirmPassword,
           });
-          const { data } = response.data;
+          
+          const { data, requiresVerification } = response.data;
+          
+          // 이메일 인증이 필요한 경우
+          if (requiresVerification) {
+            set({ isLoading: false });
+            return { requiresVerification, email };
+          }
+          
+          // 인증이 필요 없는 경우 (소셜 로그인 등)
           const { token, ...user } = data;
           
           // 신규 가입자 기본 카운트 설정
@@ -93,6 +102,8 @@ export const useAuthStore = create<AuthState>()(
           
           // Set axios default header
           axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          return response.data;
         } catch (error) {
           set({ isLoading: false });
           throw error;

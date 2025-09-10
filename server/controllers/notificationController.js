@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const User = require('../models/User'); // Fixed missing import
 
 // 알림 목록 조회
 const getNotifications = async (req, res) => {

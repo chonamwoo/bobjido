@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>BobMap 다중 사용자 테스트</title>
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        h1 {
+            background: linear-gradient(135deg, #ff6b35, #ff8e53);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+        }
+        .user-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .user-card {
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+        button {
+            background: linear-gradient(135deg, #ff6b35, #ff8e53);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: 600;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .api-url {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍚 BobMap 다중 사용자 테스트 도구</h1>
+        
+        <div class="test-section">
+            <h2>⚙️ API 설정</h2>
+            <div class="api-url">
+                API URL: <input type="text" id="apiUrl" value="http://localhost:8888" style="width: 300px; padding: 5px;">
+                <button onclick="testConnection()">연결 테스트</button>
+            </div>
+            <div id="connectionStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>👥 테스트 사용자 생성</h2>
+            <button onclick="createTestUsers()">5명 사용자 자동 생성</button>
+            <button onclick="clearAllData()">모든 데이터 초기화</button>
+            
+            <div class="user-grid" id="userGrid">
+                <!-- 사용자 카드가 여기 추가됨 -->
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🍽️ 테스트 플레이리스트 생성</h2>
+            <button onclick="createTestPlaylists()">샘플 플레이리스트 생성</button>
+            <div id="playlistStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>💬 상호작용 테스트</h2>
+            <button onclick="testFollows()">팔로우 관계 생성</button>
+            <button onclick="testLikes()">좋아요 테스트</button>
+            <button onclick="testComments()">댓글 테스트</button>
+            <div id="interactionStatus"></div>
+        </div>
+    </div>
+
+    <script>
+        const testUsers = [
+            { username: 'foodie_kim', password: 'test1234', email: 'kim@test.com', name: '김맛집' },
+            { username: 'seoul_lee', password: 'test1234', email: 'lee@test.com', name: '이서울' },
+            { username: 'gangnam_park', password: 'test1234', email: 'park@test.com', name: '박강남' },
+            { username: 'hongdae_choi', password: 'test1234', email: 'choi@test.com', name: '최홍대' },
+            { username: 'itaewon_jung', password: 'test1234', email: 'jung@test.com', name: '정이태원' }
+        ];
+
+        let createdUsers = [];
+        let authTokens = {};
+
+        async function testConnection() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const status = document.getElementById('connectionStatus');
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/health`);
+                if (response.ok) {
+                    status.innerHTML = '<div class="status success">✅ 서버 연결 성공!</div>';
+                } else {
+                    status.innerHTML = '<div class="status error">❌ 서버 연결 실패</div>';
+                }
+            } catch (error) {
+                status.innerHTML = '<div class="status error">❌ 서버에 연결할 수 없습니다: ' + error.message + '</div>';
+            }
+        }
+
+        async function createTestUsers() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const grid = document.getElementById('userGrid');
+            grid.innerHTML = '';
+            
+            for (const user of testUsers) {
+                const card = document.createElement('div');
+                card.className = 'user-card';
+                card.innerHTML = `
+                    <h3>${user.name}</h3>
+                    <p>ID: ${user.username}</p>
+                    <p>Email: ${user.email}</p>
+                    <div id="status-${user.username}" class="status info">생성 중...</div>
+                `;
+                grid.appendChild(card);
+                
+                try {
+                    // 회원가입
+                    const registerResponse = await fetch(`${apiUrl}/api/auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(user)
+                    });
+                    
+                    if (registerResponse.ok || registerResponse.status === 409) {
+                        // 로그인
+                        const loginResponse = await fetch(`${apiUrl}/api/auth/login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                username: user.username,
+                                password: user.password
+                            })
+                        });
+                        
+                        if (loginResponse.ok) {
+                            const data = await loginResponse.json();
+                            authTokens[user.username] = data.token;
+                            createdUsers.push(user);
+                            document.getElementById(`status-${user.username}`).innerHTML = 
+                                '<div class="status success">✅ 생성 완료!</div>';
+                        }
+                    }
+                } catch (error) {
+                    document.getElementById(`status-${user.username}`).innerHTML = 
+                        '<div class="status error">❌ 오류: ' + error.message + '</div>';
+                }
+            }
+        }
+
+        async function createTestPlaylists() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const status = document.getElementById('playlistStatus');
+            
+            const playlists = [
+                { 
+                    title: '강남 데이트 맛집', 
+                    description: '분위기 좋은 강남 레스토랑',
+                    user: 'foodie_kim'
+                },
+                { 
+                    title: '홍대 혼밥 맛집', 
+                    description: '혼자 가기 좋은 홍대 맛집',
+                    user: 'hongdae_choi'
+                },
+                { 
+                    title: '이태원 브런치', 
+                    description: '주말 브런치 추천',
+                    user: 'itaewon_jung'
+                }
+            ];
+            
+            let created = 0;
+            for (const playlist of playlists) {
+                if (authTokens[playlist.user]) {
+                    try {
+                        const response = await fetch(`${apiUrl}/api/playlists`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${authTokens[playlist.user]}`
+                            },
+                            body: JSON.stringify(playlist)
+                        });
+                        if (response.ok) created++;
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+            }
+            
+            status.innerHTML = `<div class="status success">✅ ${created}개 플레이리스트 생성 완료!</div>`;
+        }
+
+        async function testFollows() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const status = document.getElementById('interactionStatus');
+            
+            // 모든 사용자가 foodie_kim을 팔로우
+            let followed = 0;
+            for (const user of createdUsers) {
+                if (user.username !== 'foodie_kim' && authTokens[user.username]) {
+                    try {
+                        const response = await fetch(`${apiUrl}/api/users/follow`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${authTokens[user.username]}`
+                            },
+                            body: JSON.stringify({ targetUserId: 'foodie_kim' })
+                        });
+                        if (response.ok) followed++;
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+            }
+            
+            status.innerHTML = `<div class="status success">✅ ${followed}개 팔로우 관계 생성!</div>`;
+        }
+
+        async function clearAllData() {
+            if (confirm('모든 테스트 데이터를 삭제하시겠습니까?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

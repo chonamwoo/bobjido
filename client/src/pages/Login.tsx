@@ -35,12 +35,12 @@ const Login: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8888';
     window.location.href = `${apiUrl}/api/auth/google`;
   };
 
   const handleKakaoLogin = () => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8888';
     window.location.href = `${apiUrl}/api/auth/kakao`;
   };
 

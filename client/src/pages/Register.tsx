@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, CheckCircleIcon, XCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import EmailVerification from '../components/EmailVerification';
+import axios from 'axios';
 
 interface RegisterFormData {
   userId: string;
@@ -16,9 +18,12 @@ interface RegisterFormData {
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const { register: registerUser } = useAuthStore();
+  const { register: registerUser, login } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState<any>(null);
 
   const {
     register,
@@ -28,26 +33,95 @@ const Register: React.FC = () => {
   } = useForm<RegisterFormData>();
 
   const password = watch('password');
+  const userId = watch('userId');
+  const email = watch('email');
 
-  const onSubmit = async (data: RegisterFormData) => {
+  // 비밀번호 강도 체크
+  useEffect(() => {
+    if (password) {
+      checkPasswordStrength(password);
+    } else {
+      setPasswordStrength(null);
+    }
+  }, [password, userId, email]);
+
+  const checkPasswordStrength = async (pwd: string) => {
     try {
-      await registerUser(data.userId, data.username, data.email, data.password, data.confirmPassword);
-      toast.success('회원가입이 완료되었습니다!');
-      navigate('/');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || '회원가입에 실패했습니다.');
+      const response = await axios.post('/api/auth/check-password-strength', {
+        password: pwd,
+        userId,
+        email
+      });
+      setPasswordStrength(response.data);
+    } catch (error) {
+      // 비밀번호 강도 체크 API가 없으면 클라이언트에서 간단히 체크
+      const hasUpperCase = /[A-Z]/.test(pwd);
+      const hasLowerCase = /[a-z]/.test(pwd);
+      const hasNumbers = /\d/.test(pwd);
+      const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd);
+      const charTypes = [hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChar].filter(Boolean).length;
+      
+      let strength = 'weak';
+      if (pwd.length >= 8 && charTypes >= 2) strength = 'medium';
+      if (pwd.length >= 10 && charTypes >= 3) strength = 'strong';
+      
+      setPasswordStrength({
+        strength: { text: strength },
+        details: { hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChar, length: pwd.length }
+      });
     }
   };
 
+  const onSubmit = async (data: RegisterFormData) => {
+    try {
+      const response = await registerUser(data.userId, data.username, data.email, data.password, data.confirmPassword);
+      
+      if (response?.requiresVerification) {
+        setRegisteredEmail(data.email);
+        setShowEmailVerification(true);
+        toast.success('회원가입이 완료되었습니다. 이메일을 확인해주세요.');
+      } else {
+        toast.success('회원가입이 완료되었습니다!');
+        navigate('/');
+      }
+    } catch (error: any) {
+      if (error.response?.data?.errors) {
+        // 비밀번호 검증 오류
+        error.response.data.errors.forEach((err: string) => {
+          toast.error(err);
+        });
+      } else {
+        toast.error(error.response?.data?.message || '회원가입에 실패했습니다.');
+      }
+    }
+  };
+
+  const handleEmailVerified = (token: string, userData: any) => {
+    login(token, userData);
+    toast.success('이메일 인증이 완료되었습니다!');
+    navigate('/');
+  };
+
   const handleGoogleRegister = () => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8890';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8888';
     window.location.href = `${apiUrl}/api/auth/google`;
   };
 
   const handleKakaoRegister = () => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8890';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8888';
     window.location.href = `${apiUrl}/api/auth/kakao`;
   };
+
+  // 이메일 인증 화면 표시
+  if (showEmailVerification) {
+    return (
+      <EmailVerification
+        email={registeredEmail}
+        onVerified={handleEmailVerified}
+        onBack={() => setShowEmailVerification(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-100 via-rose-50 to-secondary-100 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -162,11 +236,27 @@ const Register: React.FC = () => {
                     required: '비밀번호를 입력해주세요',
                     minLength: {
                       value: 8,
-                      message: '비밀번호는 8자 이상이어야 합니다',
+                      message: '비밀번호는 최소 8자 이상이어야 합니다',
                     },
-                    pattern: {
-                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-                      message: '대소문자, 숫자, 특수문자를 포함해야 합니다',
+                    validate: {
+                      strength: (value) => {
+                        const hasUpperCase = /[A-Z]/.test(value);
+                        const hasLowerCase = /[a-z]/.test(value);
+                        const hasNumbers = /\d/.test(value);
+                        const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value);
+                        const charTypes = [hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChar].filter(Boolean).length;
+                        
+                        if (charTypes < 3) {
+                          return '대문자, 소문자, 숫자, 특수문자 중 최소 3가지를 포함해야 합니다';
+                        }
+                        
+                        // 아이디와 유사성 체크
+                        if (userId && value.toLowerCase().includes(userId.toLowerCase())) {
+                          return '비밀번호에 아이디를 포함할 수 없습니다';
+                        }
+                        
+                        return true;
+                      }
                     },
                   })}
                   className="form-input pr-10"
@@ -186,6 +276,70 @@ const Register: React.FC = () => {
               </div>
               {errors.password && (
                 <p className="error-text">{errors.password.message}</p>
+              )}
+              
+              {/* 비밀번호 강도 표시 */}
+              {password && passwordStrength && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-600">비밀번호 강도</span>
+                    <span className={`text-xs font-medium ${
+                      passwordStrength.strength.text === 'strong' ? 'text-green-600' :
+                      passwordStrength.strength.text === 'medium' ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {passwordStrength.strength.text === 'strong' ? '강함' :
+                       passwordStrength.strength.text === 'medium' ? '보통' : '약함'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        passwordStrength.strength.text === 'strong' ? 'bg-green-500 w-full' :
+                        passwordStrength.strength.text === 'medium' ? 'bg-yellow-500 w-2/3' :
+                        'bg-red-500 w-1/3'
+                      }`}
+                    />
+                  </div>
+                  
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center gap-1">
+                      {passwordStrength.details.hasUpperCase ? 
+                        <CheckCircleIcon className="w-4 h-4 text-green-500" /> :
+                        <XCircleIcon className="w-4 h-4 text-gray-400" />
+                      }
+                      <span className="text-xs text-gray-600">대문자 포함</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {passwordStrength.details.hasLowerCase ? 
+                        <CheckCircleIcon className="w-4 h-4 text-green-500" /> :
+                        <XCircleIcon className="w-4 h-4 text-gray-400" />
+                      }
+                      <span className="text-xs text-gray-600">소문자 포함</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {passwordStrength.details.hasNumbers ? 
+                        <CheckCircleIcon className="w-4 h-4 text-green-500" /> :
+                        <XCircleIcon className="w-4 h-4 text-gray-400" />
+                      }
+                      <span className="text-xs text-gray-600">숫자 포함</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {passwordStrength.details.hasSpecialChar ? 
+                        <CheckCircleIcon className="w-4 h-4 text-green-500" /> :
+                        <XCircleIcon className="w-4 h-4 text-gray-400" />
+                      }
+                      <span className="text-xs text-gray-600">특수문자 포함</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {passwordStrength.details.length >= 8 ? 
+                        <CheckCircleIcon className="w-4 h-4 text-green-500" /> :
+                        <XCircleIcon className="w-4 h-4 text-gray-400" />
+                      }
+                      <span className="text-xs text-gray-600">8자 이상</span>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 

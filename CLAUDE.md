@@ -48,6 +48,13 @@
 - **프론트엔드**: 3000
 - **MongoDB**: MongoDB Atlas 클라우드
 
+### ⚠️ OAuth 로그인 설정 (절대 수정 금지):
+- **Google OAuth**: 완벽하게 작동 중 - 건드리지 말 것!
+- **Kakao OAuth**: 완벽하게 작동 중 - 건드리지 말 것!
+- **passport.js의 kakaoId**: String(profile.id)로 변환 필수
+- **CLIENT_URL**: http://localhost:3000
+- **SERVER_URL**: http://localhost:8888
+
 ### 🎨 디자인 시스템 (유지해야 할 것):
 - 오렌지-레드 그라데이션 메인 컬러
 - Tailwind CSS 기반 스타일링
