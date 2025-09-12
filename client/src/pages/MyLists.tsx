@@ -39,7 +39,15 @@ const MyLists: React.FC = () => {
       if (!user) return [];
       try {
         const response = await axios.get(`/api/playlists/user/${user._id}`);
-        return response.data;
+        // response.data가 배열인지 확인하고, 배열이 아니면 빈 배열 반환
+        if (Array.isArray(response.data)) {
+          return response.data;
+        } else if (response.data && Array.isArray(response.data.playlists)) {
+          return response.data.playlists;
+        } else {
+          console.log('Unexpected API response format:', response.data);
+          return [];
+        }
       } catch (error) {
         console.log('API 호출 실패, 로컬 데이터 사용');
         return [];
@@ -58,62 +66,12 @@ const MyLists: React.FC = () => {
     }
   }, []);
   
-  // API 데이터와 로컬 데이터 합치기
-  const combinedLists = [...(apiLists || []), ...localLists];
+  // API 데이터와 로컬 데이터 합치기 - 배열인지 확인
+  const combinedLists = [
+    ...(Array.isArray(apiLists) ? apiLists : []), 
+    ...localLists
+  ];
   
-  // 기본 예시 데이터 (플레이리스트가 없을 때만 표시)
-  const [exampleLists] = useState<RestaurantList[]>([
-    {
-      id: '1',
-      name: '데이트 맛집',
-      description: '분위기 좋은 로맨틱한 장소들',
-      icon: '💑',
-      count: 12,
-      isPublic: true,
-      createdAt: '2024-01-15',
-      restaurants: 12
-    },
-    {
-      id: '2',
-      name: '혼밥 성지',
-      description: '혼자 가기 좋은 편안한 곳',
-      icon: '🍜',
-      count: 8,
-      isPublic: false,
-      createdAt: '2024-01-20',
-      restaurants: 8
-    },
-    {
-      id: '3',
-      name: '도쿄 여행 맛집',
-      description: '다음 여행때 꼭 가볼 곳들',
-      icon: '🇯🇵',
-      count: 15,
-      isPublic: true,
-      createdAt: '2024-02-01',
-      restaurants: 15
-    },
-    {
-      id: '4',
-      name: '매운맛 도전',
-      description: '매운 음식 좋아하는 사람들을 위한',
-      icon: '🌶️',
-      count: 6,
-      isPublic: true,
-      createdAt: '2024-02-10',
-      restaurants: 6
-    },
-    {
-      id: '5',
-      name: '브런치 카페',
-      description: '주말 브런치 맛집 모음',
-      icon: '☕',
-      count: 10,
-      isPublic: false,
-      createdAt: '2024-02-15',
-      restaurants: 10
-    }
-  ]);
 
   const popularCities = [
     { name: '서울', flag: '🇰🇷', count: 234 },
@@ -205,13 +163,33 @@ const MyLists: React.FC = () => {
         </motion.div>
 
         {/* 리스트 그리드 */}
+        {combinedLists.length === 0 ? (
+          // 플레이리스트가 없을 때 표시
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-center py-16"
+          >
+            <BookmarkIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">아직 플레이리스트가 없어요</h3>
+            <p className="text-gray-500 mb-6">나만의 맛집 리스트를 만들어보세요!</p>
+            <Link
+              to="/create-playlist"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all"
+            >
+              <PlusCircleIcon className="w-5 h-5" />
+              <span>첫 리스트 만들기</span>
+            </Link>
+          </motion.div>
+        ) : (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
         >
-          {(combinedLists.length > 0 ? combinedLists : exampleLists).map((list, index) => (
+          {combinedLists.map((list, index) => (
             <motion.div
               key={list._id || list.id}
               initial={{ opacity: 0, y: 20 }}
@@ -285,6 +263,7 @@ const MyLists: React.FC = () => {
             </div>
           </Link>
         </motion.div>
+        )}
 
       </div>
     </div>

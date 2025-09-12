@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import MobileNavigation from './mobile/MobileNavigation';
+import NotificationCenter from './NotificationCenter';
 import { 
   ChevronLeftIcon,
   PlusIcon,

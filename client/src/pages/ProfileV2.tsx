@@ -16,6 +16,7 @@ import {
   CameraIcon,
   ArrowRightOnRectangleIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   XMarkIcon,
   PlusIcon,
   MagnifyingGlassIcon
@@ -30,6 +31,7 @@ import { cleanupAndSyncSocialData, getSocialStats, addLikedRestaurant, removeLik
 // Removed dependency on sampleRestaurants - using MongoDB data
 import KoreanMap from '../components/KoreanMap';
 import { motion } from 'framer-motion';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // 맛집 추가 모달 컴포넌트
 const AddRestaurantModal = ({ isOpen, onClose, playlistId, onAdd }: {
@@ -285,6 +287,7 @@ const tasteProfiles = {
 const ProfileV2: React.FC = () => {
   const { username } = useParams<{ username: string }>();
   const { user: currentUser, updateUser, logout } = useAuthStore();
+  const isMobile = useIsMobile();
   const {
     followingUsers,
     followingUserDetails,
@@ -316,6 +319,7 @@ const ProfileV2: React.FC = () => {
   const [selectedPlaylistForAdd, setSelectedPlaylistForAdd] = useState<string | null>(null);
   const [selectedRestaurantForMap, setSelectedRestaurantForMap] = useState<any>(null);
   const [allPlaylists, setAllPlaylists] = useState<any[]>([]);
+  const [showSettings, setShowSettings] = useState(false);
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -678,6 +682,85 @@ const ProfileV2: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           </button>
+        </div>
+      )}
+
+      {/* 모바일에서만 보이는 설정 섹션 */}
+      {isMobile && isOwnProfile && (
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="w-full flex items-center justify-between"
+          >
+            <div className="flex items-center space-x-2">
+              <CogIcon className="w-5 h-5 text-gray-600" />
+              <span className="font-semibold">설정</span>
+            </div>
+            <ChevronDownIcon className={`w-5 h-5 transition-transform ${showSettings ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {showSettings && (
+            <div className="mt-4 space-y-3">
+              {!currentUser ? (
+                // 로그인되지 않은 상태
+                <>
+                  <Link
+                    to="/login"
+                    className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium"
+                  >
+                    <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                    <span>로그인</span>
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium"
+                  >
+                    <UserPlusIcon className="w-5 h-5" />
+                    <span>회원가입</span>
+                  </Link>
+                </>
+              ) : (
+                // 로그인된 상태
+                <>
+                  <button
+                    onClick={() => navigate('/settings')}
+                    className="w-full flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <UserIcon className="w-5 h-5 text-gray-600" />
+                      <span>프로필 수정</span>
+                    </div>
+                    <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                  </button>
+                  
+                  <button
+                    onClick={() => navigate('/settings')}
+                    className="w-full flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <CogIcon className="w-5 h-5 text-gray-600" />
+                      <span>계정 설정</span>
+                    </div>
+                    <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      if (window.confirm('정말 로그아웃 하시겠습니까?')) {
+                        logout();
+                        navigate('/');
+                        toast.success('로그아웃되었습니다');
+                      }
+                    }}
+                    className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
+                  >
+                    <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                    <span>로그아웃</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 

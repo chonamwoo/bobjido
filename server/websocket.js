@@ -4,10 +4,12 @@ const User = require('./models/User');
 const Chat = require('./models/Chat');
 const Message = require('./models/Message');
 const Notification = require('./models/Notification');
+const { SocketRateLimiter } = require('./middleware/rateLimiter');
 
 let io;
 const connectedUsers = new Map(); // userId -> socketId
 const userSockets = new Map(); // socketId -> userId
+const messageRateLimiter = new SocketRateLimiter(1000, 5); // 1초에 최대 5개 메시지
 
 function initializeWebSocket(server) {
   io = socketIo(server, {
@@ -107,6 +109,24 @@ function initializeWebSocket(server) {
       try {
         const { chatId, content, type = 'text', restaurantData } = data;
         
+        // Rate limiting 체크
+        if (!messageRateLimiter.check(socket.userId)) {
+          socket.emit('error', { 
+            message: '메시지를 너무 빠르게 전송하고 있습니다. 잠시 후 다시 시도해주세요.',
+            type: 'rate_limit'
+          });
+          return;
+        }
+        
+        // 메시지 길이 제한
+        if (content && content.length > 500) {
+          socket.emit('error', { 
+            message: '메시지는 500자를 초과할 수 없습니다.',
+            type: 'message_too_long'
+          });
+          return;
+        }
+        
         // 채팅방 참여자 확인
         const chat = await Chat.findById(chatId);
         if (!chat || !chat.participants.includes(socket.userId)) {
@@ -175,30 +195,44 @@ function initializeWebSocket(server) {
       });
     });
 
-    // 메시지 읽음 처리
+    // 메시지 읽음 처리 (배치 최적화)
     socket.on('mark_messages_read', async (chatId) => {
       try {
-        await Message.updateMany(
+        // 읽지 않은 메시지 ID만 먼저 가져오기 (성능 최적화)
+        const unreadMessages = await Message.find(
           { 
             chat: chatId, 
             sender: { $ne: socket.userId },
-            'readBy.user': { $nin: [socket.userId] }
+            'readBy.user': { $ne: socket.userId }
           },
-          { 
-            $addToSet: { 
-              readBy: {
-                user: socket.userId,
-                readAt: new Date()
+          '_id'
+        ).limit(100); // 한 번에 최대 100개까지만 처리
+        
+        if (unreadMessages.length > 0) {
+          // 배치 업데이트
+          const bulkOps = unreadMessages.map(msg => ({
+            updateOne: {
+              filter: { _id: msg._id },
+              update: { 
+                $addToSet: { 
+                  readBy: {
+                    user: socket.userId,
+                    readAt: new Date()
+                  }
+                }
               }
             }
-          }
-        );
-
-        // 채팅방의 다른 사용자들에게 읽음 상태 업데이트
-        socket.to(chatId).emit('messages_read', {
-          userId: socket.userId,
-          chatId
-        });
+          }));
+          
+          await Message.bulkWrite(bulkOps, { ordered: false });
+          
+          // 채팅방의 다른 사용자들에게 읽음 상태 업데이트
+          socket.to(chatId).emit('messages_read', {
+            userId: socket.userId,
+            chatId,
+            messageIds: unreadMessages.map(m => m._id)
+          });
+        }
       } catch (error) {
         console.error('메시지 읽음 처리 실패:', error);
       }

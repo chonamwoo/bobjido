@@ -57,7 +57,10 @@ router.get('/debug', (req, res) => {
 });
 
 // Google OAuth routes
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', passport.authenticate('google', { 
+  scope: ['profile', 'email'],
+  prompt: 'consent select_account' // 매번 동의 및 계정 선택 화면 표시
+}));
 
 router.get('/google/callback',
   passport.authenticate('google', { session: false }),
@@ -81,7 +84,9 @@ router.get('/google/callback',
 
 // Kakao OAuth routes - only if KAKAO_CLIENT_ID is configured
 if (process.env.KAKAO_CLIENT_ID) {
-  router.get('/kakao', passport.authenticate('kakao'));
+  router.get('/kakao', passport.authenticate('kakao', { 
+    prompt: 'login' // 매번 카카오 로그인 화면 표시
+  }));
 
   router.get('/kakao/callback',
     passport.authenticate('kakao', { session: false }),

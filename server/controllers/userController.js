@@ -306,26 +306,42 @@ const deleteAccount = async (req, res) => {
   try {
     const { password } = req.body;
     const userId = req.user._id;
-    const user = req.user;
+    
+    // password 필드를 포함하여 사용자 조회
+    const userWithPassword = await User.findById(userId).select('+password');
+    
+    if (!userWithPassword) {
+      return res.status(404).json({ message: '사용자를 찾을 수 없습니다' });
+    }
 
-    // 소셜 로그인 사용자가 아닌 경우 비밀번호 확인
-    const isOAuthUser = user.password && user.password.startsWith('oauth-');
+    // 소셜 로그인 사용자 확인 (googleId 또는 kakaoId가 있는 경우)
+    const isOAuthUser = userWithPassword.googleId || userWithPassword.kakaoId || 
+                       (userWithPassword.password && userWithPassword.password.startsWith('oauth-'));
     
     if (!isOAuthUser) {
+      // 일반 사용자는 비밀번호 확인 필요
       if (!password) {
         return res.status(400).json({ message: '비밀번호를 입력해주세요' });
       }
 
       const bcrypt = require('bcryptjs');
-      const isPasswordValid = await bcrypt.compare(password, user.password);
+      const isPasswordValid = await bcrypt.compare(password, userWithPassword.password);
       
       if (!isPasswordValid) {
         return res.status(400).json({ message: '비밀번호가 올바르지 않습니다' });
       }
     }
 
+    console.log('🗑️ Deleting account:', {
+      userId,
+      username: userWithPassword.username,
+      email: userWithPassword.email,
+      kakaoId: userWithPassword.kakaoId,
+      googleId: userWithPassword.googleId
+    });
+
     // 관련 데이터 삭제
-    await Promise.all([
+    const deleteResults = await Promise.all([
       // 사용자가 만든 플레이리스트 삭제
       Playlist.deleteMany({ createdBy: userId }),
       
@@ -338,6 +354,12 @@ const deleteAccount = async (req, res) => {
       // 사용자 계정 삭제
       User.findByIdAndDelete(userId)
     ]);
+
+    console.log('✅ Account deleted successfully:', {
+      userId,
+      playlistsDeleted: deleteResults[0].deletedCount,
+      userDeleted: deleteResults[2] ? 'Yes' : 'No'
+    });
 
     res.json({
       success: true,

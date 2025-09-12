@@ -10,12 +10,19 @@ import {
   ExclamationTriangleIcon,
   EyeIcon,
   EyeSlashIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  ArrowLeftIcon,
+  SparklesIcon,
+  HeartIcon,
+  CogIcon
 } from '@heroicons/react/24/outline';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout, updateUser } = useAuthStore();
+  const isMobile = useIsMobile();
+  const isAdmin = user?.isAdmin || user?.username === 'Admin' || user?.email === 'admin@bobmap.com';
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -50,9 +57,15 @@ const Settings: React.FC = () => {
       return response.data;
     },
     onSuccess: () => {
-      toast.success('계정이 삭제되었습니다');
+      toast.success('계정이 삭제되었습니다. 완전한 로그아웃을 위해 브라우저를 새로고침하세요.');
+      // OAuth 세션 정리
+      localStorage.clear();
+      sessionStorage.clear();
       logout();
-      navigate('/');
+      // 브라우저 새로고침으로 모든 세션 정리
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || '계정 삭제에 실패했습니다');
@@ -75,10 +88,76 @@ const Settings: React.FC = () => {
   const isOAuthUser = user?.password?.startsWith('oauth-');
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">계정 설정</h1>
-        <p className="text-gray-600">프로필 정보와 계정 설정을 관리하세요</p>
+    <div className={`${isMobile ? 'p-4' : 'max-w-4xl mx-auto p-6'}`}>
+      {/* 모바일 헤더 */}
+      {isMobile && (
+        <div className="flex items-center mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 -ml-2 mr-2"
+          >
+            <ArrowLeftIcon className="w-5 h-5 text-gray-700" />
+          </button>
+          <h1 className="text-xl font-bold">계정 설정</h1>
+        </div>
+      )}
+      
+      {/* 데스크톱 헤더 */}
+      {!isMobile && (
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">계정 설정</h1>
+          <p className="text-gray-600">프로필 정보와 계정 설정을 관리하세요</p>
+        </div>
+      )}
+
+      {/* 빠른 액세스 */}
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+        <div className="flex items-center mb-6">
+          <SparklesIcon className="w-6 h-6 mr-3 text-gray-600" />
+          <h2 className="text-xl font-semibold">맛집 관리</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* 팔로잉 맛집 관리 - 모든 사용자 */}
+          <button
+            onClick={() => navigate('/my-following-restaurants')}
+            className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center">
+              <HeartIcon className="w-8 h-8 text-purple-500 mr-3" />
+              <div className="text-left">
+                <h3 className="font-semibold text-gray-800">나의 팔로잉 맛집</h3>
+                <p className="text-sm text-gray-600">내가 좋아하는 맛집 리스트 관리</p>
+              </div>
+            </div>
+            <span className="text-purple-500 group-hover:translate-x-1 transition-transform">→</span>
+          </button>
+
+          {/* 인증 맛집 관리 - 관리자만 */}
+          {isAdmin && (
+            <button
+              onClick={() => navigate('/admin/certified-restaurants')}
+              className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center">
+                <CogIcon className="w-8 h-8 text-orange-500 mr-3" />
+                <div className="text-left">
+                  <h3 className="font-semibold text-gray-800">인증 맛집 관리</h3>
+                  <p className="text-sm text-gray-600">미쉐린, 생활의 달인 등 (관리자)</p>
+                </div>
+              </div>
+              <span className="text-orange-500 group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+          )}
+        </div>
+
+        {!isAdmin && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800">
+              💡 팁: 팔로잉 맛집을 추가하면 모바일 홈 화면의 "팔로잉" 탭에서 바로 확인할 수 있어요!
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 프로필 정보 수정 */}

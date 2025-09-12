@@ -155,7 +155,10 @@
       "Read(/C:\\Users\\mchon\\PycharmProjects\\BobsMap\\client\\src\\pages/**)",
       "Read(/C:\\Users\\mchon\\PycharmProjects\\BobsMap\\client\\src/**)",
       "Bash(tasklist)",
-      "Bash(netstat:*)"
+      "Bash(netstat:*)",
+      "Bash(start test-notifications.html)",
+      "Bash(start http://localhost:8081)",
+      "Bash(start http://localhost:3000/admin/certified-restaurants)"
     ],
     "deny": [],
     "ask": []

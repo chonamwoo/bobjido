@@ -23,13 +23,8 @@ const getNotifications = async (req, res) => {
       read: false 
     });
 
-    res.json({
-      notifications,
-      total,
-      unreadCount,
-      page,
-      totalPages: Math.ceil(total / limit)
-    });
+    // Return array directly for compatibility with frontend
+    res.json(notifications);
   } catch (error) {
     console.error('Get notifications error:', error);
     res.status(500).json({ message: '알림 조회 중 오류가 발생했습니다.' });

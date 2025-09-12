@@ -47,7 +47,46 @@ const PlaylistDetail: React.FC = () => {
   const { data: playlist, isLoading, error } = useQuery({
     queryKey: ['playlist', id],
     queryFn: async () => {
-      // Admin에서 수정한 데이터 먼저 확인
+      // 인증 맛집 데이터 확인 (새로운 구조)
+      if (id?.startsWith('certified-')) {
+        const certifiedData = localStorage.getItem('certified_restaurants_data');
+        if (certifiedData) {
+          const parsedData = JSON.parse(certifiedData);
+          const categoryKey = id.replace('certified-', '');
+          const category = parsedData.categories[categoryKey];
+          if (category) {
+            // 카테고리를 플레이리스트 형식으로 변환
+            return {
+              _id: id,
+              name: category.title,
+              title: `${category.icon} ${category.title}`,
+              description: category.description,
+              creator: { username: 'Admin', isVerified: true },
+              certification: category.title,
+              restaurants: category.restaurants.map((r: any) => ({
+                _id: r.id,
+                restaurant: {
+                  _id: r.id,
+                  name: r.name,
+                  category: r.category,
+                  address: r.address,
+                  phoneNumber: r.phoneNumber,
+                  priceRange: r.priceRange,
+                  rating: r.rating,
+                  image: r.image,
+                  coordinates: { lat: 37.5665, lng: 126.9780 } // 기본 좌표
+                }
+              })),
+              likeCount: category.likeCount || 0,
+              viewCount: category.viewCount || 0,
+              tags: [category.title],
+              coverImage: category.restaurants[0]?.image || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop'
+            };
+          }
+        }
+      }
+      
+      // Admin에서 수정한 데이터 확인
       const adminPlaylists = localStorage.getItem('adminPlaylists');
       if (adminPlaylists) {
         const playlists = JSON.parse(adminPlaylists);

@@ -184,6 +184,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bobmap', 
   app.use('/api/recommendations', recommendationsRoutes);
   app.use('/api/follow', followRoutes);
   app.use('/api/notifications', notificationRoutes);
+  app.use('/api/test-notifications', require('./routes/testNotificationRoutes'));
   
   // New social routes
   const socialRoutes = require('./routes/socialRoutes');

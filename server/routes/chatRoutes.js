@@ -4,6 +4,7 @@ const { protect } = require('../middleware/auth');
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const { messageLimiter } = require('../middleware/rateLimiter');
 
 // 채팅 목록 가져오기
 router.get('/list', protect, async (req, res) => {
@@ -103,11 +104,19 @@ router.get('/:chatId/messages', protect, async (req, res) => {
   }
 });
 
-// 메시지 보내기
-router.post('/:chatId/messages', protect, async (req, res) => {
+// 메시지 보내기 (Rate limiting 적용)
+router.post('/:chatId/messages', protect, messageLimiter, async (req, res) => {
   try {
     const { chatId } = req.params;
     const { content, type = 'text', restaurantData } = req.body;
+
+    // 메시지 길이 제한
+    if (content && content.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: '메시지는 500자를 초과할 수 없습니다.'
+      });
+    }
 
     // 채팅방 참여자인지 확인
     const chat = await Chat.findById(chatId);

@@ -1,0 +1,220 @@
+{
+  "lastUpdated": "2025-01-22",
+  "categories": {
+    "michelin": {
+      "title": "미쉐린 가이드 선정 맛집",
+      "description": "2024-2025 서울 미쉐린 가이드 선정 레스토랑",
+      "restaurants": [
+        {
+          "id": "michelin_001",
+          "name": "가온",
+          "category": "한식",
+          "rating": 4.8,
+          "priceRange": "₩₩₩₩",
+          "location": "강남구",
+          "address": "서울 강남구 도산대로 317",
+          "phone": "02-545-9845",
+          "hours": "12:00-15:00, 18:00-22:00",
+          "description": "미쉐린 3스타, 전통 한식의 정수",
+          "tags": ["미쉐린3스타", "한정식", "프라이빗룸"],
+          "image": "https://example.com/gaon.jpg",
+          "coordinates": { "lat": 37.5228, "lng": 127.0387 }
+        },
+        {
+          "id": "michelin_002",
+          "name": "라연",
+          "category": "한식",
+          "rating": 4.9,
+          "priceRange": "₩₩₩₩",
+          "location": "중구",
+          "address": "서울 중구 소공로 119 신라호텔 23층",
+          "phone": "02-2230-3367",
+          "hours": "12:00-14:30, 18:00-21:30",
+          "description": "미쉐린 3스타, 모던 한식의 진수",
+          "tags": ["미쉐린3스타", "호텔다이닝", "뷰맛집"],
+          "image": "https://example.com/layeon.jpg",
+          "coordinates": { "lat": 37.5558, "lng": 126.9810 }
+        },
+        {
+          "id": "michelin_003",
+          "name": "밍글스",
+          "category": "컨템포러리",
+          "rating": 4.7,
+          "priceRange": "₩₩₩₩",
+          "location": "강남구",
+          "address": "서울 강남구 도산대로67길 19",
+          "phone": "02-515-7306",
+          "hours": "18:00-22:00",
+          "description": "미쉐린 2스타, 한국 식재료로 만든 창의적 요리",
+          "tags": ["미쉐린2스타", "모던한식", "와인페어링"],
+          "image": "https://example.com/mingles.jpg",
+          "coordinates": { "lat": 37.5245, "lng": 127.0396 }
+        },
+        {
+          "id": "michelin_004",
+          "name": "알라프리마",
+          "category": "이탈리안",
+          "rating": 4.6,
+          "priceRange": "₩₩₩",
+          "location": "강남구",
+          "address": "서울 강남구 선릉로158길 7",
+          "phone": "02-511-2872",
+          "hours": "12:00-14:30, 18:00-21:30",
+          "description": "미쉐린 1스타, 정통 이탈리안 파인다이닝",
+          "tags": ["미쉐린1스타", "이탈리안", "파스타"],
+          "image": "https://example.com/alaprima.jpg",
+          "coordinates": { "lat": 37.5231, "lng": 127.0440 }
+        }
+      ]
+    },
+    "masterChef": {
+      "title": "생활의 달인 인정 맛집",
+      "description": "SBS 생활의 달인 방송 출연 맛집",
+      "restaurants": [
+        {
+          "id": "master_001",
+          "name": "광장시장 육회",
+          "category": "한식",
+          "rating": 4.5,
+          "priceRange": "₩₩",
+          "location": "종로구",
+          "address": "서울 종로구 창경궁로 88 광장시장",
+          "phone": "02-2267-0291",
+          "hours": "09:00-23:00",
+          "description": "생활의 달인 육회 달인, 40년 전통",
+          "tags": ["생활의달인", "육회", "광장시장"],
+          "image": "https://example.com/yukhoe.jpg",
+          "coordinates": { "lat": 37.5700, "lng": 126.9996 }
+        },
+        {
+          "id": "master_002",
+          "name": "을지로 골뱅이",
+          "category": "한식",
+          "rating": 4.3,
+          "priceRange": "₩",
+          "location": "중구",
+          "address": "서울 중구 을지로14길 2-1",
+          "phone": "02-2273-1326",
+          "hours": "17:00-02:00",
+          "description": "생활의 달인 골뱅이 무침 달인",
+          "tags": ["생활의달인", "골뱅이", "을지로"],
+          "image": "https://example.com/golbaengi.jpg",
+          "coordinates": { "lat": 37.5660, "lng": 126.9910 }
+        },
+        {
+          "id": "master_003",
+          "name": "신림동 순대타운 왕순대",
+          "category": "한식",
+          "rating": 4.4,
+          "priceRange": "₩",
+          "location": "관악구",
+          "address": "서울 관악구 신림로59길 14",
+          "phone": "02-884-8985",
+          "hours": "10:00-22:00",
+          "description": "생활의 달인 순대 달인, 30년 전통",
+          "tags": ["생활의달인", "순대", "신림동"],
+          "image": "https://example.com/sundae.jpg",
+          "coordinates": { "lat": 37.4839, "lng": 126.9296 }
+        }
+      ]
+    },
+    "blackBook": {
+      "title": "수요미식회 블랙북",
+      "description": "tvN 수요미식회 추천 맛집",
+      "restaurants": [
+        {
+          "id": "black_001",
+          "name": "평양면옥",
+          "category": "한식",
+          "rating": 4.6,
+          "priceRange": "₩₩",
+          "location": "중구",
+          "address": "서울 중구 장충단로 207",
+          "phone": "02-2267-7784",
+          "hours": "11:30-21:30",
+          "description": "수요미식회 평양냉면 맛집",
+          "tags": ["수요미식회", "평양냉면", "전통"],
+          "image": "https://example.com/pyongyang.jpg",
+          "coordinates": { "lat": 37.5594, "lng": 127.0056 }
+        },
+        {
+          "id": "black_002",
+          "name": "성수동 대림창고",
+          "category": "양식",
+          "rating": 4.5,
+          "priceRange": "₩₩₩",
+          "location": "성동구",
+          "address": "서울 성동구 성수이로 78",
+          "phone": "02-747-0075",
+          "hours": "11:00-22:00",
+          "description": "수요미식회 브런치 맛집",
+          "tags": ["수요미식회", "브런치", "성수동"],
+          "image": "https://example.com/daelim.jpg",
+          "coordinates": { "lat": 37.5445, "lng": 127.0557 }
+        }
+      ]
+    },
+    "bluRibbon": {
+      "title": "블루리본 서베이",
+      "description": "블루리본 서베이 선정 맛집",
+      "restaurants": [
+        {
+          "id": "blue_001",
+          "name": "스시조",
+          "category": "일식",
+          "rating": 4.8,
+          "priceRange": "₩₩₩₩",
+          "location": "강남구",
+          "address": "서울 강남구 언주로152길 10",
+          "phone": "02-3448-0140",
+          "hours": "12:00-14:30, 18:00-22:00",
+          "description": "블루리본 3년 연속 선정, 오마카세",
+          "tags": ["블루리본", "오마카세", "스시"],
+          "image": "https://example.com/sushijo.jpg",
+          "coordinates": { "lat": 37.5201, "lng": 127.0336 }
+        }
+      ]
+    },
+    "local": {
+      "title": "동네 맛집",
+      "description": "현지인들이 인정하는 진짜 맛집",
+      "restaurants": [
+        {
+          "id": "local_001",
+          "name": "연남동 경성주막",
+          "category": "한식",
+          "rating": 4.4,
+          "priceRange": "₩₩",
+          "location": "마포구",
+          "address": "서울 마포구 동교로38길 33",
+          "phone": "02-332-3320",
+          "hours": "17:00-02:00",
+          "description": "연남동 현지인 맛집, 전통주와 안주",
+          "tags": ["연남동", "전통주", "안주"],
+          "image": "https://example.com/kyungsung.jpg",
+          "coordinates": { "lat": 37.5626, "lng": 126.9255 }
+        },
+        {
+          "id": "local_002",
+          "name": "망원동 칼국수",
+          "category": "한식",
+          "rating": 4.3,
+          "priceRange": "₩",
+          "location": "마포구",
+          "address": "서울 마포구 포은로 88",
+          "phone": "02-336-8852",
+          "hours": "11:00-21:00",
+          "description": "망원시장 30년 전통 칼국수",
+          "tags": ["망원동", "칼국수", "전통시장"],
+          "image": "https://example.com/kalguksu.jpg",
+          "coordinates": { "lat": 37.5556, "lng": 126.9105 }
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "totalRestaurants": 15,
+    "lastModified": "2025-01-22T10:00:00Z",
+    "version": "1.0.0"
+  }
+}

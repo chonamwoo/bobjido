@@ -169,6 +169,9 @@ class DataManager {
   // 좋아요 토글 (맛집)
   toggleRestaurantLike(restaurantId: string): boolean {
     const userData = this.getUserData();
+    if (!userData.likedRestaurants) {
+      userData.likedRestaurants = [];
+    }
     const index = userData.likedRestaurants.indexOf(restaurantId);
     
     if (index > -1) {
@@ -185,12 +188,15 @@ class DataManager {
   // 좋아요 여부 확인 (맛집)
   isRestaurantLiked(restaurantId: string): boolean {
     const userData = this.getUserData();
-    return userData.likedRestaurants.includes(restaurantId);
+    return userData.likedRestaurants ? userData.likedRestaurants.includes(restaurantId) : false;
   }
   
   // 좋아요 토글 (플레이리스트)
   togglePlaylistLike(playlistId: string): boolean {
     const userData = this.getUserData();
+    if (!userData.likedPlaylists) {
+      userData.likedPlaylists = [];
+    }
     const index = userData.likedPlaylists.indexOf(playlistId);
     
     if (index > -1) {
@@ -207,7 +213,7 @@ class DataManager {
   // 좋아요 여부 확인 (플레이리스트)
   isPlaylistLiked(playlistId: string): boolean {
     const userData = this.getUserData();
-    return userData.likedPlaylists.includes(playlistId);
+    return userData.likedPlaylists ? userData.likedPlaylists.includes(playlistId) : false;
   }
   
   // 방문한 맛집 추가 (개선된 버전)

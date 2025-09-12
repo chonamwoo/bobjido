@@ -87,10 +87,12 @@ const messageSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// 인덱스
-messageSchema.index({ chat: 1, createdAt: -1 });
-messageSchema.index({ sender: 1 });
-messageSchema.index({ readBy: 1 });
+// 인덱스 (성능 최적화)
+messageSchema.index({ chat: 1, createdAt: -1 }); // 채팅방별 메시지 조회
+messageSchema.index({ sender: 1 }); // 발신자별 메시지 조회
+messageSchema.index({ 'readBy.user': 1 }); // 읽음 상태 조회
+messageSchema.index({ chat: 1, sender: 1, createdAt: -1 }); // 복합 인덱스
+messageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 2592000 }); // 30일 후 자동 삭제 (선택적)
 
 // 메시지 전송 전 검증
 messageSchema.pre('save', function(next) {

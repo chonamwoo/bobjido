@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LayoutMVP from './components/LayoutMVP';
 import MobileLayout from './components/MobileLayout';
 import { useIsMobile } from './hooks/useIsMobile';
+import { useAuthStore } from './store/authStore';
+import socketService from './services/socketService';
 import './styles/mobile.css';
 import 'leaflet/dist/leaflet.css';
 import HomeSoundCloud from './pages/HomeSoundCloud';
@@ -56,9 +58,14 @@ import CreateRestaurant from './pages/CreateRestaurant';
 import Followers from './pages/Followers';
 import Following from './pages/Following';
 import Admin from './pages/Admin';
+import RestaurantDataManager from './pages/RestaurantDataManager';
+import MyFollowingRestaurants from './pages/MyFollowingRestaurants';
+import AdminCertifiedRestaurants from './pages/AdminCertifiedRestaurants';
 
 function App() {
   const isMobile = useIsMobile();
+  const { token } = useAuthStore();
+  const isAuthenticated = !!token;
   const Layout = isMobile ? MobileLayout : LayoutMVP;
   const HomePage = isMobile ? MobileHomeSoundCloud : HomeSoundCloud;
   const PlaylistPage = isMobile ? MobilePlaylistDetail : PlaylistDetail;
@@ -66,6 +73,19 @@ function App() {
   const ExplorePage = isMobile ? MobileSuperExplore : SuperExplore;
   const CommunityPage = isMobile ? MobileCommunity : Community;
   const MessagesPage = isMobile ? MobileMessages : Messages;
+  
+  // Initialize socket connection when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      socketService.connect(token);
+    } else {
+      socketService.disconnect();
+    }
+    
+    return () => {
+      socketService.disconnect();
+    };
+  }, [isAuthenticated, token]);
   
   return (
     <Routes>
@@ -150,6 +170,15 @@ function App() {
         />
         <Route path="beta-feedback" element={<BetaFeedback />} />
         <Route path="help" element={<Help />} />
+        <Route path="restaurant-data" element={<RestaurantDataManager />} />
+        <Route 
+          path="my-following-restaurants" 
+          element={
+            <ProtectedRoute>
+              <MyFollowingRestaurants />
+            </ProtectedRoute>
+          } 
+        />
         <Route 
           path="my-stats" 
           element={
@@ -174,6 +203,7 @@ function App() {
       <Route path="/admin/panel" element={<EnhancedAdminPanel />} />
       <Route path="/admin/users" element={<AdminUserManagement />} />
       <Route path="/admin/restaurants" element={<AdminRestaurantManagement />} />
+      <Route path="/admin/certified-restaurants" element={<AdminCertifiedRestaurants />} />
     </Routes>
   );
 }

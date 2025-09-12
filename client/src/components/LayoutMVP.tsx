@@ -22,6 +22,7 @@ import {
   UsersIcon,
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../store/authStore';
+import NotificationCenter from './NotificationCenter';
 import toast from 'react-hot-toast';
 
 const LayoutMVP: React.FC = () => {
@@ -108,15 +109,8 @@ const LayoutMVP: React.FC = () => {
                     <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
                   </Link>
 
-                  {/* Notifications Button */}
-                  <Link
-                    to="/notifications"
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
-                    title="알림"
-                  >
-                    <BellIcon className="w-6 h-6 text-gray-700" />
-                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                  </Link>
+                  {/* Notifications Component */}
+                  <NotificationCenter />
 
                   <div className="relative">
                     <button

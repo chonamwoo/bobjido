@@ -37,18 +37,26 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // 기존 사용자 확인
-        let user = await User.findOne({ email: profile.emails[0].value });
+        // googleId로만 사용자 찾기 (계정 삭제 후 재가입 시 새 계정 생성을 위해)
+        let user = await User.findOne({ googleId: profile.id });
+        
+        console.log('🔍 Google Login Check:', {
+          googleId: profile.id,
+          email: profile.emails[0].value,
+          foundUser: user ? `Found user with id: ${user._id}` : 'No user found',
+          willCreateNew: !user
+        });
 
         if (user) {
-          // 기존 사용자가 있으면 Google ID 연결
-          if (!user.googleId) {
-            user.googleId = profile.id;
-          }
+          // 기존 사용자가 있으면 정보 업데이트
           // userId가 없으면 추가
           if (!user.userId) {
             const baseUserId = profile.emails[0].value.split('@')[0].toLowerCase();
             user.userId = baseUserId.replace(/[^a-z0-9_]/g, '') || `google_${profile.id.slice(-8)}`;
+          }
+          // 프로필 이미지 업데이트
+          if (profile.photos[0]?.value) {
+            user.profileImage = profile.photos[0].value;
           }
           await user.save();
         } else {
@@ -94,46 +102,67 @@ if (process.env.KAKAO_CLIENT_ID) {
         const kakaoId = String(profile.id); // 숫자를 문자열로 변환
         const nickname = profile._json.properties?.nickname || profile.displayName || profile.username;
         
-        // 카카오 프로필 이미지 처리
-        let profileImage = profile._json.properties?.profile_image || profile._json.properties?.thumbnail_image;
+        // 카카오 프로필 정보 로깅
+        console.log('🎨 Kakao Profile Data:', {
+          properties: profile._json.properties,
+          kakao_account: profile._json.kakao_account,
+          profile_needs_agreement: profile._json.kakao_account?.profile_needs_agreement,
+          profile_image_needs_agreement: profile._json.kakao_account?.profile_image_needs_agreement
+        });
+        
+        // 카카오 프로필 이미지 처리 - 여러 곳에서 시도
+        let profileImage = 
+          profile._json.properties?.profile_image || 
+          profile._json.properties?.thumbnail_image ||
+          profile._json.kakao_account?.profile?.profile_image_url ||
+          profile._json.kakao_account?.profile?.thumbnail_image_url;
+        
+        console.log('🖼️ Kakao Profile Image:', profileImage);
         
         // 프로필 이미지가 없으면 기본 아바타 생성 (이름 기반)
         if (!profileImage) {
           const displayName = nickname || 'K';
           profileImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=FEE500&color=3C1E1E&bold=true&size=200`;
+          console.log('📷 Using default avatar for:', displayName);
         }
         
-        // 이메일이 없으면 kakaoId로 사용자 찾기
-        let user;
+        // kakaoId로만 사용자 찾기 (계정 삭제 후 재가입 시 새 계정 생성을 위해)
+        // kakaoId를 문자열로 확실히 변환
+        const kakaoIdStr = String(kakaoId);
+        let user = await User.findOne({ kakaoId: kakaoIdStr });
         
-        if (email) {
-          // 이메일이 있으면 이메일로 먼저 검색
-          user = await User.findOne({ $or: [{ email }, { kakaoId }] });
-        } else {
-          // 이메일이 없으면 kakaoId로만 검색
-          user = await User.findOne({ kakaoId });
-        }
+        console.log('🔍 Kakao Login Check:', {
+          kakaoId: kakaoIdStr,
+          email,
+          foundUser: user ? `Found user with id: ${user._id}` : 'No user found',
+          willCreateNew: !user
+        });
+        
+        // kakaoId로 찾지 못하면 무조건 새 계정 생성
+        // 이메일이 같아도 새로운 계정으로 처리 (계정 삭제 후 재가입 케이스)
 
         if (user) {
           // 기존 사용자가 있으면 Kakao ID 연결
           if (!user.kakaoId) {
-            user.kakaoId = kakaoId;
+            user.kakaoId = kakaoIdStr;
           }
           // userId가 없으면 추가
           if (!user.userId) {
-            user.userId = email ? email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') : `kakao_${kakaoId.slice(-8)}`;
+            user.userId = email ? email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') : `kakao_${kakaoIdStr.slice(-8)}`;
           }
+          // 프로필 이미지 업데이트 (카카오에서 새로운 이미지를 가져왔을 수 있음)
+          user.profileImage = profileImage;
           await user.save();
         } else {
           // 새 사용자 생성
           // 이메일이 없는 경우 kakaoId를 기반으로 고유 이메일 생성
-          const userEmail = email || `kakao${kakaoId}@bobmap.com`;
-          const username = nickname || `kakao_user_${kakaoId.slice(-6)}`;
-          const userId = email ? email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') : `kakao_${kakaoId.slice(-8)}`;
+          const userEmail = email || `kakao${kakaoIdStr}@bobmap.com`;
+          const username = nickname || `kakao_user_${kakaoIdStr.slice(-6)}`;
+          const userId = email ? email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') : `kakao_${kakaoIdStr.slice(-8)}`;
           
           user = await User.create({
             userId: userId,
-            kakaoId: kakaoId,
+            kakaoId: kakaoIdStr,
             username: username,
             email: userEmail,
             emailVerified: true, // OAuth 로그인은 이메일 인증 완료로 처리

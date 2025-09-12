@@ -78,6 +78,7 @@ const RestaurantMapV3: React.FC = () => {
   // 필터 상태
   const [filters, setFilters] = useState({
     category: '',
+    certification: '', // 인증 맛집 필터 추가
     priceRange: '',
     minRating: 0,
     minTaste: 0,
@@ -240,6 +241,53 @@ const RestaurantMapV3: React.FC = () => {
       const dbData = dbRestaurants || [];
       result = dbData;
       
+      // Add certified restaurants from admin panel
+      const certifiedData = localStorage.getItem('certified_restaurants_data');
+      if (certifiedData) {
+        const parsedData = JSON.parse(certifiedData);
+        const certifiedRestaurants: Restaurant[] = [];
+        
+        Object.entries(parsedData.categories).forEach(([categoryKey, category]: [string, any]) => {
+          category.restaurants.forEach((r: any) => {
+            const location = r.location || { lat: 37.5665, lng: 126.9780 };
+            certifiedRestaurants.push({
+              _id: r.id,
+              name: r.name,
+              category: r.category,
+              address: r.address,
+              phoneNumber: r.phoneNumber || '',
+              priceRange: r.priceRange || '',
+              averageRating: r.rating || 0,
+              images: r.image ? [r.image] : [],
+              certification: category.title, // Add certification badge
+              certificationIcon: category.icon,
+              location: location,
+              coordinates: location, // Use same format as location
+              dnaProfile: {
+                atmosphere: ['casual', 'cozy'],
+                foodStyle: ['traditional', 'authentic'],
+                instagramability: 4,
+                dateSpot: 3,
+                groupFriendly: 4,
+                soloFriendly: 3
+              },
+              reviewCount: 0,
+              tags: [],
+              features: [],
+              createdBy: {} as any,
+              verifiedBy: [],
+              isVerified: true,
+              viewCount: 0,
+              saveCount: 0,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            } as Restaurant);
+          });
+        });
+        
+        result = [...result, ...certifiedRestaurants];
+      }
+      
       // Add local storage restaurants with proper type conversion
       const localRestaurants = localStorage.getItem('localRestaurants');
       if (localRestaurants) {
@@ -290,6 +338,13 @@ const RestaurantMapV3: React.FC = () => {
     // 카테고리 필터
     if (filters.category) {
       result = result.filter(restaurant => restaurant.category === filters.category);
+    }
+    
+    // 인증 맛집 필터
+    if (filters.certification) {
+      result = result.filter(restaurant => 
+        (restaurant as any).certification === filters.certification
+      );
     }
     
     // 가격대 필터
@@ -615,6 +670,30 @@ const RestaurantMapV3: React.FC = () => {
                   </select>
                 </div>
 
+                {/* 인증 맛집 필터 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">🏆 인증 맛집</label>
+                  <select
+                    value={filters.certification}
+                    onChange={(e) => setFilters({ ...filters, certification: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">전체</option>
+                    {(() => {
+                      const certifiedData = localStorage.getItem('certified_restaurants_data');
+                      if (certifiedData) {
+                        const parsedData = JSON.parse(certifiedData);
+                        return Object.entries(parsedData.categories).map(([key, category]: [string, any]) => (
+                          <option key={key} value={category.title}>
+                            {category.icon} {category.title}
+                          </option>
+                        ));
+                      }
+                      return null;
+                    })()}
+                  </select>
+                </div>
+
                 {/* 가격대 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">가격대</label>
@@ -712,6 +791,7 @@ const RestaurantMapV3: React.FC = () => {
                 <button
                   onClick={() => setFilters({
                     category: '',
+                    certification: '',
                     priceRange: '',
                     minRating: 0,
                     minTaste: 0,

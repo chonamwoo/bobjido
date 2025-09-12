@@ -87,19 +87,63 @@ const MobileHomeSoundCloud: React.FC = () => {
       let filteredLists = [];
       
       if (activeFilter === 'certified') {
-        // 인증 맛집 리스트 (미디어/인플루언서/유튜브 등장)
-        filteredLists = allPlaylists.filter((p: any) => 
-          p.certification && [
-            '흑백요리사',
-            '수요미식회',
-            '미쉐린스타',
-            '백종원의3대천왕',
-            '백년가게'
-          ].includes(p.certification)
-        );
+        // 인증 맛집 리스트 - Admin만 수정 가능
+        const adminData = localStorage.getItem('certified_restaurants_data');
+        if (adminData) {
+          const parsedData = JSON.parse(adminData);
+          // 카테고리별로 리스트 생성
+          filteredLists = Object.entries(parsedData.categories).map(([key, category]: [string, any]) => {
+            // 실제 조회수와 좋아요 수 가져오기 (없으면 초기값 설정)
+            const statsKey = `playlist_stats_certified-${key}`;
+            const savedStats = localStorage.getItem(statsKey);
+            const stats = savedStats ? JSON.parse(savedStats) : {
+              likeCount: category.likeCount || 0,
+              viewCount: category.viewCount || 0
+            };
+            
+            return {
+              _id: `certified-${key}`,
+              name: category.title,
+              title: `${category.icon} ${category.title}`,
+              description: category.description,
+              creator: { username: 'Admin', isVerified: true },
+              certification: category.title,
+              likeCount: stats.likeCount,
+              viewCount: stats.viewCount,
+              restaurants: category.restaurants.slice(0, 5).map((r: any) => ({
+              _id: r.id,
+              restaurant: { 
+                _id: r.id, 
+                name: r.name, 
+                category: r.category, 
+                address: r.address,
+                image: r.image
+              }
+              })),
+              tags: [category.title.split(' ')[0], '인증맛집'],
+              coverImage: category.restaurants[0]?.image || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop'
+            };
+          });
+        } else {
+          // 기본 인증 맛집 리스트
+          filteredLists = allPlaylists.filter((p: any) => 
+            p.certification && [
+              '흑백요리사',
+              '수요미식회',
+              '미쉐린스타',
+              '백종원의3대천왕',
+              '백년가게'
+            ].includes(p.certification)
+          );
+        }
       } else if (activeFilter === 'following') {
-        // 지인(팔로잉) 인증 맛집 리스트 - 실제 친구 이름처럼
-        filteredLists = [
+        // 팔로잉 맛집 - 개인이 수정/관리 가능
+        const userFollowingData = localStorage.getItem(`following_restaurants_${user?._id}`);
+        if (userFollowingData) {
+          filteredLists = JSON.parse(userFollowingData);
+        } else {
+          // 기본 팔로잉 맛집 리스트
+          filteredLists = [
           {
             _id: 'following-1',
             name: '김재광님의 성수동 맛집리스트',
@@ -195,70 +239,10 @@ const MobileHomeSoundCloud: React.FC = () => {
             coverImage: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop'
           }
         ];
+        }
       } else if (activeFilter === 'similar') {
-        // 나와 비슷한 먹성 추천 기반 - 더 리얼한 데이터
-        filteredLists = [
-          {
-            _id: 'similar-1',
-            name: '매운맛 마니아들의 성지',
-            title: '🔥 불맛 매운맛 끝판왕',
-            description: '매운맛 좋아하는 사람들이 인정한 진짜 매운 맛집',
-            creator: { username: '매운맛협회', isVerified: false },
-            certification: null,
-            likeCount: 678,
-            viewCount: 4523,
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            restaurants: [
-              { _id: 'rest-26', restaurant: { _id: 'rest-26', name: '사천짜장', category: '중식', address: '서울 마포구' }},
-              { _id: 'rest-27', restaurant: { _id: 'rest-27', name: '병천순대국', category: '한식', address: '서울 양천구' }},
-              { _id: 'rest-28', restaurant: { _id: 'rest-28', name: '불타는고추', category: '한식', address: '서울 강남구' }},
-              { _id: 'rest-29', restaurant: { _id: 'rest-29', name: '진짜매운탕', category: '한식', address: '서울 종로구' }}
-            ],
-            tags: ['매운맛', '불맛', '중독성'],
-            coverImage: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop',
-            recommendedReason: '취향 매칭 92%'
-          },
-          {
-            _id: 'similar-2',
-            name: '가성비 최강 맛집',
-            title: '💰 1만원 이하 가성비 끝판왕',
-            description: '만원의 행복! 가성비로 승부하는 진짜 맛집',
-            creator: { username: '알뜰살뜰', isVerified: false },
-            certification: null,
-            likeCount: 892,
-            viewCount: 6234,
-            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            restaurants: [
-              { _id: 'rest-30', restaurant: { _id: 'rest-30', name: '김밥천국', category: '분식', address: '서울 종로구' }},
-              { _id: 'rest-31', restaurant: { _id: 'rest-31', name: '이모네집', category: '한식', address: '서울 마포구' }},
-              { _id: 'rest-32', restaurant: { _id: 'rest-32', name: '광장시장', category: '한식', address: '서울 종로구' }},
-              { _id: 'rest-33', restaurant: { _id: 'rest-33', name: '통인동칼국수', category: '한식', address: '서울 종로구' }},
-              { _id: 'rest-34', restaurant: { _id: 'rest-34', name: '순대국밥', category: '한식', address: '서울 중구' }}
-            ],
-            tags: ['가성비', '저렴한', '푸짐한'],
-            coverImage: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=300&fit=crop',
-            recommendedReason: '취향 매칭 88%'
-          },
-          {
-            _id: 'similar-3',
-            name: '한식 러버들의 집밥 맛집',
-            title: '🍚 엄마 손맛 같은 한식당',
-            description: '집밥이 그리울 때 가는 정통 한식 맛집',
-            creator: { username: '한식사랑', isVerified: true },
-            certification: null,
-            likeCount: 543,
-            viewCount: 3421,
-            createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-            restaurants: [
-              { _id: 'rest-8', restaurant: { _id: 'rest-8', name: '하동관', category: '한식', address: '서울 중구' }},
-              { _id: 'rest-35', restaurant: { _id: 'rest-35', name: '진주회관', category: '한식', address: '서울 종로구' }},
-              { _id: 'rest-36', restaurant: { _id: 'rest-36', name: '토속촌', category: '한식', address: '서울 강남구' }}
-            ],
-            tags: ['한식', '집밥', '건강한'],
-            coverImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop',
-            recommendedReason: '취향 매칭 95%'
-          }
-        ];
+        // 취향 매칭 - 서비스 준비중
+        filteredLists = [];
       }
       
       setPlaylists(filteredLists.slice(0, 6));
@@ -288,6 +272,30 @@ const MobileHomeSoundCloud: React.FC = () => {
       }
       return newSet;
     });
+    
+    // 좋아요 수 업데이트
+    const statsKey = `playlist_stats_${playlistId}`;
+    const currentStats = localStorage.getItem(statsKey);
+    const stats = currentStats ? JSON.parse(currentStats) : { 
+      likeCount: 0, 
+      viewCount: 0 
+    };
+    stats.likeCount = newLiked ? (stats.likeCount || 0) + 1 : Math.max(0, (stats.likeCount || 0) - 1);
+    localStorage.setItem(statsKey, JSON.stringify(stats));
+    
+    // 인증 맛집 데이터에도 업데이트
+    if (playlistId.startsWith('certified-')) {
+      const certifiedData = localStorage.getItem('certified_restaurants_data');
+      if (certifiedData) {
+        const parsedData = JSON.parse(certifiedData);
+        const categoryKey = playlistId.replace('certified-', '');
+        if (parsedData.categories[categoryKey]) {
+          parsedData.categories[categoryKey].likeCount = stats.likeCount;
+          localStorage.setItem('certified_restaurants_data', JSON.stringify(parsedData));
+        }
+      }
+    }
+    
     toast.success(newLiked ? '좋아요!' : '좋아요 취소');
 
     // 서버와 동기화 시도 (비동기)
@@ -400,7 +408,32 @@ const MobileHomeSoundCloud: React.FC = () => {
         <div 
           className="relative cursor-pointer overflow-hidden"
           style={{ aspectRatio: '16/9' }}
-          onClick={() => navigate(`/playlist/${playlist._id}`)}
+          onClick={() => {
+            // 조회수 증가
+            const statsKey = `playlist_stats_${playlist._id}`;
+            const currentStats = localStorage.getItem(statsKey);
+            const stats = currentStats ? JSON.parse(currentStats) : { 
+              likeCount: playlist.likeCount || 0, 
+              viewCount: playlist.viewCount || 0 
+            };
+            stats.viewCount = (stats.viewCount || 0) + 1;
+            localStorage.setItem(statsKey, JSON.stringify(stats));
+            
+            // 인증 맛집 데이터에도 업데이트
+            if (playlist.certification) {
+              const certifiedData = localStorage.getItem('certified_restaurants_data');
+              if (certifiedData) {
+                const parsedData = JSON.parse(certifiedData);
+                const categoryKey = playlist._id.replace('certified-', '');
+                if (parsedData.categories[categoryKey]) {
+                  parsedData.categories[categoryKey].viewCount = stats.viewCount;
+                  localStorage.setItem('certified_restaurants_data', JSON.stringify(parsedData));
+                }
+              }
+            }
+            
+            navigate(`/playlist/${playlist._id}`);
+          }}
         >
           <img
             src={getPlaylistImage()}
@@ -632,13 +665,30 @@ const MobileHomeSoundCloud: React.FC = () => {
           </div>
         ) : (
           <div className="text-center py-8">
-            <p className="text-gray-500 text-sm">
-              {activeFilter === 'following' 
-                ? '팔로우하는 사람이 없습니다. 다른 사용자를 팔로우해보세요!'
-                : activeFilter === 'similar'
-                ? '취향 분석 중입니다. 더 많은 활동을 해주세요!'
-                : '아직 등록된 맛집이 없습니다.'}
-            </p>
+            {activeFilter === 'similar' ? (
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-100">
+                <SparklesIcon className="w-12 h-12 text-purple-500 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  🚀 서비스 준비중
+                </h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  취향 매칭 서비스가 곧 출시됩니다!
+                </p>
+                <p className="text-xs text-gray-500">
+                  AI가 분석한 당신의 취향과 비슷한 사람들의<br />
+                  맛집 리스트를 추천해드릴 예정입니다
+                </p>
+                <div className="mt-4 inline-flex items-center text-xs text-purple-600 font-medium">
+                  <span className="animate-pulse">개발 진행중...</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">
+                {activeFilter === 'following' 
+                  ? '팔로우하는 사람이 없습니다. 다른 사용자를 팔로우해보세요!'
+                  : '아직 등록된 맛집이 없습니다.'}
+              </p>
+            )}
           </div>
         )}
       </section>

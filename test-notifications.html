@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>알림 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+        
+        .btn-create {
+            background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+        }
+        
+        .btn-create:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3);
+        }
+        
+        .btn-clear {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+        
+        .btn-clear:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(107, 114, 128, 0.3);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        
+        .status.success {
+            background: #10b981;
+            color: white;
+            display: block;
+        }
+        
+        .status.error {
+            background: #ef4444;
+            color: white;
+            display: block;
+        }
+        
+        .status.info {
+            background: #3b82f6;
+            color: white;
+            display: block;
+        }
+        
+        .login-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 10px;
+        }
+        
+        .login-section h3 {
+            margin-bottom: 15px;
+            color: #374151;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        input {
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .notification-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .notification-item {
+            padding: 12px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #f97316;
+        }
+        
+        .notification-item .type {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        
+        .notification-item .message {
+            margin-top: 4px;
+            color: #111827;
+        }
+        
+        .notification-item .time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 BobMap 알림 테스트</h1>
+        
+        <div class="login-section">
+            <h3>로그인 정보</h3>
+            <div class="input-group">
+                <input type="email" id="email" placeholder="이메일" value="test@test.com">
+                <input type="password" id="password" placeholder="비밀번호" value="Test1234!@">
+            </div>
+            <button class="btn-login" onclick="login()">로그인</button>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-create" onclick="createTestNotifications()">
+                테스트 알림 생성 (4개)
+            </button>
+            <button class="btn-clear" onclick="clearAllNotifications()">
+                모든 알림 삭제
+            </button>
+        </div>
+        
+        <div id="status" class="status"></div>
+        <div id="notificationList" class="notification-list"></div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token');
+        
+        // 페이지 로드 시 토큰 확인
+        window.onload = function() {
+            if (token) {
+                showStatus('이미 로그인되어 있습니다', 'info');
+            }
+        };
+        
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:8888/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    token = data.token;
+                    localStorage.setItem('token', token);
+                    showStatus('로그인 성공!', 'success');
+                } else {
+                    showStatus(`로그인 실패: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`로그인 오류: ${error.message}`, 'error');
+            }
+        }
+        
+        async function createTestNotifications() {
+            if (!token) {
+                showStatus('먼저 로그인해주세요', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8888/api/test-notifications/create-test', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showStatus(data.message, 'success');
+                    displayNotifications(data.notifications);
+                } else {
+                    showStatus(`실패: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`오류: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearAllNotifications() {
+            if (!token) {
+                showStatus('먼저 로그인해주세요', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8888/api/test-notifications/clear-all', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showStatus(data.message, 'success');
+                    document.getElementById('notificationList').innerHTML = '';
+                } else {
+                    showStatus(`실패: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`오류: ${error.message}`, 'error');
+            }
+        }
+        
+        function displayNotifications(notifications) {
+            const listEl = document.getElementById('notificationList');
+            listEl.innerHTML = '<h3 style="margin-bottom: 10px;">생성된 알림:</h3>';
+            
+            notifications.forEach(notif => {
+                const item = document.createElement('div');
+                item.className = 'notification-item';
+                item.innerHTML = `
+                    <div class="type">${notif.type}</div>
+                    <div class="message">${notif.message}</div>
+                    <div class="time">${new Date(notif.createdAt).toLocaleString('ko-KR')}</div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+        
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            
+            setTimeout(() => {
+                statusEl.className = 'status';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

@@ -18,6 +18,7 @@ interface User {
   createdAt?: string;
   lastLogin?: string;
   onboardingCompleted?: boolean;
+  isAdmin?: boolean;
 }
 
 interface AuthState {
