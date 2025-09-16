@@ -467,6 +467,40 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+// 채팅 가능한 사용자 목록 가져오기
+const getAvailableUsers = async (req, res) => {
+  try {
+    // 현재 로그인한 사용자 제외하고 모든 사용자 가져오기
+    const users = await User.find({ 
+      _id: { $ne: req.user?._id } 
+    })
+    .select('username profileImage bio isOnline lastSeen tasteProfile.type')
+    .sort('-lastSeen')
+    .limit(100); // 최대 100명
+
+    const formattedUsers = users.map(user => ({
+      id: user._id,
+      username: user.username,
+      profileImage: user.profileImage,
+      bio: user.bio || '',
+      isOnline: user.isOnline || false,
+      lastSeen: user.lastSeen,
+      tasteType: user.tasteProfile?.type || ''
+    }));
+
+    res.json({
+      success: true,
+      data: formattedUsers
+    });
+  } catch (error) {
+    console.error('Get available users error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: '사용자 목록을 가져오는데 실패했습니다' 
+    });
+  }
+};
+
 module.exports = {
   getUser,
   followUser,
@@ -478,4 +512,5 @@ module.exports = {
   getFollowers,
   getFollowing,
   getUserProfile,
+  getAvailableUsers,
 };

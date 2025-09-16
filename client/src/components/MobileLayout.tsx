@@ -9,17 +9,57 @@ import {
   BellIcon,
   EllipsisHorizontalIcon
 } from '@heroicons/react/24/outline';
+import socketService from '../services/socketService';
+import { useAuthStore } from '../store/authStore';
 
 const MobileLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { token } = useAuthStore();
   const isHomePage = location.pathname === '/';
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // 알림 상태 (실제로는 API나 상태 관리에서 가져와야 함)
-  const [hasNewMessage, setHasNewMessage] = useState(true);
-  const [hasNewNotification, setHasNewNotification] = useState(true);
+  // 알림 상태
+  const [hasNewMessage, setHasNewMessage] = useState(false);
+  const [hasNewNotification, setHasNewNotification] = useState(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  // WebSocket 연결 및 실시간 알림
+  useEffect(() => {
+    if (!token) return;
+
+    // 새 메시지 알림
+    socketService.on('new_message', (data: any) => {
+      // 현재 메시지 페이지가 아닐 때만 알림 표시
+      if (location.pathname !== '/messages') {
+        setHasNewMessage(true);
+        setUnreadMessageCount(prev => prev + 1);
+      }
+    });
+
+    // 새 알림
+    socketService.on('new_notification', (data: any) => {
+      setHasNewNotification(true);
+      setUnreadNotificationCount(prev => prev + 1);
+    });
+
+    // 읽지 않은 알림 개수
+    socketService.on('unread_notifications_count', (count: number) => {
+      setUnreadNotificationCount(count);
+      setHasNewNotification(count > 0);
+    });
+
+    // 초기 알림 개수 요청
+    socketService.getUnreadNotificationsCount();
+
+    return () => {
+      socketService.off('new_message');
+      socketService.off('new_notification');
+      socketService.off('unread_notifications_count');
+    };
+  }, [token, location.pathname]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -96,7 +136,9 @@ const MobileLayout: React.FC = () => {
                       <span className="text-sm text-gray-700">메시지</span>
                     </div>
                     {hasNewMessage && (
-                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                        {unreadMessageCount > 0 ? unreadMessageCount : ''}
+                      </span>
                     )}
                   </button>
                   
@@ -113,7 +155,9 @@ const MobileLayout: React.FC = () => {
                       <span className="text-sm text-gray-700">알림</span>
                     </div>
                     {hasNewNotification && (
-                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                        {unreadNotificationCount > 0 ? unreadNotificationCount : ''}
+                      </span>
                     )}
                   </button>
                 </div>

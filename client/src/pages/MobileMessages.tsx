@@ -43,7 +43,7 @@ const MobileMessages: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  const [chats] = useState<Chat[]>([
+  const [chats, setChats] = useState<Chat[]>([
     {
       id: '1',
       user: {
@@ -111,8 +111,62 @@ const MobileMessages: React.FC = () => {
   const currentChat = chats.find(chat => chat.id === selectedChat);
 
   const handleSendMessage = () => {
-    if (!messageInput.trim()) return;
+    if (!messageInput.trim() || !currentChat) return;
+    
+    // 새 메시지 추가
+    const newMessage = {
+      id: Date.now().toString(),
+      text: messageInput,
+      sender: 'me' as const,
+      timestamp: new Date().toLocaleTimeString('ko-KR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      read: false
+    };
+    
+    // 현재 채팅 업데이트
+    setChats(prevChats => 
+      prevChats.map(chat => 
+        chat.id === currentChat.id
+          ? {
+              ...chat,
+              messages: [...chat.messages, newMessage],
+              lastMessage: messageInput,
+              timestamp: '방금'
+            }
+          : chat
+      )
+    );
+    
     setMessageInput('');
+    
+    // 시뮬레이션: 2초 후 상대방 응답
+    setTimeout(() => {
+      const replyMessage = {
+        id: (Date.now() + 1).toString(),
+        text: '메시지 잘 받았어요! 😊',
+        sender: 'other' as const,
+        timestamp: new Date().toLocaleTimeString('ko-KR', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        read: false
+      };
+      
+      setChats(prevChats => 
+        prevChats.map(chat => 
+          chat.id === currentChat.id
+            ? {
+                ...chat,
+                messages: [...chat.messages, replyMessage],
+                lastMessage: replyMessage.text,
+                timestamp: '방금'
+              }
+            : chat
+        )
+      );
+    }, 2000);
   };
 
   const filteredChats = chats.filter(chat =>

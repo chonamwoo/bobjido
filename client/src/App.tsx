@@ -9,13 +9,6 @@ import './styles/mobile.css';
 import 'leaflet/dist/leaflet.css';
 import HomeSoundCloud from './pages/HomeSoundCloud';
 import MobileHomeSoundCloud from './pages/MobileHomeSoundCloud';
-import FoodMBTI from './pages/FoodMBTI';
-import GameHub from './pages/GameHub';
-import GameResults from './pages/GameResults';
-import LunchRecommendation from './pages/LunchRecommendation';
-import FoodVS from './pages/FoodVS';
-import FoodRoulette from './pages/FoodRoulette';
-import RestaurantQuiz from './pages/RestaurantQuiz';
 import Auth from './pages/Auth';
 import PlaylistDetail from './pages/PlaylistDetail';
 import MobilePlaylistDetail from './pages/MobilePlaylistDetail';
@@ -53,7 +46,8 @@ import MobileSuperExplore from './pages/MobileSuperExplore';
 import Community from './pages/Community';
 import Messages from './pages/Messages';
 import MobileCommunity from './pages/MobileCommunity';
-import MobileMessages from './pages/MobileMessages';
+import MobileMessagesRealtime from './pages/MobileMessagesRealtime';
+import MobileMessagesSimple from './pages/MobileMessagesSimple';
 import CreateRestaurant from './pages/CreateRestaurant';
 import Followers from './pages/Followers';
 import Following from './pages/Following';
@@ -61,6 +55,7 @@ import Admin from './pages/Admin';
 import RestaurantDataManager from './pages/RestaurantDataManager';
 import MyFollowingRestaurants from './pages/MyFollowingRestaurants';
 import AdminCertifiedRestaurants from './pages/AdminCertifiedRestaurants';
+import ImportNaverPlaces from './pages/ImportNaverPlaces';
 
 function App() {
   const isMobile = useIsMobile();
@@ -72,7 +67,7 @@ function App() {
   const RestaurantPage = isMobile ? MobileRestaurantDetail : RestaurantDetail;
   const ExplorePage = isMobile ? MobileSuperExplore : SuperExplore;
   const CommunityPage = isMobile ? MobileCommunity : Community;
-  const MessagesPage = isMobile ? MobileMessages : Messages;
+  const MessagesPage = isMobile ? MobileMessagesRealtime : Messages;
   
   // Initialize socket connection when user is authenticated
   useEffect(() => {
@@ -91,13 +86,6 @@ function App() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<HomePage />} />
-        <Route path="game-hub" element={<GameHub />} />
-        <Route path="food-mbti" element={<FoodMBTI />} />
-        <Route path="game-results" element={<GameResults />} />
-        <Route path="lunch-recommendation" element={<LunchRecommendation />} />
-        <Route path="food-vs" element={<FoodVS />} />
-        <Route path="food-roulette" element={<FoodRoulette />} />
-        <Route path="restaurant-quiz" element={<RestaurantQuiz />} />
         <Route path="auth" element={<Auth />} />
         <Route path="login" element={<Auth />} />
         <Route path="register" element={<Auth />} />
@@ -193,6 +181,14 @@ function App() {
         <Route path="expert/:username/following" element={<Following />} />
         <Route path="expert-playlist/:id" element={<SimplePlaylistDetail />} />
         <Route path="influencer/:id" element={<InfluencerProfile />} />
+        <Route 
+          path="import/naver" 
+          element={
+            <ProtectedRoute>
+              <ImportNaverPlaces />
+            </ProtectedRoute>
+          } 
+        />
       </Route>
       
       {/* Admin Routes - Layout 밖에 배치 */}

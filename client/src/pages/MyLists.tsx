@@ -31,6 +31,7 @@ interface RestaurantList {
 
 const MyLists: React.FC = () => {
   const { user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<'created' | 'saved'>('created');
   
   // API에서 플레이리스트 가져오기
   const { data: apiLists, isLoading } = useQuery({
@@ -56,21 +57,38 @@ const MyLists: React.FC = () => {
     enabled: !!user
   });
   
-  // 로컬 스토리지에서 플레이리스트 가져오기
+  // 로컬 스토리지에서 내가 만든 플레이리스트 가져오기
   const [localLists, setLocalLists] = useState<any[]>([]);
   
-  useEffect(() => {
-    const savedLists = localStorage.getItem('localPlaylists');
-    if (savedLists) {
-      setLocalLists(JSON.parse(savedLists));
-    }
-  }, []);
+  // 로컬 스토리지에서 저장한 플레이리스트 가져오기
+  const [savedPlaylists, setSavedPlaylists] = useState<any[]>([]);
   
-  // API 데이터와 로컬 데이터 합치기 - 배열인지 확인
-  const combinedLists = [
+  useEffect(() => {
+    // 내가 만든 플레이리스트
+    const myLists = localStorage.getItem('localPlaylists');
+    if (myLists) {
+      setLocalLists(JSON.parse(myLists));
+    }
+    
+    // 저장한 플레이리스트 ID들
+    const savedIds = localStorage.getItem(`saved_playlists_${user?._id}`);
+    if (savedIds) {
+      const ids = JSON.parse(savedIds);
+      // 모든 플레이리스트에서 저장한 것들 찾기
+      const allPlaylists = JSON.parse(localStorage.getItem('allPlaylists') || '[]');
+      const saved = allPlaylists.filter((p: any) => ids.includes(p._id || p.id));
+      setSavedPlaylists(saved);
+    }
+  }, [user]);
+  
+  // 내가 만든 리스트 (API 데이터와 로컬 데이터 합치기)
+  const createdLists = [
     ...(Array.isArray(apiLists) ? apiLists : []), 
     ...localLists
   ];
+  
+  // 현재 탭에 따라 보여줄 리스트
+  const displayLists = activeTab === 'created' ? createdLists : savedPlaylists;
   
 
   const popularCities = [
@@ -119,8 +137,8 @@ const MyLists: React.FC = () => {
                 <BookmarkIcon className="w-6 h-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">51</p>
-                <p className="text-sm text-gray-600">저장한 맛집</p>
+                <p className="text-2xl font-bold text-gray-900">{savedPlaylists.length}</p>
+                <p className="text-sm text-gray-600">저장한 리스트</p>
               </div>
             </div>
           </div>
@@ -131,7 +149,7 @@ const MyLists: React.FC = () => {
                 <SparklesIcon className="w-6 h-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">5</p>
+                <p className="text-2xl font-bold text-gray-900">{createdLists.length}</p>
                 <p className="text-sm text-gray-600">내 리스트</p>
               </div>
             </div>
@@ -162,8 +180,32 @@ const MyLists: React.FC = () => {
           </div>
         </motion.div>
 
+        {/* 탭 선택 */}
+        <div className="flex gap-4 mb-6 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('created')}
+            className={`pb-3 px-1 font-medium transition-colors border-b-2 ${
+              activeTab === 'created' 
+                ? 'text-orange-600 border-orange-600'
+                : 'text-gray-500 border-transparent hover:text-gray-700'
+            }`}
+          >
+            내가 만든 리스트 ({createdLists.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={`pb-3 px-1 font-medium transition-colors border-b-2 ${
+              activeTab === 'saved'
+                ? 'text-orange-600 border-orange-600'
+                : 'text-gray-500 border-transparent hover:text-gray-700'
+            }`}
+          >
+            저장한 리스트 ({savedPlaylists.length})
+          </button>
+        </div>
+
         {/* 리스트 그리드 */}
-        {combinedLists.length === 0 ? (
+        {displayLists.length === 0 ? (
           // 플레이리스트가 없을 때 표시
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -172,8 +214,12 @@ const MyLists: React.FC = () => {
             className="text-center py-16"
           >
             <BookmarkIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">아직 플레이리스트가 없어요</h3>
-            <p className="text-gray-500 mb-6">나만의 맛집 리스트를 만들어보세요!</p>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">
+              {activeTab === 'created' ? '아직 플레이리스트가 없어요' : '저장한 리스트가 없어요'}
+            </h3>
+            <p className="text-gray-500 mb-6">
+              {activeTab === 'created' ? '나만의 맛집 리스트를 만들어보세요!' : '맘에 드는 리스트를 저장해보세요!'}
+            </p>
             <Link
               to="/create-playlist"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all"
@@ -189,7 +235,7 @@ const MyLists: React.FC = () => {
           transition={{ delay: 0.2 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
         >
-          {combinedLists.map((list, index) => (
+          {displayLists.map((list, index) => (
             <motion.div
               key={list._id || list.id}
               initial={{ opacity: 0, y: 20 }}
@@ -236,12 +282,21 @@ const MyLists: React.FC = () => {
                   <button className="p-1.5 text-gray-600 hover:text-orange-600 transition-colors">
                     <ShareIcon className="w-4 h-4" />
                   </button>
-                  <button className="p-1.5 text-gray-600 hover:text-blue-600 transition-colors">
-                    <PencilIcon className="w-4 h-4" />
-                  </button>
-                  <button className="p-1.5 text-gray-600 hover:text-red-600 transition-colors">
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
+                  {activeTab === 'created' && (
+                    <>
+                      <button className="p-1.5 text-gray-600 hover:text-blue-600 transition-colors">
+                        <PencilIcon className="w-4 h-4" />
+                      </button>
+                      <button className="p-1.5 text-gray-600 hover:text-red-600 transition-colors">
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                  {activeTab === 'saved' && list.creator && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      by {list.creator?.username || list.creatorName || '익명'}
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs text-gray-500">
                   {new Date(list.createdAt).toLocaleDateString('ko-KR')}
@@ -250,18 +305,20 @@ const MyLists: React.FC = () => {
             </motion.div>
           ))}
           
-          {/* 새 리스트 추가 카드 */}
-          <Link
-            to="/create-playlist"
-            className="bg-white/50 backdrop-blur-sm rounded-xl border-2 border-dashed border-gray-300 hover:border-orange-400 transition-all flex items-center justify-center min-h-[200px] group"
-          >
-            <div className="text-center">
-              <PlusCircleIcon className="w-12 h-12 text-gray-400 group-hover:text-orange-500 mx-auto mb-3 transition-colors" />
-              <p className="text-gray-600 group-hover:text-orange-600 font-medium transition-colors">
-                새 리스트 만들기
-              </p>
-            </div>
-          </Link>
+          {/* 새 리스트 추가 카드 - 내가 만든 리스트 탭일 때만 표시 */}
+          {activeTab === 'created' && (
+            <Link
+              to="/create-playlist"
+              className="bg-white/50 backdrop-blur-sm rounded-xl border-2 border-dashed border-gray-300 hover:border-orange-400 transition-all flex items-center justify-center min-h-[200px] group"
+            >
+              <div className="text-center">
+                <PlusCircleIcon className="w-12 h-12 text-gray-400 group-hover:text-orange-500 mx-auto mb-3 transition-colors" />
+                <p className="text-gray-600 group-hover:text-orange-600 font-medium transition-colors">
+                  새 리스트 만들기
+                </p>
+              </div>
+            </Link>
+          )}
         </motion.div>
         )}
 

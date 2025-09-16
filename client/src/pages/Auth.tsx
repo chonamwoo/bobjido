@@ -221,7 +221,7 @@ const Auth: React.FC = () => {
   };
 
   // OAuth 로그인
-  const handleOAuthLogin = (provider: 'google' | 'kakao') => {
+  const handleOAuthLogin = (provider: 'google' | 'kakao' | 'naver') => {
     window.location.href = `http://localhost:8888/api/auth/${provider}`;
   };
 
@@ -518,7 +518,7 @@ const Auth: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-3 gap-3">
               <button
                 type="button"
                 onClick={() => handleOAuthLogin('google')}
@@ -530,7 +530,7 @@ const Auth: React.FC = () => {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
-                <span className="ml-2">Google</span>
+                <span className="ml-2 hidden sm:inline">Google</span>
               </button>
 
               <button
@@ -541,7 +541,18 @@ const Auth: React.FC = () => {
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#000000" d="M12 3c-5.5 0-10 3.58-10 8 0 2.83 1.85 5.32 4.64 6.74-.2.71-.76 2.73-.78 2.91-.03.26.1.5.34.58.08.03.17.04.25.04.17 0 .34-.05.47-.15.97-.74 3.55-2.72 4.35-3.37.56.08 1.14.12 1.73.12 5.5 0 10-3.58 10-8s-4.5-8-10-8z"/>
                 </svg>
-                <span className="ml-2">Kakao</span>
+                <span className="ml-2 hidden sm:inline">Kakao</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin('naver')}
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-[#03C75A] text-sm font-medium text-white hover:bg-[#02B550] transition-colors"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="white" d="M16.273 12.845L7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>
+                </svg>
+                <span className="ml-2 hidden sm:inline">Naver</span>
               </button>
             </div>
           </div>

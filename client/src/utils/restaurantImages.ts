@@ -1,3 +1,92 @@
+// 실제 식당별 대표 음식 이미지 매핑
+export const restaurantSpecificImages: { [key: string]: string } = {
+  // 강남 맛집들
+  '밍글스': 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800', // 파인다이닝 코스 요리
+  '정식당': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800', // 모던 한식 정식
+  '시그니처': 'https://images.unsplash.com/photo-1626957341926-98d2fc2c7af9?w=800', // 스테이크
+  '스시사이토': 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800', // 고급 스시
+  '평양면옥': 'https://images.unsplash.com/photo-1623341214825-9f4f963727da?w=800', // 평양냉면
+  '새마을식당': 'https://images.unsplash.com/photo-1635363638580-c2809d049eee?w=800', // 7분김치찌개
+  '후토마키': 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800', // 스시롤
+  '모수': 'https://images.unsplash.com/photo-1580822184713-fc5400e7fe10?w=800', // 돈카츠
+  
+  // 홍대 맛집들
+  '연남동그곳': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800', // 피자
+  '홍대개미': 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=800', // 비빔밥
+  '뱃놈': 'https://images.unsplash.com/photo-1623341214825-9f4f963727da?w=800', // 냉면
+  '마포원조갈매기': 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=800', // 갈매기살
+  '호호식당': 'https://images.unsplash.com/photo-1583032015879-e5022cb87c3b?w=800', // 쌀국수
+  '버거비': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800', // 수제버거
+  
+  // 이태원 맛집들
+  '단델라이언': 'https://images.unsplash.com/photo-1432139509613-5c4255815697?w=800', // 스테이크
+  '바토스': 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800', // 타코
+  '카사블랑카': 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800', // 모로칸 쿠스쿠스
+  '라이너스 바베큐': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800', // BBQ 립
+  '케세라세라': 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800', // 케이크
+  '더베이커스테이블': 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800', // 베이커리
+  '페트라': 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800', // 중동음식
+  
+  // 성수 맛집들
+  '어니언': 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800', // 커피와 베이글
+  '대림창고': 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800', // 브런치
+  '성수족발': 'https://images.unsplash.com/photo-1625398407796-82b7b8c3c6b2?w=800', // 족발
+  '더플레인': 'https://images.unsplash.com/photo-1526234362653-3b75a0c07438?w=800', // 베이커리
+  '테라스키친': 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800', // 브런치 플레이트
+  
+  // 종로/을지로 맛집들
+  '광장시장 마약김밥': 'https://images.unsplash.com/photo-1607013251379-e6eecfffe234?w=800', // 김밥
+  '을지로골뱅이': 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=800', // 골뱅이무침
+  '진옥화할매원조닭한마리': 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=800', // 닭한마리
+  '종로노가리': 'https://images.unsplash.com/photo-1608039755401-742074f0548d?w=800', // 노가리와 맥주
+  
+  // 기타 유명 맛집들
+  '교대이층집': 'https://images.unsplash.com/photo-1635363638580-c2809d049eee?w=800', // 삼겹살
+  '을지면옥': 'https://images.unsplash.com/photo-1623341214825-9f4f963727da?w=800', // 냉면
+  '마포돼지갈비': 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=800', // 돼지갈비
+  '종로설렁탕': 'https://images.unsplash.com/photo-1580651614010-0e5b4f90e6f2?w=800', // 설렁탕
+  '광화문짚불고기': 'https://images.unsplash.com/photo-1583032015879-e5022cb87c3b?w=800', // 불고기
+  
+  // 디저트/카페
+  '도레도레': 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=800', // 도나츠
+  '나뜨르': 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800', // 케이크
+  '블루보틀': 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800', // 스페셜티 커피
+  
+  // 일식
+  '쿠시카츠준': 'https://images.unsplash.com/photo-1562436260-8c9216eeb703?w=800', // 쿠시카츠
+  '하카타분코': 'https://images.unsplash.com/photo-1562436260-8c9216eeb703?w=800', // 라멘
+  '긴자료코': 'https://images.unsplash.com/photo-1580822184713-fc5400e7fe10?w=800', // 우동
+  
+  // 중식
+  '홍콩반점': 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=800', // 짜장면
+  '태화장': 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=800', // 짬뽕
+  '샤오롱칸': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800', // 마라탕
+  
+  // 치킨
+  '교촌치킨': 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=800', // 양념치킨
+  'BBQ치킨': 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=800', // 황금올리브
+  '굽네치킨': 'https://images.unsplash.com/photo-1562967914-608f82629710?w=800', // 오븐치킨
+  
+  // 분식
+  '신전떡볶이': 'https://images.unsplash.com/photo-1635684953077-95e87e9a24b5?w=800', // 떡볶이
+  '김밥천국': 'https://images.unsplash.com/photo-1607013251379-e6eecfffe234?w=800', // 김밥
+  '할머니즉석떡볶이': 'https://images.unsplash.com/photo-1635684953077-95e87e9a24b5?w=800', // 즉석떡볶이
+  
+  // 해산물
+  '노량진수산시장': 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800', // 회
+  '대게나라': 'https://images.unsplash.com/photo-1606850780554-b55ea4dd0b70?w=800', // 대게
+  '조개구이천국': 'https://images.unsplash.com/photo-1606850780554-b55ea4dd0b70?w=800', // 조개구이
+  
+  // 베트남/태국
+  '포36거리': 'https://images.unsplash.com/photo-1582116593333-0c7b5e04c11f?w=800', // 쌀국수
+  '방콕익스프레스': 'https://images.unsplash.com/photo-1559314809-0d155014e29e?w=800', // 팟타이
+  '사이공마켓': 'https://images.unsplash.com/photo-1609501676725-7186f017a4b7?w=800', // 분짜
+  
+  // 멕시칸
+  '온더보더': 'https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?w=800', // 부리또
+  '구스토타코': 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800' // 타코
+};
+
 // 카테고리별 실제 음식 이미지 URL (고품질 이미지 사용)
 const FOOD_IMAGES = {
   // 한식 - 더 다양한 한식 이미지
@@ -180,6 +269,20 @@ export const getGroupImage = (groupName: string): string => {
 
 // 레스토랑 이미지를 가져오는 함수 (동기 버전)
 export const getRestaurantImage = (restaurantName: string): string => {
+  // 먼저 실제 식당명에 매핑된 이미지가 있는지 확인
+  if (restaurantSpecificImages[restaurantName]) {
+    return restaurantSpecificImages[restaurantName];
+  }
+  
+  // 부분 매칭 시도
+  const lowerName = restaurantName.toLowerCase();
+  for (const [key, value] of Object.entries(restaurantSpecificImages)) {
+    if (key.toLowerCase().includes(lowerName) || lowerName.includes(key.toLowerCase())) {
+      return value;
+    }
+  }
+  
+  // 카테고리 기반 매칭
   const category = getCategoryFromName(restaurantName);
   const images = FOOD_IMAGES[category as keyof typeof FOOD_IMAGES] || FOOD_IMAGES.interior;
   

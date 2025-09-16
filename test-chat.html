@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BobMap 채팅 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            height: 600px;
+        }
+
+        .section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .chat-item {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .chat-item:hover {
+            background: #f5f5f5;
+        }
+
+        .chat-item.active {
+            background: #e8eaf6;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            max-width: 70%;
+        }
+
+        .message.sent {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.received {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 10px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .status.connected {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .status.disconnected {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        .user-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .user-item {
+            padding: 5px 10px;
+            background: #f5f5f5;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .user-item:hover {
+            background: #e0e0e0;
+        }
+
+        .log {
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section">
+            <h2>사용자 로그인</h2>
+            <div id="loginSection">
+                <input type="text" id="userId" placeholder="사용자 ID" value="test123">
+                <input type="text" id="password" placeholder="비밀번호" value="password123">
+                <button onclick="login()">로그인</button>
+            </div>
+            <div id="userInfo" style="display: none; padding: 10px;">
+                <p>로그인 사용자: <strong id="currentUser"></strong></p>
+                <button onclick="logout()">로그아웃</button>
+            </div>
+            
+            <h2 style="margin-top: 20px;">다른 사용자들</h2>
+            <div class="user-list" id="userList">
+                <div class="user-item" onclick="startChat('user456', '김철수')">김철수 (user456)</div>
+                <div class="user-item" onclick="startChat('user789', '이영희')">이영희 (user789)</div>
+                <div class="user-item" onclick="startChat('user101', '박민수')">박민수 (user101)</div>
+            </div>
+            
+            <h2>채팅 목록</h2>
+            <div class="chat-list" id="chatList"></div>
+        </div>
+        
+        <div class="section">
+            <h2>채팅창</h2>
+            <div class="status disconnected" id="status">연결 안됨</div>
+            <div class="messages" id="messages"></div>
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="메시지를 입력하세요..." disabled>
+                <button onclick="sendMessage()" id="sendButton" disabled>전송</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>API 테스트</h2>
+            <button onclick="testCreateChat()">채팅방 생성 테스트</button>
+            <button onclick="testGetChats()">채팅 목록 가져오기</button>
+            <button onclick="testSendMessage()">메시지 전송 테스트</button>
+            <button onclick="testGetMessages()">메시지 가져오기</button>
+            
+            <h2 style="margin-top: 20px;">로그</h2>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let token = null;
+        let currentUserId = null;
+        let currentChatId = null;
+        let socket = null;
+
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            logEl.innerHTML += `<div style="color: ${color}">[${time}] ${message}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(`[${type}] ${message}`);
+        }
+
+        async function login() {
+            const userId = document.getElementById('userId').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:8888/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ loginId: userId, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    token = data.data.token;
+                    currentUserId = data.data._id;
+                    
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('userInfo').style.display = 'block';
+                    document.getElementById('currentUser').textContent = data.data.username;
+                    
+                    log(`로그인 성공: ${data.data.username}`, 'success');
+                    
+                    // WebSocket 연결
+                    connectWebSocket();
+                    
+                    // 채팅 목록 가져오기
+                    await getChats();
+                } else {
+                    log(`로그인 실패: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log(`로그인 오류: ${error.message}`, 'error');
+            }
+        }
+
+        function logout() {
+            token = null;
+            currentUserId = null;
+            currentChatId = null;
+            
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+            
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('chatList').innerHTML = '';
+            document.getElementById('messages').innerHTML = '';
+            updateStatus(false);
+            
+            log('로그아웃 완료', 'success');
+        }
+
+        function connectWebSocket() {
+            if (!token) return;
+            
+            // Socket.io 클라이언트 로드
+            const script = document.createElement('script');
+            script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
+            script.onload = () => {
+                socket = io('http://localhost:8888', {
+                    auth: { token },
+                    transports: ['websocket', 'polling']
+                });
+                
+                socket.on('connect', () => {
+                    updateStatus(true);
+                    log('WebSocket 연결됨', 'success');
+                    socket.emit('join_chats');
+                });
+                
+                socket.on('disconnect', () => {
+                    updateStatus(false);
+                    log('WebSocket 연결 끊김', 'error');
+                });
+                
+                socket.on('new_message', (data) => {
+                    log(`새 메시지 수신: ${data.content}`, 'info');
+                    if (data.chatId === currentChatId) {
+                        displayMessage(data);
+                    }
+                });
+                
+                socket.on('error', (error) => {
+                    log(`WebSocket 오류: ${error.message || error}`, 'error');
+                });
+            };
+            document.head.appendChild(script);
+        }
+
+        function updateStatus(connected) {
+            const statusEl = document.getElementById('status');
+            const inputEl = document.getElementById('messageInput');
+            const buttonEl = document.getElementById('sendButton');
+            
+            if (connected) {
+                statusEl.className = 'status connected';
+                statusEl.textContent = '연결됨';
+                inputEl.disabled = false;
+                buttonEl.disabled = false;
+            } else {
+                statusEl.className = 'status disconnected';
+                statusEl.textContent = '연결 안됨';
+                inputEl.disabled = true;
+                buttonEl.disabled = true;
+            }
+        }
+
+        async function startChat(userId, userName) {
+            if (!token) {
+                log('먼저 로그인하세요', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8888/api/chat/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ userId, type: 'personal' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentChatId = data.data.chatId;
+                    log(`${userName}과의 채팅방 생성/열기 성공`, 'success');
+                    
+                    // 채팅방 참여
+                    if (socket) {
+                        socket.emit('join_chat', currentChatId);
+                    }
+                    
+                    // 메시지 가져오기
+                    await getMessages(currentChatId);
+                    
+                    // 채팅 목록 새로고침
+                    await getChats();
+                } else {
+                    log(`채팅방 생성 실패: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log(`채팅방 생성 오류: ${error.message}`, 'error');
+            }
+        }
+
+        async function getChats() {
+            if (!token) return;
+            
+            try {
+                const response = await fetch('http://localhost:8888/api/chat/list', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const chatListEl = document.getElementById('chatList');
+                    chatListEl.innerHTML = '';
+                    
+                    data.data.forEach(chat => {
+                        const chatEl = document.createElement('div');
+                        chatEl.className = 'chat-item' + (chat.id === currentChatId ? ' active' : '');
+                        chatEl.innerHTML = `
+                            <strong>${chat.name}</strong>
+                            <div style="font-size: 12px; color: #666;">${chat.lastMessage || '대화를 시작하세요'}</div>
+                        `;
+                        chatEl.onclick = () => selectChat(chat.id);
+                        chatListEl.appendChild(chatEl);
+                    });
+                    
+                    log(`채팅 목록 로드: ${data.data.length}개`, 'success');
+                }
+            } catch (error) {
+                log(`채팅 목록 로드 실패: ${error.message}`, 'error');
+            }
+        }
+
+        async function selectChat(chatId) {
+            currentChatId = chatId;
+            
+            // 채팅방 참여
+            if (socket) {
+                socket.emit('join_chat', chatId);
+            }
+            
+            // 메시지 가져오기
+            await getMessages(chatId);
+            
+            // 활성 채팅 표시
+            document.querySelectorAll('.chat-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+        }
+
+        async function getMessages(chatId) {
+            if (!token || !chatId) return;
+            
+            try {
+                const response = await fetch(`http://localhost:8888/api/chat/${chatId}/messages`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const messagesEl = document.getElementById('messages');
+                    messagesEl.innerHTML = '';
+                    
+                    data.data.forEach(message => {
+                        displayMessage(message);
+                    });
+                    
+                    log(`메시지 로드: ${data.data.length}개`, 'success');
+                }
+            } catch (error) {
+                log(`메시지 로드 실패: ${error.message}`, 'error');
+            }
+        }
+
+        function displayMessage(message) {
+            const messagesEl = document.getElementById('messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message ' + (message.senderId === 'me' || message.senderId === currentUserId ? 'sent' : 'received');
+            messageEl.innerHTML = `
+                <div>${message.content}</div>
+                <div style="font-size: 10px; opacity: 0.7;">${message.timestamp}</div>
+            `;
+            messagesEl.appendChild(messageEl);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            
+            if (!content || !currentChatId) return;
+            
+            try {
+                // API로 전송
+                const response = await fetch(`http://localhost:8888/api/chat/${currentChatId}/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ content, type: 'text' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // WebSocket으로도 전송
+                    if (socket) {
+                        socket.emit('send_message', {
+                            chatId: currentChatId,
+                            content,
+                            type: 'text'
+                        });
+                    }
+                    
+                    input.value = '';
+                    log('메시지 전송 성공', 'success');
+                } else {
+                    log(`메시지 전송 실패: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log(`메시지 전송 오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 테스트 함수들
+        async function testCreateChat() {
+            await startChat('user456', '김철수');
+        }
+
+        async function testGetChats() {
+            await getChats();
+        }
+
+        async function testSendMessage() {
+            if (!currentChatId) {
+                log('먼저 채팅방을 선택하세요', 'error');
+                return;
+            }
+            document.getElementById('messageInput').value = '테스트 메시지 ' + new Date().toLocaleTimeString();
+            await sendMessage();
+        }
+
+        async function testGetMessages() {
+            if (!currentChatId) {
+                log('먼저 채팅방을 선택하세요', 'error');
+                return;
+            }
+            await getMessages(currentChatId);
+        }
+
+        // Enter 키로 메시지 전송
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

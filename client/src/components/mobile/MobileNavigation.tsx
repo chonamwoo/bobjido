@@ -2,14 +2,12 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   HomeIcon, 
-  PuzzlePieceIcon, 
   UsersIcon, 
   UserIcon,
   MapPinIcon 
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
-  PuzzlePieceIcon as PuzzlePieceIconSolid,
   UsersIcon as UsersIconSolid,
   UserIcon as UserIconSolid,
   MapPinIcon as MapPinIconSolid
@@ -36,12 +34,6 @@ const MobileNavigation: React.FC = () => {
       icon: UsersIcon, 
       iconActive: UsersIconSolid, 
       label: '커뮤니티' 
-    },
-    { 
-      path: '/game-hub', 
-      icon: PuzzlePieceIcon, 
-      iconActive: PuzzlePieceIconSolid, 
-      label: '게임' 
     },
     { 
       path: '/profile', 

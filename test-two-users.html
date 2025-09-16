@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BobMap 두 사용자 채팅 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            height: 100vh;
+            background: #f5f5f5;
+        }
+
+        .user-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ddd;
+            background: white;
+            margin: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ff8787);
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #4caf50;
+            border-radius: 50%;
+        }
+
+        .status.offline {
+            background: #999;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.sent {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+
+        .message.sent .message-bubble {
+            background: linear-gradient(135deg, #ff6b6b, #ff8787);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received .message-bubble {
+            background: #f0f0f0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .message.sent .message-time {
+            text-align: right;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .input-container {
+            border-top: 1px solid #e0e0e0;
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .input-field:focus {
+            border-color: #ff6b6b;
+        }
+
+        .send-btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: none;
+            background: linear-gradient(135deg, #ff6b6b, #ff8787);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .login-form {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .login-form input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .login-form button {
+            padding: 10px 30px;
+            background: linear-gradient(135deg, #ff6b6b, #ff8787);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .typing-indicator {
+            font-style: italic;
+            color: #999;
+            padding: 5px 15px;
+        }
+
+        .instructions {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        💡 두 개의 다른 브라우저(Chrome & Edge) 또는 시크릿 모드로 열어서 테스트하세요
+    </div>
+
+    <!-- 사용자 1 -->
+    <div class="user-container">
+        <div class="header">
+            <h2>사용자 1</h2>
+            <div class="user-info">
+                <span class="status" id="status1"></span>
+                <span id="username1">로그인 필요</span>
+            </div>
+        </div>
+        
+        <div id="loginForm1" class="login-form">
+            <h3>로그인</h3>
+            <input type="text" id="loginInput1" placeholder="사용자명 입력" value="김철수">
+            <br>
+            <button onclick="login(1)">로그인</button>
+        </div>
+
+        <div id="chatArea1" style="display: none; flex: 1; flex-direction: column;">
+            <div class="messages" id="messages1">
+                <!-- 메시지들이 여기에 표시됩니다 -->
+            </div>
+            <div id="typing1" class="typing-indicator" style="display: none;">
+                상대방이 입력 중...
+            </div>
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    class="input-field" 
+                    id="messageInput1" 
+                    placeholder="메시지 입력..."
+                    onkeypress="handleKeyPress(event, 1)"
+                >
+                <button class="send-btn" onclick="sendMessage(1)">전송</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 사용자 2 -->
+    <div class="user-container">
+        <div class="header">
+            <h2>사용자 2</h2>
+            <div class="user-info">
+                <span class="status" id="status2"></span>
+                <span id="username2">로그인 필요</span>
+            </div>
+        </div>
+        
+        <div id="loginForm2" class="login-form">
+            <h3>로그인</h3>
+            <input type="text" id="loginInput2" placeholder="사용자명 입력" value="박영희">
+            <br>
+            <button onclick="login(2)">로그인</button>
+        </div>
+
+        <div id="chatArea2" style="display: none; flex: 1; flex-direction: column;">
+            <div class="messages" id="messages2">
+                <!-- 메시지들이 여기에 표시됩니다 -->
+            </div>
+            <div id="typing2" class="typing-indicator" style="display: none;">
+                상대방이 입력 중...
+            </div>
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    class="input-field" 
+                    id="messageInput2" 
+                    placeholder="메시지 입력..."
+                    onkeypress="handleKeyPress(event, 2)"
+                >
+                <button class="send-btn" onclick="sendMessage(2)">전송</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        let socket1 = null;
+        let socket2 = null;
+        let user1 = null;
+        let user2 = null;
+        let chatId = 'test-chat-' + Date.now();
+        let typingTimeout1 = null;
+        let typingTimeout2 = null;
+
+        function login(userNum) {
+            const username = document.getElementById(`loginInput${userNum}`).value;
+            if (!username) {
+                alert('사용자명을 입력해주세요');
+                return;
+            }
+
+            // 사용자 정보 설정
+            if (userNum === 1) {
+                user1 = { id: 'user1', username: username };
+                // Socket.io 연결
+                socket1 = io('http://localhost:8888', {
+                    auth: { userId: user1.id, username: user1.username }
+                });
+                setupSocket(socket1, 1);
+            } else {
+                user2 = { id: 'user2', username: username };
+                // Socket.io 연결
+                socket2 = io('http://localhost:8888', {
+                    auth: { userId: user2.id, username: user2.username }
+                });
+                setupSocket(socket2, 2);
+            }
+
+            // UI 업데이트
+            document.getElementById(`loginForm${userNum}`).style.display = 'none';
+            document.getElementById(`chatArea${userNum}`).style.display = 'flex';
+            document.getElementById(`username${userNum}`).textContent = username;
+            document.getElementById(`status${userNum}`).classList.remove('offline');
+        }
+
+        function setupSocket(socket, userNum) {
+            socket.on('connect', () => {
+                console.log(`사용자 ${userNum} 연결됨`);
+                // 채팅방 참여
+                socket.emit('join_chat', chatId);
+            });
+
+            socket.on('new_message', (data) => {
+                console.log(`사용자 ${userNum} 새 메시지 수신:`, data);
+                if (data.chatId === chatId) {
+                    // 다른 사용자의 메시지만 표시
+                    if ((userNum === 1 && data.senderId === user2?.id) ||
+                        (userNum === 2 && data.senderId === user1?.id)) {
+                        addMessage(userNum, data.content, false, data.timestamp);
+                    }
+                }
+            });
+
+            socket.on('user_typing', (data) => {
+                if (data.chatId === chatId && data.isTyping) {
+                    // 상대방이 타이핑 중
+                    if ((userNum === 1 && data.userId === user2?.id) ||
+                        (userNum === 2 && data.userId === user1?.id)) {
+                        document.getElementById(`typing${userNum}`).style.display = 'block';
+                        setTimeout(() => {
+                            document.getElementById(`typing${userNum}`).style.display = 'none';
+                        }, 3000);
+                    }
+                }
+            });
+
+            socket.on('disconnect', () => {
+                console.log(`사용자 ${userNum} 연결 끊김`);
+                document.getElementById(`status${userNum}`).classList.add('offline');
+            });
+        }
+
+        function sendMessage(userNum) {
+            const input = document.getElementById(`messageInput${userNum}`);
+            const content = input.value.trim();
+            
+            if (!content) return;
+
+            const socket = userNum === 1 ? socket1 : socket2;
+            const user = userNum === 1 ? user1 : user2;
+            
+            if (!socket || !user) {
+                alert('먼저 로그인해주세요');
+                return;
+            }
+
+            // 메시지 전송
+            socket.emit('send_message', {
+                chatId: chatId,
+                content: content,
+                senderId: user.id,
+                senderName: user.username,
+                timestamp: new Date().toISOString()
+            });
+
+            // 자신의 화면에 메시지 추가
+            addMessage(userNum, content, true);
+            
+            // 입력창 초기화
+            input.value = '';
+        }
+
+        function addMessage(userNum, content, isSent, timestamp) {
+            const messagesEl = document.getElementById(`messages${userNum}`);
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${isSent ? 'sent' : 'received'}`;
+            
+            const time = timestamp ? new Date(timestamp).toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }) : new Date().toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            messageEl.innerHTML = `
+                <div class="message-bubble">
+                    <div>${content}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+            
+            messagesEl.appendChild(messageEl);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function handleKeyPress(event, userNum) {
+            if (event.key === 'Enter') {
+                sendMessage(userNum);
+            } else {
+                // 타이핑 상태 전송
+                const socket = userNum === 1 ? socket1 : socket2;
+                const user = userNum === 1 ? user1 : user2;
+                
+                if (socket && user) {
+                    socket.emit('typing_start', chatId);
+                    
+                    // 타이핑 중지 타이머
+                    if (userNum === 1) {
+                        clearTimeout(typingTimeout1);
+                        typingTimeout1 = setTimeout(() => {
+                            socket.emit('typing_stop', chatId);
+                        }, 1000);
+                    } else {
+                        clearTimeout(typingTimeout2);
+                        typingTimeout2 = setTimeout(() => {
+                            socket.emit('typing_stop', chatId);
+                        }, 1000);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

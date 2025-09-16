@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from '../utils/axios';
 import KoreanMap from '../components/KoreanMap';
 import { 
@@ -20,8 +20,6 @@ import {
   CurrencyDollarIcon,
   TagIcon,
   UserGroupIcon,
-  UserPlusIcon,
-  UserMinusIcon,
   MapIcon
 } from '@heroicons/react/24/outline';
 import { 
@@ -50,6 +48,7 @@ L.Icon.Default.mergeOptions({
 
 const RestaurantMapV3: React.FC = () => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -66,6 +65,7 @@ const RestaurantMapV3: React.FC = () => {
     const savedData = dataManager.getSavedPlaylists();
     return savedData.map(p => p.playlistId);
   });
+  const [selectedCreatorForExplore, setSelectedCreatorForExplore] = useState<any>(null);
   
   // 소셜 스토어에서 팔로잉 관리
   const { followUser, unfollowUser, isFollowing, syncWithLocalStorage } = useSocialStore();
@@ -517,10 +517,39 @@ const RestaurantMapV3: React.FC = () => {
     
     if (isSaved) {
       dataManager.unsavePlaylist(listId);
+      
+      // saved_playlists_[userId]에서도 제거
+      if (user) {
+        const savedIds = JSON.parse(localStorage.getItem(`saved_playlists_${user._id}`) || '[]');
+        const updatedIds = savedIds.filter((id: string) => id !== listId);
+        localStorage.setItem(`saved_playlists_${user._id}`, JSON.stringify(updatedIds));
+      }
+      
       toast.success('리스트 저장을 취소했습니다.');
       setSavedLists(prev => prev.filter(id => id !== listId));
     } else {
       dataManager.savePlaylist(listId);
+      
+      // saved_playlists_[userId]에 추가
+      if (user) {
+        const savedIds = JSON.parse(localStorage.getItem(`saved_playlists_${user._id}`) || '[]');
+        if (!savedIds.includes(listId)) {
+          savedIds.push(listId);
+          localStorage.setItem(`saved_playlists_${user._id}`, JSON.stringify(savedIds));
+        }
+        
+        // 플레이리스트 전체 데이터도 저장 (allPlaylists 업데이트)
+        const playlist = certifiedRestaurantLists.find(list => list._id === listId);
+        if (playlist) {
+          const allPlaylistsData = JSON.parse(localStorage.getItem('allPlaylists') || '[]');
+          const exists = allPlaylistsData.some((p: any) => p._id === playlist._id);
+          if (!exists) {
+            allPlaylistsData.push(playlist);
+            localStorage.setItem('allPlaylists', JSON.stringify(allPlaylistsData));
+          }
+        }
+      }
+      
       toast.success('리스트가 저장되었습니다!');
       setSavedLists(prev => [...prev, listId]);
     }
@@ -528,7 +557,7 @@ const RestaurantMapV3: React.FC = () => {
     // 이벤트 발생
     window.dispatchEvent(new CustomEvent('dataManager:update'));
     setRefreshKey(prev => prev + 1);
-  }, []);
+  }, [user]);
 
   const handleSubmitRequest = async () => {
     if (!requestForm.name || !requestForm.category || !requestForm.address) {
@@ -889,34 +918,19 @@ const RestaurantMapV3: React.FC = () => {
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-3 text-xs text-gray-500">
                           <span>📍 {list.restaurants?.length || 0}개</span>
-                          <span>👤 {typeof list.createdBy === 'object' ? list.createdBy?.username : list.createdBy}</span>
-                        </div>
-                        {list.createdBy && typeof list.createdBy === 'object' && (
                           <button
+                            className="cursor-pointer hover:text-orange-600 transition-colors flex items-center gap-1"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleFollowUser(list.createdBy._id, list.createdBy.username, list.createdBy);
+                              if (typeof list.createdBy === 'object' && list.createdBy?.username) {
+                                setSelectedCreatorForExplore(list.createdBy);
+                              }
                             }}
-                            className={`px-2.5 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1 transition-all transform hover:scale-105 ${
-                              isFollowing(list.createdBy._id) ?
-                              'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md' :
-                              'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md hover:shadow-lg'
-                            }`}
-                            title={isFollowing(list.createdBy._id) ? '팔로우 취소' : '팔로우'}
                           >
-                            {isFollowing(list.createdBy._id) ? (
-                              <>
-                                <UserMinusIcon className="w-3.5 h-3.5" />
-                                <span>팔로잉</span>
-                              </>
-                            ) : (
-                              <>
-                                <UserPlusIcon className="w-3.5 h-3.5" />
-                                <span>팔로우</span>
-                              </>
-                            )}
+                            <span>👤 {typeof list.createdBy === 'object' ? list.createdBy?.username : list.createdBy}</span>
+                            <ChevronDownIcon className="w-3 h-3" />
                           </button>
-                        )}
+                        </div>
                       </div>
                     </div>
                     
@@ -1495,6 +1509,77 @@ const RestaurantMapV3: React.FC = () => {
                       <span>저장하기</span>
                     </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 작성자의 다른 리스트 탐색 모달 */}
+        {selectedCreatorForExplore && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-xl font-bold">{selectedCreatorForExplore.username}님의 리스트</h3>
+                  <p className="text-sm text-gray-500">이 작성자의 다른 맛집 리스트</p>
+                </div>
+                <button
+                  onClick={() => setSelectedCreatorForExplore(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                {(() => {
+                  // 작성자의 다른 리스트 찾기
+                  const creatorLists = certifiedRestaurantLists.filter((list: any) => 
+                    typeof list.createdBy === 'object' && 
+                    list.createdBy._id === selectedCreatorForExplore._id
+                  );
+                  
+                  if (creatorLists.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>이 작성자의 다른 리스트가 없습니다</p>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div className="space-y-3">
+                      {creatorLists.map((list: any) => (
+                        <div
+                          key={list._id}
+                          onClick={() => {
+                            setSelectedList(list);
+                            setSelectedCreatorForExplore(null);
+                          }}
+                          className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-semibold text-sm">{list.name}</h4>
+                            <span className="text-xs text-gray-500">📍 {list.restaurants?.length || 0}개</span>
+                          </div>
+                          <p className="text-xs text-gray-600 line-clamp-2">{list.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+              
+              <div className="mt-4 pt-4 border-t">
+                <button
+                  onClick={() => {
+                    navigate(`/profile/${selectedCreatorForExplore.username}`);
+                    setSelectedCreatorForExplore(null);
+                  }}
+                  className="w-full py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                >
+                  프로필 보러가기
                 </button>
               </div>
             </div>

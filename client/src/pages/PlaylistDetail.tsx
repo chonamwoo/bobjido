@@ -4,6 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from '../utils/axios';
 import toast from 'react-hot-toast';
 import KoreanMap from '../components/KoreanMap';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { 
   HeartIcon, 
   BookmarkIcon, 
@@ -28,6 +31,14 @@ import { useAuthStore } from '../store/authStore';
 import { getDefaultAvatar } from '../utils/avatars';
 import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists_fixed';
 import { dataManager } from '../utils/dataManager';
+
+// Leaflet 아이콘 설정
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const PlaylistDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -280,7 +291,7 @@ const PlaylistDetail: React.FC = () => {
   }
 
   // Handle both old and new data formats
-  const restaurants = playlist.restaurants.map((r: any) => {
+  const restaurants = (playlist.restaurants || []).map((r: any) => {
     // If it's already in the new format with restaurant object
     if (r.restaurant) {
       return r.restaurant;
@@ -407,24 +418,54 @@ const PlaylistDetail: React.FC = () => {
 
         {/* 작성자 정보 */}
         <div className="flex items-center justify-between">
-          <Link
-            to={`/profile/${playlist.createdBy.username}`}
-            className="flex items-center space-x-3 hover:bg-gray-50 p-2 rounded-lg transition-colors"
-          >
-            <img
-              src={playlist.createdBy.profileImage || getDefaultAvatar(playlist.createdBy.username, 40)}
-              alt={playlist.createdBy.username}
-              className="w-10 h-10 rounded-full"
-            />
-            <div>
-              <p className="font-semibold">{playlist.createdBy.username}</p>
-              <p className="text-sm text-gray-500">
-                {format(new Date(playlist.createdAt), 'yyyy년 MM월 dd일', { locale: ko })}
-              </p>
+          {playlist.createdBy ? (
+            <Link
+              to={`/profile/${playlist.createdBy.username}`}
+              className="flex items-center space-x-3 hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
+              <img
+                src={playlist.createdBy.profileImage || getDefaultAvatar(playlist.createdBy.username, 40)}
+                alt={playlist.createdBy.username}
+                className="w-10 h-10 rounded-full"
+              />
+              <div>
+                <p className="font-semibold">{playlist.createdBy.username}</p>
+                <p className="text-sm text-gray-500">
+                  {format(new Date(playlist.createdAt), 'yyyy년 MM월 dd일', { locale: ko })}
+                </p>
+              </div>
+            </Link>
+          ) : playlist.creator ? (
+            <div className="flex items-center space-x-3 p-2">
+              <img
+                src={getDefaultAvatar(playlist.creator.username || 'Admin', 40)}
+                alt={playlist.creator.username || 'Admin'}
+                className="w-10 h-10 rounded-full"
+              />
+              <div>
+                <p className="font-semibold">{playlist.creator.username || 'Admin'}</p>
+                <p className="text-sm text-gray-500">
+                  {format(new Date(playlist.createdAt || Date.now()), 'yyyy년 MM월 dd일', { locale: ko })}
+                </p>
+              </div>
             </div>
-          </Link>
+          ) : (
+            <div className="flex items-center space-x-3 p-2">
+              <img
+                src={getDefaultAvatar('Admin', 40)}
+                alt="Admin"
+                className="w-10 h-10 rounded-full"
+              />
+              <div>
+                <p className="font-semibold">Admin</p>
+                <p className="text-sm text-gray-500">
+                  {format(new Date(playlist.createdAt || Date.now()), 'yyyy년 MM월 dd일', { locale: ko })}
+                </p>
+              </div>
+            </div>
+          )}
 
-          {playlist.tags.length > 0 && (
+          {playlist.tags && playlist.tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {playlist.tags.map((tag: string) => (
                 <span
@@ -453,7 +494,7 @@ const PlaylistDetail: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-xl font-bold mb-4">맛집 목록</h2>
           <div className="space-y-4 max-h-96 overflow-y-auto">
-            {playlist.restaurants.map((item: any, index: number) => {
+            {(playlist.restaurants || []).map((item: any, index: number) => {
               // Handle both old and new data formats
               const restaurant = item.restaurant || {
                 _id: item.name?.replace(/\s/g, '-').toLowerCase() || Math.random().toString(),
@@ -657,6 +698,35 @@ const PlaylistDetail: React.FC = () => {
             </div>
 
             <div className="p-6 space-y-6">
+              {/* 지도 */}
+              <div className="w-full h-64 rounded-lg overflow-hidden shadow-md">
+                <MapContainer 
+                  center={[
+                    selectedRestaurant.lat || selectedRestaurant.coordinates?.lat || 37.5665, 
+                    selectedRestaurant.lng || selectedRestaurant.coordinates?.lng || 126.9780
+                  ]} 
+                  zoom={16} 
+                  style={{ height: '100%', width: '100%' }}
+                  scrollWheelZoom={false}
+                >
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  />
+                  <Marker position={[
+                    selectedRestaurant.lat || selectedRestaurant.coordinates?.lat || 37.5665,
+                    selectedRestaurant.lng || selectedRestaurant.coordinates?.lng || 126.9780
+                  ]}>
+                    <Popup>
+                      <div className="p-2">
+                        <p className="font-semibold">{selectedRestaurant.name}</p>
+                        <p className="text-sm text-gray-600">{selectedRestaurant.address}</p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+
               {/* 기본 정보 */}
               <div>
                 <div className="flex items-center gap-2 mb-2">

@@ -158,7 +158,18 @@
       "Bash(netstat:*)",
       "Bash(start test-notifications.html)",
       "Bash(start http://localhost:8081)",
-      "Bash(start http://localhost:3000/admin/certified-restaurants)"
+      "Bash(start http://localhost:3000/admin/certified-restaurants)",
+      "Bash(start http://localhost:5555/test-chat.html)",
+      "Bash(start http://localhost:5555/test-two-users.html)",
+      "Bash(robocopy:*)",
+      "Read(//c/Users/mchon/PycharmProjects/BobsMap/**)",
+      "Bash(move clientsrcpagesGameHub.tsx modulesgamesclient )",
+      "Bash(move clientsrcpagesFoodMBTI.tsx modulesgamesclient )",
+      "Bash(move clientsrcpagesFoodVS.tsx modulesgamesclient )",
+      "Bash(move clientsrcpagesFoodRoulette.tsx modulesgamesclient )",
+      "Bash(move clientsrcpagesRestaurantQuiz.tsx modulesgamesclient )",
+      "Bash(move clientsrcpagesGameResults.tsx modulesgamesclient )",
+      "Bash(move clientsrcpagesLunchRecommendation.tsx modulesgamesclient)"
     ],
     "deny": [],
     "ask": []

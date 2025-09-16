@@ -1,6 +1,7 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const KakaoStrategy = require('passport-kakao').Strategy;
+const NaverStrategy = require('passport-naver-v2').Strategy;
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
@@ -177,6 +178,87 @@ if (process.env.KAKAO_CLIENT_ID) {
         return done(error, null);
       }
     }
+    )
+  );
+}
+
+// Naver OAuth Strategy - only if credentials are provided
+if (process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET) {
+  const naverCallbackURL = `${process.env.SERVER_URL || `http://localhost:${process.env.PORT || 8888}`}/api/auth/naver/callback`;
+  console.log('🔐 Naver OAuth Callback URL:', naverCallbackURL);
+  
+  passport.use(
+    new NaverStrategy(
+      {
+        clientID: process.env.NAVER_CLIENT_ID,
+        clientSecret: process.env.NAVER_CLIENT_SECRET,
+        callbackURL: naverCallbackURL,
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          const naverId = String(profile.id);
+          const email = profile.email;
+          const nickname = profile.nickname || profile.name || email?.split('@')[0];
+          const profileImage = profile.profileImage;
+          
+          console.log('🟢 Naver Profile Data:', {
+            naverId,
+            email,
+            nickname,
+            profileImage
+          });
+          
+          // naverId로 사용자 찾기
+          let user = await User.findOne({ naverId: naverId });
+          
+          console.log('🔍 Naver Login Check:', {
+            naverId,
+            email,
+            foundUser: user ? `Found user with id: ${user._id}` : 'No user found',
+            willCreateNew: !user
+          });
+          
+          if (user) {
+            // 기존 사용자가 있으면 정보 업데이트
+            if (!user.naverId) {
+              user.naverId = naverId;
+            }
+            // userId가 없으면 추가
+            if (!user.userId) {
+              user.userId = email ? email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') : `naver_${naverId.slice(-8)}`;
+            }
+            // 프로필 이미지 업데이트
+            if (profileImage) {
+              user.profileImage = profileImage;
+            }
+            await user.save();
+          } else {
+            // 새 사용자 생성
+            const userEmail = email || `naver${naverId}@bobmap.com`;
+            const username = nickname || `naver_user_${naverId.slice(-6)}`;
+            const userId = email ? email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') : `naver_${naverId.slice(-8)}`;
+            
+            // 프로필 이미지가 없으면 기본 아바타 생성
+            const userProfileImage = profileImage || 
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=03C75A&color=FFFFFF&bold=true&size=200`;
+            
+            user = await User.create({
+              userId: userId,
+              naverId: naverId,
+              username: username,
+              email: userEmail,
+              emailVerified: true, // OAuth 로그인은 이메일 인증 완료로 처리
+              profileImage: userProfileImage,
+              // OAuth 로그인은 비밀번호 불필요
+              password: 'oauth-' + Math.random().toString(36).slice(-8),
+            });
+          }
+
+          return done(null, user);
+        } catch (error) {
+          return done(error, null);
+        }
+      }
     )
   );
 }

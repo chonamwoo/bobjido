@@ -46,7 +46,7 @@ const MobilePlaylistDetail: React.FC = () => {
   });
   const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
   const [showRestaurantPopup, setShowRestaurantPopup] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('map'); // 기본값을 map으로 변경
+  // viewMode 제거 - 항상 지도만 표시
   const [likedRestaurants, setLikedRestaurants] = useState<string[]>(() => {
     const likes = localStorage.getItem('likedRestaurants');
     return likes ? JSON.parse(likes) : [];
@@ -515,42 +515,18 @@ const MobilePlaylistDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* 뷰 모드 토글 버튼 */}
+      {/* 맛집 목록 헤더 */}
       <div className="px-4 mt-6 mb-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">
-            맛집 목록 ({restaurants.length})
+            <MapIcon className="w-5 h-5 inline mr-1 text-orange-500" />
+            맛집 지도 ({restaurants.length})
           </h2>
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('map')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                viewMode === 'map'
-                  ? 'bg-white text-orange-600 shadow-sm'
-                  : 'text-gray-600'
-              }`}
-            >
-              <MapIcon className="w-4 h-4 inline mr-1" />
-              지도
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-white text-orange-600 shadow-sm'
-                  : 'text-gray-600'
-              }`}
-            >
-              <ListBulletIcon className="w-4 h-4 inline mr-1" />
-              목록
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* 지도 뷰 */}
-      {viewMode === 'map' ? (
-        <div className="px-4">
+      {/* 지도 뷰 (항상 표시) */}
+      <div className="px-4">
           <div className="w-full h-[400px] rounded-lg shadow-md overflow-hidden">
             <MapContainer 
               center={[37.5500, 126.9700]} 
@@ -636,142 +612,7 @@ const MobilePlaylistDetail: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
-      ) : (
-        /* 리스트 뷰 (기존 코드) */
-        <div className="px-4">
-          <div className="space-y-3">
-            {restaurants.map((restaurant: any, index: number) => (
-              <div
-                key={restaurant._id || index}
-                className="bg-white rounded-lg shadow-sm p-4"
-                onClick={() => {
-                  setSelectedRestaurant(restaurant);
-                  setShowRestaurantPopup(true);
-                }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center mb-1">
-                      <span className="text-sm font-bold text-orange-500 mr-2">
-                        {index + 1}
-                      </span>
-                      <h3 className="font-semibold text-gray-900">
-                        {restaurant.name}
-                      </h3>
-                    </div>
-                    <div className="flex items-center text-xs text-gray-500 mb-2">
-                      <span className="mr-3">{restaurant.category}</span>
-                      <span className="mr-3">{restaurant.price}</span>
-                      {restaurant.rating && (
-                        <div className="flex items-center mr-3">
-                          <StarIcon className="w-3 h-3 text-yellow-500 mr-1" />
-                          <span>{restaurant.rating}</span>
-                        </div>
-                      )}
-                      {/* 실시간 통계 표시 */}
-                      <div className="flex items-center gap-2">
-                        {restaurantStats[restaurant._id]?.saves > 0 && (
-                          <span className="flex items-center">
-                            <BookmarkSolidIcon className="w-3 h-3 text-orange-500 mr-0.5" />
-                            <span className="text-orange-600 font-medium">{restaurantStats[restaurant._id].saves}</span>
-                          </span>
-                        )}
-                        {restaurantStats[restaurant._id]?.likes > 0 && (
-                          <span className="flex items-center">
-                            <HeartSolidIcon className="w-3 h-3 text-red-500 mr-0.5" />
-                            <span className="text-red-600 font-medium">{restaurantStats[restaurant._id].likes}</span>
-                          </span>
-                        )}
-                        {restaurantStats[restaurant._id]?.reviews > 0 && (
-                          <span className="flex items-center">
-                            <StarSolidIcon className="w-3 h-3 text-yellow-500 mr-0.5" />
-                            <span className="text-yellow-600 font-medium">{restaurantStats[restaurant._id].reviews}</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center text-xs text-gray-500">
-                      <MapPinIcon className="w-3 h-3 mr-1" />
-                      <span>{restaurant.address}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="relative w-20 h-20 rounded-lg overflow-hidden ml-3 flex-shrink-0">
-                    {restaurant.image ? (
-                      <img
-                        src={restaurant.image}
-                        alt={restaurant.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.onerror = null;
-                          // 카테고리 기반 fallback 이미지
-                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(restaurant.name)}&size=160&background=FED7AA&color=C2410C&bold=true`;
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
-                        <span className="text-2xl">🍽️</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {restaurant.reason && (
-                  <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded">
-                    💬 "{restaurant.reason}"
-                  </p>
-                )}
-                
-                {/* 저장 버튼 */}
-                <div className="mt-2 pt-2 border-t border-gray-100">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!user) {
-                        toast.error('로그인이 필요합니다.');
-                        return;
-                      }
-                      
-                      const isRestaurantSaved = savedRestaurants.includes(restaurant._id);
-                      if (isRestaurantSaved) {
-                        dataManager.unsaveRestaurant(restaurant._id);
-                        toast.success('저장 취소');
-                        setSavedRestaurants(prev => prev.filter(id => id !== restaurant._id));
-                      } else {
-                        // localRestaurants에도 저장
-                        const localRestaurants = localStorage.getItem('localRestaurants');
-                        const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
-                        if (!restaurants.find((r: any) => r._id === restaurant._id)) {
-                          restaurants.push(restaurant);
-                          localStorage.setItem('localRestaurants', JSON.stringify(restaurants));
-                        }
-                        
-                        dataManager.saveRestaurant(restaurant._id, `${playlist?.title || '플레이리스트'}에서 저장`);
-                        toast.success('맛집이 저장되었습니다!');
-                        setSavedRestaurants(prev => [...prev, restaurant._id]);
-                      }
-                    }}
-                    className={`w-full flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      savedRestaurants.includes(restaurant._id)
-                        ? 'bg-primary-500 text-white'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {savedRestaurants.includes(restaurant._id) ? (
-                      <BookmarkSolidIcon className="w-4 h-4" />
-                    ) : (
-                      <BookmarkIcon className="w-4 h-4" />
-                    )}
-                    {savedRestaurants.includes(restaurant._id) ? '저장됨' : '맛집 저장'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* 맛집 상세 팝업 */}
       {showRestaurantPopup && selectedRestaurant && (
@@ -818,14 +659,37 @@ const MobilePlaylistDetail: React.FC = () => {
             </div>
             
             <div className="p-4 space-y-4">
-              {/* 이미지 - 크기 조정 */}
-              {selectedRestaurant.image && (
-                <img
-                  src={selectedRestaurant.image}
-                  alt={selectedRestaurant.name}
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-              )}
+              {/* 지도로 변경 - 식당 위치 표시 */}
+              <div className="w-full h-48 rounded-lg overflow-hidden shadow-md">
+                <MapContainer 
+                  center={[
+                    selectedRestaurant.lat || selectedRestaurant.coordinates?.lat || 37.5665, 
+                    selectedRestaurant.lng || selectedRestaurant.coordinates?.lng || 126.9780
+                  ]} 
+                  zoom={16} 
+                  style={{ height: '100%', width: '100%' }}
+                  scrollWheelZoom={false}
+                  zoomControl={true}
+                  dragging={true}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker 
+                    position={[
+                      selectedRestaurant.lat || selectedRestaurant.coordinates?.lat || 37.5665, 
+                      selectedRestaurant.lng || selectedRestaurant.coordinates?.lng || 126.9780
+                    ]}
+                    icon={L.divIcon({
+                      className: 'custom-marker',
+                      html: `<div style="background-color: #ea580c; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">📍</div>`,
+                      iconSize: [30, 30],
+                      iconAnchor: [15, 30]
+                    })}
+                  />
+                </MapContainer>
+              </div>
 
               {/* 기본 정보 및 통계 */}
               <div className="bg-gray-50 rounded-lg p-3">

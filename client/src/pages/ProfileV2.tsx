@@ -351,13 +351,20 @@ const ProfileV2: React.FC = () => {
       localStorage.setItem('bobmap_user_data', JSON.stringify(data));
     }
     
-    // Load saved items
-    const uniquePlaylists = data.savedPlaylists?.reduce((acc: any[], curr: any) => {
+    // Load saved items - also check the new saved_playlists format
+    const savedPlaylistIds = JSON.parse(localStorage.getItem(`saved_playlists_${currentUser?._id}`) || '[]');
+    const savedPlaylistsData = savedPlaylistIds.map((id: string) => ({
+      playlistId: id,
+      savedAt: new Date().toISOString()
+    }));
+    
+    // Merge with existing data format
+    const uniquePlaylists = [...(data.savedPlaylists || []), ...savedPlaylistsData].reduce((acc: any[], curr: any) => {
       if (!acc.find(item => item.playlistId === curr.playlistId)) {
         acc.push(curr);
       }
       return acc;
-    }, []) || [];
+    }, []);
     
     const uniqueRestaurants = data.savedRestaurants?.reduce((acc: any[], curr: any) => {
       if (!acc.find(item => item.restaurantId === curr.restaurantId)) {
@@ -366,6 +373,7 @@ const ProfileV2: React.FC = () => {
       return acc;
     }, []) || [];
     
+    console.log('Loaded saved playlists:', uniquePlaylists);
     console.log('Loaded saved restaurants:', uniqueRestaurants);
     setLocalSavedPlaylists(uniquePlaylists);
     setLocalSavedRestaurants(uniqueRestaurants);
@@ -648,17 +656,9 @@ const ProfileV2: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setShowLikes(!showLikes)}
-                  className="hover:text-gray-800 transition-colors group flex flex-col items-center md:flex-row"
+                  className="hover:text-gray-800 transition-colors"
                 >
-                  <div className="flex items-center">
-                    <span>좋아요</span>
-                    <span className="font-semibold ml-1">
-                      {likedRestaurants.length + likedPlaylists.length}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-500 group-hover:text-gray-700 md:ml-1">
-                    {likedRestaurants.length}🍽/{likedPlaylists.length}📋
-                  </span>
+                  좋아요 <span className="font-semibold">{likedRestaurants.length + likedPlaylists.length}</span>
                 </button>
               </div>
             </div>

@@ -110,9 +110,9 @@ const AdminCertifiedRestaurants: React.FC = () => {
     local: 'from-green-500 to-emerald-500'
   };
 
-  // 로컬 스토리지에서 데이터 로드
+  // 로컬 스토리지에서 데이터 로드 (certified_restaurants_data 사용)
   useEffect(() => {
-    const savedData = localStorage.getItem('restaurantData');
+    const savedData = localStorage.getItem('certified_restaurants_data');
     if (savedData) {
       const parsedData = JSON.parse(savedData);
       setData(parsedData);
@@ -120,52 +120,70 @@ const AdminCertifiedRestaurants: React.FC = () => {
         setSelectedCategory(Object.keys(parsedData.categories)[0]);
       }
     } else {
-      // 기본 카테고리 생성
-      const defaultData = {
-        lastUpdated: new Date().toISOString().split('T')[0],
-        categories: {
-          michelin: {
-            title: '미쉐린 가이드 선정 맛집',
-            description: '미쉐린 가이드 선정 레스토랑',
-            icon: '⭐',
-            color: 'from-yellow-500 to-orange-500',
-            restaurants: []
-          },
-          masterChef: {
-            title: '생활의 달인 인정 맛집',
-            description: 'SBS 생활의 달인 방송 출연 맛집',
-            icon: '👨‍🍳',
-            color: 'from-red-500 to-pink-500',
-            restaurants: []
-          },
-          blackBook: {
-            title: '수요미식회 블랙북',
-            description: 'tvN 수요미식회 추천 맛집',
-            icon: '📖',
-            color: 'from-purple-500 to-indigo-500',
-            restaurants: []
-          },
-          bluRibbon: {
-            title: '블루리본 서베이',
-            description: '블루리본 서베이 선정 맛집',
-            icon: '🎖️',
-            color: 'from-blue-500 to-cyan-500',
-            restaurants: []
+      // 기본 데이터를 certifiedRestaurantLists에서 가져오기
+      import('../data/certifiedRestaurantLists').then(module => {
+        const lists = module.certifiedRestaurantLists;
+        const defaultData: {
+          lastUpdated: string;
+          categories: Categories;
+          metadata: {
+            totalRestaurants: number;
+            lastModified: string;
+            version: string;
+          };
+        } = {
+          lastUpdated: new Date().toISOString().split('T')[0],
+          categories: {},
+          metadata: {
+            totalRestaurants: 0,
+            lastModified: new Date().toISOString(),
+            version: '1.0.0'
           }
-        },
-        metadata: {
-          totalRestaurants: 0,
-          lastModified: new Date().toISOString(),
-          version: '1.0.0'
+        };
+        
+        // certifiedRestaurantLists의 데이터를 카테고리로 변환
+        lists.forEach(list => {
+          if (list.certification) {
+            const key = list.certification.toLowerCase().replace(/\s+/g, '_');
+            defaultData.categories[key] = {
+              title: list.certification,
+              description: list.description,
+              icon: list.certification === '흑백요리사' ? '🍳' :
+                    list.certification === '수요미식회' ? '📖' :
+                    list.certification === '미쉐린스타' ? '⭐' :
+                    list.certification === '백종원의3대천왕' ? '👑' :
+                    list.certification === '백년가게' ? '🏛️' : '🍽️',
+              color: 'from-orange-500 to-red-500',
+              restaurants: list.restaurants.map(r => ({
+                id: r.restaurant._id,
+                name: r.restaurant.name,
+                category: r.restaurant.category,
+                rating: r.restaurant.rating || 4.5,
+                priceRange: '₩₩₩',
+                location: r.restaurant.address.split(' ').slice(0, 2).join(' '),
+                address: r.restaurant.address,
+                phone: '02-1234-5678',
+                hours: '11:00 - 22:00',
+                description: r.personalNote || '인증된 맛집입니다',
+                tags: r.mustTry || [],
+                image: `https://images.unsplash.com/photo-${Math.random() > 0.5 ? '1517248135467-4c7edcad34c4' : '1414235077428-338989a2e8c0'}?w=400&h=300&fit=crop`,
+                coordinates: r.restaurant.coordinates || { lat: 37.5665, lng: 126.9780 }
+              }))
+            };
+            defaultData.metadata.totalRestaurants += list.restaurants.length;
+          }
+        });
+        
+        setData(defaultData);
+        localStorage.setItem('certified_restaurants_data', JSON.stringify(defaultData));
+        if (Object.keys(defaultData.categories).length > 0) {
+          setSelectedCategory(Object.keys(defaultData.categories)[0]);
         }
-      };
-      setData(defaultData);
-      localStorage.setItem('restaurantData', JSON.stringify(defaultData));
-      setSelectedCategory('michelin');
+      });
     }
   }, []);
 
-  // 데이터 저장
+  // 데이터 저장 (certified_restaurants_data에 저장)
   const saveData = () => {
     const updatedData = {
       ...data,
@@ -178,7 +196,7 @@ const AdminCertifiedRestaurants: React.FC = () => {
         )
       }
     };
-    localStorage.setItem('restaurantData', JSON.stringify(updatedData));
+    localStorage.setItem('certified_restaurants_data', JSON.stringify(updatedData));
     setData(updatedData);
     
     // 모바일 앱에도 반영되도록 이벤트 발생
@@ -391,26 +409,48 @@ const AdminCertifiedRestaurants: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
+              <button
+                onClick={() => navigate(-1)}
+                className="mr-3 p-2 hover:bg-white/20 rounded-lg transition-colors"
+                title="뒤로가기"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
               <CogIcon className="w-8 h-8 text-white mr-3" />
               <h1 className="text-white text-xl font-bold">관리자 대시보드</h1>
             </div>
             <nav className="flex space-x-4">
               <button
-                onClick={() => navigate('/admin-dashboard')}
+                onClick={() => navigate('/')}
+                className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                홈
+              </button>
+              <button
+                onClick={() => {
+                  toast.success('통계 페이지는 준비 중입니다');
+                }}
                 className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
               >
                 <ChartBarIcon className="w-4 h-4 mr-1" />
                 통계
               </button>
               <button
-                onClick={() => navigate('/admin-users')}
+                onClick={() => {
+                  toast.success('사용자 관리 페이지는 준비 중입니다');
+                }}
                 className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
               >
                 <UserGroupIcon className="w-4 h-4 mr-1" />
                 사용자
               </button>
               <button
-                className="text-white bg-white/20 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                className="text-white bg-white/20 px-3 py-2 rounded-md text-sm font-medium flex items-center cursor-default"
               >
                 <BuildingStorefrontIcon className="w-4 h-4 mr-1" />
                 인증 맛집

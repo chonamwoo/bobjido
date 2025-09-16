@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: function() {
       // OAuth 로그인인 경우 이메일 필수 아님
-      return !this.googleId && !this.kakaoId;
+      return !this.googleId && !this.kakaoId && !this.naverId;
     },
     unique: true,
     sparse: true,  // null 값 허용
@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema({
     validate: {
       validator: function(v) {
         // OAuth 사용자이거나 이메일이 없는 경우 검증 통과
-        if (this.googleId || this.kakaoId || !v) return true;
+        if (this.googleId || this.kakaoId || this.naverId || !v) return true;
         // 일반 사용자만 이메일 형식 검증
         return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,10})+$/.test(v);
       },
@@ -48,7 +48,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: function() {
       // OAuth 로그인인 경우 비밀번호 필수 아님
-      return !this.googleId && !this.kakaoId;
+      return !this.googleId && !this.kakaoId && !this.naverId;
     },
     minlength: [6, '비밀번호는 최소 6자 이상이어야 합니다'],
     select: false
@@ -72,6 +72,10 @@ const userSchema = new mongoose.Schema({
     sparse: true
   },
   kakaoId: {
+    type: String,
+    sparse: true
+  },
+  naverId: {
     type: String,
     sparse: true
   },

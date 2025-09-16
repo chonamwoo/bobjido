@@ -9,17 +9,20 @@ import {
   FireIcon,
   PlusCircleIcon,
   StarIcon,
+  BookmarkIcon,
   UserPlusIcon,
   UserMinusIcon
 } from '@heroicons/react/24/outline';
-import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
+import { HeartIcon as HeartIconSolid, BookmarkIcon as BookmarkIconSolid } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import { certifiedRestaurantLists, getTrendingLists, getLatestLists } from '../data/certifiedRestaurantLists_fixed';
 import { useSocialStore } from '../store/socialStore';
 import { useAuthStore } from '../store/authStore';
 import axios from '../utils/axios';
 import syncStorage from '../utils/syncStorage';
+import { getImageForCategory, getPlaylistImage } from '../utils/foodImages';
 import { getRestaurantImage } from '../utils/restaurantImages';
+import { getUniquePlaylistImage } from '../utils/playlistImages';
 
 const MobileHomeSoundCloud: React.FC = () => {
   const navigate = useNavigate();
@@ -27,17 +30,24 @@ const MobileHomeSoundCloud: React.FC = () => {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [likedPlaylists, setLikedPlaylists] = useState<Set<string>>(new Set());
+  const [savedPlaylists, setSavedPlaylists] = useState<Set<string>>(new Set());
   const [activeFilter, setActiveFilter] = useState<'certified' | 'following' | 'similar'>('certified');
-  const { followUser, unfollowUser, isFollowing, syncWithLocalStorage } = useSocialStore();
+  const { followUser, unfollowUser, isFollowing, syncWithLocalStorage, followingUsers } = useSocialStore();
   
   // Sync on mount
   useEffect(() => {
     syncWithLocalStorage();
     
-    // localStorage에서 초기 좋아요 상태 불러오기
+    // localStorage에서 초기 좋아요 및 저장 상태 불러오기
     if (user) {
       const likes = syncStorage.getPlaylistLikes(user._id);
       setLikedPlaylists(likes);
+      
+      // 저장된 플레이리스트 불러오기
+      const saved = localStorage.getItem(`saved_playlists_${user._id}`);
+      if (saved) {
+        setSavedPlaylists(new Set(JSON.parse(saved)));
+      }
     }
   }, [syncWithLocalStorage, user]);
   
@@ -76,9 +86,11 @@ const MobileHomeSoundCloud: React.FC = () => {
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
     };
-  }, []);
+  }, [activeFilter]); // activeFilter 변경 시 interval 재설정
 
   const fetchPlaylists = async () => {
+    console.log('fetchPlaylists called with activeFilter:', activeFilter);
+    setLoading(true);
     try {
       // Admin에서 수정한 데이터가 있으면 사용, 없으면 기본 데이터 사용
       const adminPlaylists = localStorage.getItem('adminPlaylists');
@@ -87,6 +99,7 @@ const MobileHomeSoundCloud: React.FC = () => {
       let filteredLists = [];
       
       if (activeFilter === 'certified') {
+        console.log('Loading certified restaurants...');
         // 인증 맛집 리스트 - Admin만 수정 가능
         const adminData = localStorage.getItem('certified_restaurants_data');
         if (adminData) {
@@ -121,7 +134,7 @@ const MobileHomeSoundCloud: React.FC = () => {
               }
               })),
               tags: [category.title.split(' ')[0], '인증맛집'],
-              coverImage: category.restaurants[0]?.image || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop'
+              coverImage: null // getPlaylistImageUrl이 처리하도록 null로 설정
             };
           });
         } else {
@@ -137,114 +150,44 @@ const MobileHomeSoundCloud: React.FC = () => {
           );
         }
       } else if (activeFilter === 'following') {
-        // 팔로잉 맛집 - 개인이 수정/관리 가능
-        const userFollowingData = localStorage.getItem(`following_restaurants_${user?._id}`);
-        if (userFollowingData) {
-          filteredLists = JSON.parse(userFollowingData);
+        console.log('Loading following playlists...');
+        // 팔로잉하는 사람들의 플레이리스트
+        // followedUsers 키로 저장된 팔로우 목록 가져오기
+        const followingIds = localStorage.getItem('followedUsers') ? JSON.parse(localStorage.getItem('followedUsers') || '[]') : [];
+        
+        // 또는 useSocialStore에서 직접 가져오기
+        const followingFromStore = followingUsers;
+        const actualFollowing = followingFromStore.length > 0 ? followingFromStore : followingIds;
+        console.log('Following users:', actualFollowing);
+        
+        if (actualFollowing.length > 0) {
+          // 실제 팔로우한 사람들의 플레이리스트만 표시
+          // 1. allPlaylists에서 팔로우한 사람의 리스트 찾기
+          const allPlaylistsData = JSON.parse(localStorage.getItem('allPlaylists') || '[]');
+          const certifiedData = certifiedRestaurantLists || [];
+          
+          // 팔로우한 사람들의 플레이리스트 필터링
+          const followedUserPlaylists = [...allPlaylistsData, ...certifiedData].filter((list: any) => {
+            if (list.createdBy && typeof list.createdBy === 'object') {
+              return actualFollowing.includes(list.createdBy._id);
+            } else if (list.creator && typeof list.creator === 'object') {
+              return actualFollowing.includes(list.creator._id);
+            }
+            return false;
+          });
+          
+          // 실제 팔로우한 사람들의 플레이리스트만 표시 (데모 데이터 제거)
+          filteredLists = followedUserPlaylists;
         } else {
-          // 기본 팔로잉 맛집 리스트
-          filteredLists = [
-          {
-            _id: 'following-1',
-            name: '김재광님의 성수동 맛집리스트',
-            title: '재광님이 인증한 성수동 핫플',
-            description: '성수동 가면 꼭 가봐야할 곳들! 분위기도 맛도 최고',
-            creator: { username: '김재광', isVerified: false },
-            certification: null,
-            likeCount: 234,
-            viewCount: 1520,
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            restaurants: [
-              { _id: 'rest-14', restaurant: { _id: 'rest-14', name: '어반플레이스', category: '카페', address: '서울 성수동' }},
-              { _id: 'rest-15', restaurant: { _id: 'rest-15', name: '대림창고', category: '브런치', address: '서울 성수동' }},
-              { _id: 'rest-9', restaurant: { _id: 'rest-9', name: '성수족발', category: '한식', address: '서울 성수동' }},
-              { _id: 'rest-16', restaurant: { _id: 'rest-16', name: '온더보더', category: '양식', address: '서울 성수동' }}
-            ],
-            tags: ['성수동', '핫플', '데이트'],
-            coverImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop'
-          },
-          {
-            _id: 'following-2',
-            name: '남우님의 제육 맛집리스트',
-            title: '제육볶음 원탑 맛집 모음',
-            description: '전국 제육볶음 투어하면서 찾은 진짜들만',
-            creator: { username: '조남우', isVerified: false },
-            certification: null,
-            likeCount: 156,
-            viewCount: 892,
-            createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-            restaurants: [
-              { _id: 'rest-3', restaurant: { _id: 'rest-3', name: '을지면옥', category: '한식', address: '서울 중구' }},
-              { _id: 'rest-8', restaurant: { _id: 'rest-8', name: '하동관', category: '한식', address: '서울 중구' }},
-              { _id: 'rest-17', restaurant: { _id: 'rest-17', name: '강남면옥', category: '한식', address: '서울 강남구' }}
-            ],
-            tags: ['제육볶음', '한식', '밥도둑'],
-            coverImage: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=400&h=300&fit=crop'
-          },
-          {
-            _id: 'following-3',
-            name: '민정이의 브런치 카페 리스트',
-            title: '주말 브런치 예약 필수 맛집',
-            description: '인스타 감성 + 맛까지 보장하는 브런치 맛집',
-            creator: { username: '박민정', isVerified: false },
-            certification: null,
-            likeCount: 412,
-            viewCount: 2341,
-            createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-            restaurants: [
-              { _id: 'rest-15', restaurant: { _id: 'rest-15', name: '대림창고', category: '브런치', address: '서울 성수동' }},
-              { _id: 'rest-18', restaurant: { _id: 'rest-18', name: '빌즈', category: '브런치', address: '서울 강남구' }},
-              { _id: 'rest-19', restaurant: { _id: 'rest-19', name: '엘리스리틀이태리', category: '양식', address: '서울 이태원' }},
-              { _id: 'rest-20', restaurant: { _id: 'rest-20', name: '카페마마스', category: '브런치', address: '서울 용산구' }},
-              { _id: 'rest-21', restaurant: { _id: 'rest-21', name: '테라스키친', category: '브런치', address: '서울 한남동' }}
-            ],
-            tags: ['브런치', '카페', '디저트'],
-            coverImage: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop'
-          },
-          {
-            _id: 'following-4',
-            name: '준서형의 고기 맛집리스트',
-            title: '육식파를 위한 고기 맛집 총정리',
-            description: '소고기 돼지고기 양고기까지, 고기러버 필수 코스',
-            creator: { username: '이준서', isVerified: false },
-            certification: null,
-            likeCount: 567,
-            viewCount: 3456,
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            restaurants: [
-              { _id: 'rest-10', restaurant: { _id: 'rest-10', name: '새마을식당', category: '한식', address: '서울 강남구' }},
-              { _id: 'rest-22', restaurant: { _id: 'rest-22', name: '정식당', category: '한식', address: '서울 강남구' }},
-              { _id: 'rest-4', restaurant: { _id: 'rest-4', name: '라이너스 바베큐', category: '양식', address: '서울 이태원' }}
-            ],
-            tags: ['고기', '삼겹살', '스테이크'],
-            coverImage: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop'
-          },
-          {
-            _id: 'following-5',
-            name: '혜진이의 이태원 맛집리스트',
-            title: '이태원 국제 음식 투어',
-            description: '이태원에서 세계여행! 각 나라 진짜 맛집들',
-            creator: { username: '김혜진', isVerified: false },
-            certification: null,
-            likeCount: 289,
-            viewCount: 1789,
-            createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-            restaurants: [
-              { _id: 'rest-4', restaurant: { _id: 'rest-4', name: '라이너스 바베큐', category: '양식', address: '서울 이태원' }},
-              { _id: 'rest-23', restaurant: { _id: 'rest-23', name: '바토스', category: '멕시칸', address: '서울 이태원' }},
-              { _id: 'rest-24', restaurant: { _id: 'rest-24', name: '카사블랑카', category: '모로칸', address: '서울 이태원' }},
-              { _id: 'rest-25', restaurant: { _id: 'rest-25', name: '페트라', category: '중동음식', address: '서울 이태원' }}
-            ],
-            tags: ['이태원', '세계음식', '이국적'],
-            coverImage: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop'
-          }
-        ];
+          // 팔로잉하는 사람이 없을 때 빈 배열 반환
+          filteredLists = [];
         }
       } else if (activeFilter === 'similar') {
         // 취향 매칭 - 서비스 준비중
         filteredLists = [];
       }
       
+      console.log('Setting playlists:', filteredLists.length, 'items for filter:', activeFilter);
       setPlaylists(filteredLists.slice(0, 6));
     } catch (error) {
       console.error('Error fetching playlists:', error);
@@ -322,6 +265,45 @@ const MobileHomeSoundCloud: React.FC = () => {
     }
   };
 
+  const handleSaveToggle = (playlistId: string) => {
+    if (!user) {
+      toast.error('로그인이 필요합니다');
+      navigate('/login');
+      return;
+    }
+
+    // 플레이리스트 찾기
+    const playlist = playlists.find(p => p._id === playlistId);
+    
+    setSavedPlaylists(prev => {
+      const newSet = new Set(prev);
+      let saved;
+      if (newSet.has(playlistId)) {
+        newSet.delete(playlistId);
+        saved = false;
+      } else {
+        newSet.add(playlistId);
+        saved = true;
+      }
+      
+      // localStorage에 ID만 저장
+      localStorage.setItem(`saved_playlists_${user._id}`, JSON.stringify(Array.from(newSet)));
+      
+      // 플레이리스트 전체 데이터도 저장 (allPlaylists 업데이트)
+      if (saved && playlist) {
+        const allPlaylistsData = JSON.parse(localStorage.getItem('allPlaylists') || '[]');
+        const exists = allPlaylistsData.some((p: any) => p._id === playlist._id);
+        if (!exists) {
+          allPlaylistsData.push(playlist);
+          localStorage.setItem('allPlaylists', JSON.stringify(allPlaylistsData));
+        }
+      }
+      
+      toast.success(saved ? '플레이리스트 저장됨!' : '저장 취소');
+      return newSet;
+    });
+  };
+
   const handleFollowUser = (userId: string, username: string, userDetails?: any) => {
     const isFollowed = isFollowing(userId);
     
@@ -334,8 +316,9 @@ const MobileHomeSoundCloud: React.FC = () => {
     }
   };
 
-  const PlaylistCard = ({ playlist }: { playlist: any }) => {
+  const PlaylistCard = ({ playlist, index }: { playlist: any; index: number }) => {
     const isLiked = likedPlaylists.has(playlist._id);
+    const isSaved = savedPlaylists.has(playlist._id);
     const [localLikeCount, setLocalLikeCount] = useState(() => {
       const baseCount = Array.isArray(playlist.likes) ? playlist.likes.length : (playlist.likes || playlist.likeCount || 0);
       const storedCount = syncStorage.getLikeCount(`playlist_${playlist._id}`);
@@ -353,16 +336,12 @@ const MobileHomeSoundCloud: React.FC = () => {
       };
     }, [playlist._id]);
 
-    const getPlaylistImage = () => {
+    const getPlaylistImageUrl = () => {
+      // 이미 coverImage가 있다면 그것을 사용
       if (playlist.coverImage) return playlist.coverImage;
-      // 카테고리별 기본 이미지
-      const defaultImages: { [key: string]: string } = {
-        '흑백요리사': 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
-        '수요미식회': 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=400&h=300&fit=crop',
-        '미쉐린스타': 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=400&h=300&fit=crop',
-        '백종원의3대천왕': 'https://images.unsplash.com/photo-1554679665-f5537f187268?w=400&h=300&fit=crop'
-      };
-      return defaultImages[playlist.certification] || 'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=400&h=300&fit=crop&q=80';
+      
+      // 새로운 이미지 함수 사용 - 플레이리스트의 제목과 설명을 기반으로 적절한 이미지 선택
+      return getUniquePlaylistImage(playlist);
     };
 
     const getRestaurantNames = () => {
@@ -436,7 +415,7 @@ const MobileHomeSoundCloud: React.FC = () => {
           }}
         >
           <img
-            src={getPlaylistImage()}
+            src={getPlaylistImageUrl()}
             alt={playlist.name}
             className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
@@ -504,39 +483,48 @@ const MobileHomeSoundCloud: React.FC = () => {
             {playlist.description || '맛집 큐레이션'}
           </p>
           
-          {/* 크리에이터 정보 및 팔로우 버튼 */}
+          {/* 크리에이터 정보 */}
           {(playlist.createdBy || playlist.creator) && (
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-gray-500">
-                by {(playlist.createdBy || playlist.creator).username}
+                by <span 
+                  className="font-medium text-gray-700 hover:text-orange-600 cursor-pointer transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // 작성자 프로필로 이동
+                    const creator = playlist.createdBy || playlist.creator;
+                    if (creator.username) {
+                      navigate(`/profile/${creator.username}`);
+                    }
+                  }}
+                >
+                  {(playlist.createdBy || playlist.creator).username}
+                </span>
                 {(playlist.createdBy || playlist.creator).isVerified && ' ✓'}
               </p>
-              {typeof (playlist.createdBy || playlist.creator) === 'object' && (
+              
+              {/* 플레이리스트 액션 버튼들 */}
+              <div className="flex items-center gap-2">
+                {/* 저장 버튼 */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    const user = playlist.createdBy || playlist.creator;
-                    handleFollowUser(user._id, user.username, user);
+                    handleSaveToggle(playlist._id);
                   }}
-                  className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all transform hover:scale-105 ${
-                    isFollowing((playlist.createdBy || playlist.creator)._id) ?
-                    'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md' :
-                    'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md hover:shadow-lg'
+                  className={`p-1.5 rounded-full transition-all ${
+                    isSaved ?
+                    'text-green-600 bg-green-50' :
+                    'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                   }`}
+                  title={isSaved ? '저장됨' : '플레이리스트 저장'}
                 >
-                  {isFollowing((playlist.createdBy || playlist.creator)._id) ? (
-                    <>
-                      <UserMinusIcon className="w-3 h-3" />
-                      <span>팔로잉</span>
-                    </>
+                  {isSaved ? (
+                    <BookmarkIconSolid className="w-4 h-4" />
                   ) : (
-                    <>
-                      <UserPlusIcon className="w-3 h-3" />
-                      <span>팔로우</span>
-                    </>
+                    <BookmarkIcon className="w-4 h-4" />
                   )}
                 </button>
-              )}
+              </div>
             </div>
           )}
           
@@ -620,7 +608,7 @@ const MobileHomeSoundCloud: React.FC = () => {
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            팔로잉
+            친구맛집
           </button>
           <button
             onClick={() => setActiveFilter('similar')}
@@ -645,7 +633,7 @@ const MobileHomeSoundCloud: React.FC = () => {
           {activeFilter === 'following' && (
             <p className="text-xs text-gray-600">
               <HeartIcon className="w-4 h-4 inline mr-1 text-red-500" />
-              내가 팔로우하는 사람들이 인증한 맛집
+              내가 팔로우하는 친구들의 맛집 리스트
             </p>
           )}
           {activeFilter === 'similar' && (
@@ -659,8 +647,8 @@ const MobileHomeSoundCloud: React.FC = () => {
         {/* 플레이리스트 표시 */}
         {playlists.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
-            {playlists.map((playlist) => (
-              <PlaylistCard key={playlist._id} playlist={playlist} />
+            {playlists.map((playlist, index) => (
+              <PlaylistCard key={playlist._id} playlist={playlist} index={index} />
             ))}
           </div>
         ) : (
@@ -685,7 +673,7 @@ const MobileHomeSoundCloud: React.FC = () => {
             ) : (
               <p className="text-gray-500 text-sm">
                 {activeFilter === 'following' 
-                  ? '팔로우하는 사람이 없습니다. 다른 사용자를 팔로우해보세요!'
+                  ? '팔로우하는 친구가 없습니다. 맛집 잘 아는 친구들을 팔로우해보세요!'
                   : '아직 등록된 맛집이 없습니다.'}
               </p>
             )}

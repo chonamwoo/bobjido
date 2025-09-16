@@ -14,6 +14,7 @@ const {
   getFollowers,
   getFollowing,
   getUserProfile,
+  getAvailableUsers,
 } = require('../controllers/userController');
 
 const storage = multer.diskStorage({
@@ -43,6 +44,9 @@ const upload = multer({
     }
   }
 });
+
+// 채팅 가능한 사용자 목록 (맨 위에 위치 - 더 구체적인 경로)
+router.get('/available', optionalAuth, getAvailableUsers);
 
 router.get('/:username', optionalAuth, getUser);
 router.get('/:username/profile', optionalAuth, getUserProfile);

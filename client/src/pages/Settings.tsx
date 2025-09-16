@@ -14,7 +14,9 @@ import {
   ArrowLeftIcon,
   SparklesIcon,
   HeartIcon,
-  CogIcon
+  CogIcon,
+  MapPinIcon,
+  LinkIcon
 } from '@heroicons/react/24/outline';
 import { useIsMobile } from '../hooks/useIsMobile';
 
@@ -30,6 +32,11 @@ const Settings: React.FC = () => {
     username: user?.username || '',
     email: user?.email || '',
     bio: user?.bio || ''
+  });
+  const [naverConnected, setNaverConnected] = useState(false);
+  const [syncSettings, setSyncSettings] = useState({
+    autoSync: false,
+    syncFrequency: 'daily'
   });
 
   // 프로필 정보 업데이트
@@ -215,6 +222,118 @@ const Settings: React.FC = () => {
             {updateProfileMutation.isPending ? '저장 중...' : '변경사항 저장'}
           </button>
         </form>
+      </div>
+
+      {/* 네이버 MY플레이스 연동 */}
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+        <div className="flex items-center mb-6">
+          <MapPinIcon className="w-6 h-6 mr-3 text-green-600" />
+          <h2 className="text-xl font-semibold">네이버 MY플레이스 연동</h2>
+        </div>
+
+        {!naverConnected ? (
+          <div>
+            <p className="text-gray-600 mb-6">
+              네이버 MY플레이스에 저장한 맛집들을 BobMap으로 가져올 수 있습니다.
+              연동하시면 자동으로 동기화됩니다.
+            </p>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <h3 className="font-semibold text-green-800 mb-2">연동 시 혜택</h3>
+              <ul className="space-y-1 text-sm text-green-700">
+                <li>• 네이버 MY플레이스의 모든 저장 장소 자동 가져오기</li>
+                <li>• 주기적 자동 동기화 (새로 추가한 장소도 자동 반영)</li>
+                <li>• 카테고리별 자동 분류</li>
+                <li>• 중복 장소 자동 감지 및 제거</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => navigate('/import/naver')}
+              className="w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <LinkIcon className="w-5 h-5" />
+              네이버 계정 연동하기
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-green-800 font-semibold">연동 완료</span>
+                <span className="text-sm text-green-600">
+                  마지막 동기화: {new Date().toLocaleString('ko-KR')}
+                </span>
+              </div>
+              <p className="text-sm text-green-700 mb-3">
+                네이버 MY플레이스와 연동되었습니다.
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={syncSettings.autoSync}
+                    onChange={(e) => setSyncSettings({
+                      ...syncSettings,
+                      autoSync: e.target.checked
+                    })}
+                    className="mr-3"
+                  />
+                  <div>
+                    <p className="font-medium">자동 동기화</p>
+                    <p className="text-sm text-gray-600">
+                      새로운 장소를 자동으로 가져옵니다
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {syncSettings.autoSync && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    동기화 주기
+                  </label>
+                  <select
+                    value={syncSettings.syncFrequency}
+                    onChange={(e) => setSyncSettings({
+                      ...syncSettings,
+                      syncFrequency: e.target.value
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  >
+                    <option value="realtime">실시간</option>
+                    <option value="hourly">매시간</option>
+                    <option value="daily">매일</option>
+                    <option value="weekly">매주</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => navigate('/import/naver')}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                수동 동기화
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm('네이버 연동을 해제하시겠습니까?')) {
+                    setNaverConnected(false);
+                    toast.success('네이버 연동이 해제되었습니다.');
+                  }
+                }}
+                className="flex-1 border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors"
+              >
+                연동 해제
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 계정 보안 */}

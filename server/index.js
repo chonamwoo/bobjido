@@ -189,6 +189,10 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bobmap', 
   // New social routes
   const socialRoutes = require('./routes/socialRoutes');
   app.use('/api/social', socialRoutes);
+  
+  // Import routes for Naver integration
+  app.use('/api/import', require('./routes/importRoutes'));
+  
   console.log('✅ 라우트 등록 완료');
 })
 .catch((err) => {

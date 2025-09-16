@@ -112,4 +112,32 @@ if (process.env.KAKAO_CLIENT_ID) {
   );
 }
 
+// Naver OAuth routes - only if NAVER_CLIENT_ID is configured
+if (process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET) {
+  router.get('/naver', passport.authenticate('naver'));
+
+  router.get('/naver/callback',
+    passport.authenticate('naver', { session: false }),
+    (req, res) => {
+      console.log('🟢 Naver callback hit!');
+      console.log('CLIENT_URL from env:', process.env.CLIENT_URL);
+      
+      const token = generateToken(req.user._id);
+      const user = {
+        _id: req.user._id,
+        username: req.user.username,
+        email: req.user.email,
+        profileImage: req.user.profileImage,
+        onboardingCompleted: true  // MVP에서는 온보딩 없음
+      };
+    
+      // auth-bridge.html로 리다이렉트 (토큰과 사용자 정보 포함)
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      const redirectUrl = `${clientUrl}/auth-bridge.html?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`;
+      console.log('🟢 Redirecting to:', redirectUrl);
+      res.redirect(redirectUrl);
+    }
+  );
+}
+
 module.exports = router;
