@@ -279,6 +279,22 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false
+  },
+  verifiedAt: {
+    type: Date,
+    default: null
+  },
+  verificationNote: {
+    type: String,
+    default: ''
+  },
   lastActive: {
     type: Date,
     default: Date.now

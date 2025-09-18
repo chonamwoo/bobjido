@@ -29,7 +29,7 @@ async function checkRestaurantCount() {
       console.log(`   주소: ${r.address}`);
       console.log(`   가격대: ${r.priceRange}`);
       console.log(`   평점: ${r.averageRating?.toFixed(1)}`);
-      console.log(`   리뷰: ${r.reviewCount}개`);
+      console.log(`   리뷰: ${r.reviewCount}개`);11
       if (r.dnaProfile) {
         console.log(`   분위기: ${r.dnaProfile.atmosphere?.join(', ') || 'N/A'}`);
         console.log(`   음식스타일: ${r.dnaProfile.foodStyle?.join(', ') || 'N/A'}`);
@@ -37,7 +37,7 @@ async function checkRestaurantCount() {
         console.log(`   데이트: ${r.dnaProfile.dateSpot}/5`);
       }
     });
-    
+    1
   } catch (error) {
     console.error('Error:', error);
   } finally {

@@ -79,17 +79,13 @@ const MobileLayout: React.FC = () => {
         <div className="pt-safe"> {/* iPhone notch/Dynamic Island safe area */}
           <div className="flex items-center justify-between h-12 px-3 max-w-full">
             <div className="flex items-center flex-1">
-              {!isHomePage ? (
+              {!isHomePage && (
                 <button
                   onClick={() => navigate(-1)}
                   className="p-1.5 -ml-1.5 mr-2"
                 >
                   <ChevronLeftIcon className="w-5 h-5 text-gray-700" />
                 </button>
-              ) : (
-                <span className="text-base font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-                  BobMap
-                </span>
               )}
             </div>
             

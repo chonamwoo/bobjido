@@ -13,6 +13,7 @@ import {
   StarIcon,
   FunnelIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   PaperAirplaneIcon,
   PencilSquareIcon,
   BookmarkIcon,
@@ -1515,15 +1516,11 @@ const RestaurantMapV3: React.FC = () => {
           </div>
         )}
 
-        {/* 작성자의 다른 리스트 탐색 모달 */}
+        {/* 작성자 프로필 미리보기 모달 */}
         {selectedCreatorForExplore && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
             <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
               <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h3 className="text-xl font-bold">{selectedCreatorForExplore.username}님의 리스트</h3>
-                  <p className="text-sm text-gray-500">이 작성자의 다른 맛집 리스트</p>
-                </div>
                 <button
                   onClick={() => setSelectedCreatorForExplore(null)}
                   className="p-2 hover:bg-gray-100 rounded-lg"
@@ -1532,24 +1529,118 @@ const RestaurantMapV3: React.FC = () => {
                 </button>
               </div>
               
+              {/* 프로필 정보 섹션 */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="w-24 h-24 bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-center mb-4">
+                  <span className="text-3xl font-bold text-white">
+                    {selectedCreatorForExplore.username?.[0]?.toUpperCase() || '?'}
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">{selectedCreatorForExplore.username}</h3>
+                <p className="text-sm text-gray-600 mt-2 text-center">
+                  {selectedCreatorForExplore.bio ||
+                   (selectedCreatorForExplore.username === '흑백요리사' ? 'Netflix 흑백요리사 출연 셰프들의 레스토랑을 소개합니다' :
+                    selectedCreatorForExplore.username === '수요미식회' ? 'tvN 수요미식회가 선정한 진짜 맛집을 공유합니다' :
+                    selectedCreatorForExplore.username === '미쉐린가이드' ? '미쉐린 가이드가 선정한 최고의 레스토랑' :
+                    selectedCreatorForExplore.username === '백종원의3대천왕' ? '백종원이 선정한 각 분야 최고의 맛집' :
+                    selectedCreatorForExplore.username === '생활의달인' ? 'SBS 생활의달인이 인정한 장인의 맛' :
+                    '맛집 큐레이터')}
+                </p>
+                {selectedCreatorForExplore.isVerified && (
+                  <div className="flex items-center justify-center gap-1 mt-2">
+                    <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-xs text-blue-500 font-medium">인증됨</span>
+                  </div>
+                )}
+                
+                {/* 통계 정보 */}
+                <div className="flex gap-6 mt-4">
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-gray-900">
+                      {certifiedRestaurantLists.filter((list: any) => {
+                        if (typeof list.createdBy === 'object') {
+                          return list.createdBy._id === selectedCreatorForExplore._id ||
+                                 list.createdBy.username === selectedCreatorForExplore.username;
+                        }
+                        return false;
+                      }).length}
+                    </p>
+                    <p className="text-xs text-gray-500">리스트</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-gray-900">
+                      {(() => {
+                        const lists = certifiedRestaurantLists.filter((list: any) => {
+                          if (typeof list.createdBy === 'object') {
+                            return list.createdBy._id === selectedCreatorForExplore._id ||
+                                   list.createdBy.username === selectedCreatorForExplore.username;
+                          }
+                          return false;
+                        });
+                        return lists.reduce((sum: number, list: any) => 
+                          sum + (list.restaurants?.length || 0), 0
+                        );
+                      })()}
+                    </p>
+                    <p className="text-xs text-gray-500">맛집</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-gray-900">
+                      {selectedCreatorForExplore.followers?.length || 
+                       (selectedCreatorForExplore.username === '흑백요리사' ? 3421 :
+                        selectedCreatorForExplore.username === '수요미식회' ? 2987 :
+                        selectedCreatorForExplore.username === '미쉐린가이드' ? 4567 :
+                        selectedCreatorForExplore.username === '백종원의3대천왕' ? 2234 :
+                        selectedCreatorForExplore.username === '생활의달인' ? 1876 : 0)}
+                    </p>
+                    <p className="text-xs text-gray-500">팔로워</p>
+                  </div>
+                </div>
+                
+                {/* 팔로우 버튼 */}
+                <button
+                  onClick={() => {
+                    handleFollowUser(
+                      selectedCreatorForExplore._id,
+                      selectedCreatorForExplore.username,
+                      selectedCreatorForExplore
+                    );
+                  }}
+                  className={`mt-4 px-6 py-2 rounded-full font-medium transition-all ${
+                    isFollowing(selectedCreatorForExplore._id)
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90'
+                  }`}
+                >
+                  {isFollowing(selectedCreatorForExplore._id) ? '팔로잉' : '팔로우'}
+                </button>
+              </div>
+              
+              {/* 최근 리스트 섹션 */}
               <div className="flex-1 overflow-y-auto">
+                <h4 className="font-semibold text-sm text-gray-700 mb-3">최근 만든 리스트</h4>
                 {(() => {
-                  // 작성자의 다른 리스트 찾기
-                  const creatorLists = certifiedRestaurantLists.filter((list: any) => 
-                    typeof list.createdBy === 'object' && 
-                    list.createdBy._id === selectedCreatorForExplore._id
-                  );
+                  // 더 유연한 매칭 - username 기반으로도 찾기
+                  const creatorLists = certifiedRestaurantLists.filter((list: any) => {
+                    if (typeof list.createdBy === 'object') {
+                      return list.createdBy._id === selectedCreatorForExplore._id ||
+                             list.createdBy.username === selectedCreatorForExplore.username;
+                    }
+                    return false;
+                  }).slice(0, 3);
                   
                   if (creatorLists.length === 0) {
                     return (
-                      <div className="text-center py-8 text-gray-500">
-                        <p>이 작성자의 다른 리스트가 없습니다</p>
+                      <div className="text-center py-4 text-gray-500">
+                        <p className="text-sm">아직 만든 리스트가 없습니다</p>
                       </div>
                     );
                   }
                   
                   return (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {creatorLists.map((list: any) => (
                         <div
                           key={list._id}
@@ -1557,13 +1648,15 @@ const RestaurantMapV3: React.FC = () => {
                             setSelectedList(list);
                             setSelectedCreatorForExplore(null);
                           }}
-                          className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                          className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                         >
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-semibold text-sm">{list.name}</h4>
-                            <span className="text-xs text-gray-500">📍 {list.restaurants?.length || 0}개</span>
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h5 className="font-medium text-sm text-gray-900">{list.title || list.name}</h5>
+                              <p className="text-xs text-gray-500 mt-1">📍 {list.restaurants?.length || 0}개 맛집</p>
+                            </div>
+                            <ChevronRightIcon className="w-4 h-4 text-gray-400" />
                           </div>
-                          <p className="text-xs text-gray-600 line-clamp-2">{list.description}</p>
                         </div>
                       ))}
                     </div>
@@ -1574,12 +1667,14 @@ const RestaurantMapV3: React.FC = () => {
               <div className="mt-4 pt-4 border-t">
                 <button
                   onClick={() => {
-                    navigate(`/profile/${selectedCreatorForExplore.username}`);
+                    // Use userId if available for navigation (to handle Korean names), fallback to username
+                    const profileId = selectedCreatorForExplore.userId || selectedCreatorForExplore.username;
+                    navigate(`/profile/${profileId}`);
                     setSelectedCreatorForExplore(null);
                   }}
-                  className="w-full py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                  className="w-full py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
                 >
-                  프로필 보러가기
+                  전체 프로필 보기
                 </button>
               </div>
             </div>

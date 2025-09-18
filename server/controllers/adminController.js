@@ -119,7 +119,9 @@ const getUsers = async (req, res) => {
       .sort(sort)
       .limit(limit * 1)
       .skip((page - 1) * limit)
-      .select('-password');
+      .select('-password')
+      .populate('followers.user', 'username')
+      .populate('following.user', 'username');
     
     const total = await User.countDocuments(query);
     
@@ -713,11 +715,69 @@ const createSuperAdmin = async () => {
   }
 };
 
+// 사용자 인증 상태 변경
+const verifyUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { isVerified, verificationNote } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { 
+        isVerified,
+        verifiedAt: isVerified ? new Date() : null,
+        verificationNote: verificationNote || ''
+      },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: '사용자를 찾을 수 없습니다' });
+    }
+
+    res.json({
+      message: `사용자가 ${isVerified ? '인증' : '인증 취소'}되었습니다`,
+      user
+    });
+  } catch (error) {
+    console.error('Verify user error:', error);
+    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+  }
+};
+
+// 사용자 관리자 권한 변경
+const makeAdmin = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { isAdmin } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isAdmin },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: '사용자를 찾을 수 없습니다' });
+    }
+
+    res.json({
+      message: `사용자의 관리자 권한이 ${isAdmin ? '부여' : '제거'}되었습니다`,
+      user
+    });
+  } catch (error) {
+    console.error('Make admin error:', error);
+    res.status(500).json({ message: '서버 오류가 발생했습니다' });
+  }
+};
+
 module.exports = {
   adminLogin,
   getDashboardStats,
   getUsers,
   updateUserStatus,
+  verifyUser,
+  makeAdmin,
   getPlaylists,
   deletePlaylist,
   getRestaurants,

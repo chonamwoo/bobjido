@@ -46,6 +46,7 @@ const MobilePlaylistDetail: React.FC = () => {
   });
   const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
   const [showRestaurantPopup, setShowRestaurantPopup] = useState(false);
+  const [imageError, setImageError] = useState(false);
   // viewMode 제거 - 항상 지도만 표시
   const [likedRestaurants, setLikedRestaurants] = useState<string[]>(() => {
     const likes = localStorage.getItem('likedRestaurants');
@@ -62,52 +63,428 @@ const MobilePlaylistDetail: React.FC = () => {
   const { data: playlist, isLoading, error } = useQuery({
     queryKey: ['playlist', id],
     queryFn: async () => {
-      // 인증 맛집 데이터 확인 (새로운 구조)
-      if (id?.startsWith('certified-')) {
-        const certifiedData = localStorage.getItem('certified_restaurants_data');
-        if (certifiedData) {
-          const parsedData = JSON.parse(certifiedData);
-          const categoryKey = id.replace('certified-', '');
-          const category = parsedData.categories[categoryKey];
-          if (category) {
-            // 카테고리를 플레이리스트 형식으로 변환
-            return {
-              _id: id,
-              name: category.title,
-              title: `${category.icon} ${category.title}`,
-              description: category.description,
-              creator: { username: 'Admin', isVerified: true },
-              certification: category.title,
-              restaurants: category.restaurants.map((r: any) => ({
-                _id: r.id,
-                restaurant: {
-                  _id: r.id,
-                  name: r.name,
-                  category: r.category,
-                  address: r.address,
-                  phoneNumber: r.phoneNumber,
-                  priceRange: r.priceRange,
-                  rating: r.rating,
-                  image: r.image,
-                  coordinates: { lat: 37.5665, lng: 126.9780 } // 기본 좌표
-                }
-              })),
-              likeCount: category.likeCount || 0,
-              viewCount: category.viewCount || 0,
-              tags: [category.title],
-              coverImage: category.restaurants[0]?.image || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop'
-            };
+      // friend- prefix 처리 (친구 플레이리스트)
+      if (id?.startsWith('friend-')) {
+        // friend- prefix를 제거하고 실제 플레이리스트 찾기
+        const parts = id.split('-');
+        const username = parts.slice(1, -1).join('-'); // friend-{username}-{index}에서 username 추출
+        
+        // localStorage에서 해당 사용자의 플레이리스트 찾기
+        const localPlaylists = localStorage.getItem('localPlaylists');
+        if (localPlaylists) {
+          const playlists = JSON.parse(localPlaylists);
+          const userPlaylist = playlists.find((p: any) => 
+            p.createdBy?.username === username || p.creator === username
+          );
+          if (userPlaylist) {
+            return userPlaylist;
           }
         }
+        
+        // 인증 크리에이터인지 확인
+        const certifiedCreators = ['흑백요리사', '미슐랭 가이드', '블루리본', '백종원', '수요미식회', '에드워드 리'];
+        if (certifiedCreators.includes(username)) {
+          const certPlaylist = certifiedRestaurantLists.find((p: any) => p.createdBy?.username === username);
+          if (certPlaylist) {
+            return certPlaylist;
+          }
+        }
+        
+        // 플레이리스트가 없으면 기본 더미 데이터 반환
+        return {
+          _id: id,
+          name: `${username}의 맛집 리스트`,
+          title: `${username}의 맛집 컬렉션`,
+          description: `${username}님이 추천하는 맛집들입니다`,
+          createdBy: { username: username, isVerified: false },
+          restaurants: [
+            { 
+              _id: `${username}-rest-1`,
+              restaurant: {
+                _id: `${username}-rest-1`,
+                name: '스시 오마카세',
+                category: '일식',
+                rating: 4.8,
+                address: '서울 강남구 청담동',
+                priceRange: '₩₩₩₩',
+                image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                coordinates: { lat: 37.5226894, lng: 127.0423736 }
+              },
+              reason: `${username}님이 강력 추천하는 오마카세`
+            }
+          ],
+          coverImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600',
+          likeCount: 0,
+          viewCount: 0,
+          tags: ['추천', '맛집', username]
+        };
       }
       
-      // Admin에서 수정한 데이터 확인
-      const adminPlaylists = localStorage.getItem('adminPlaylists');
-      if (adminPlaylists) {
-        const playlists = JSON.parse(adminPlaylists);
-        const adminPlaylist = playlists.find((p: any) => p._id === id);
-        if (adminPlaylist) {
-          return adminPlaylist;
+      // cert-1, cert-2 등의 인증 맛집 데이터 직접 가져오기
+      if (id?.startsWith('cert-')) {
+        // MobileHomeSoundCloud에서 사용하는 동일한 더미 데이터를 가져옵니다
+        const certifiedLists = [
+          {
+            _id: 'cert-1',
+            name: '미슐랭 가이드 서울 2024',
+            title: '미슐랭 가이드 서울 2024',
+            description: '미슐랭이 인정한 서울의 맛집들',
+            createdBy: { username: '미슐랭 가이드', isVerified: true },
+            restaurants: [
+              { 
+                _id: 'rest-1',
+                restaurant: {
+                  _id: 'rest-1',
+                  name: '정식당',
+                  category: '한식',
+                  rating: 4.8,
+                  address: '서울 강남구 선릉로 158길 11',
+                  priceRange: '₩₩₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                  coordinates: { lat: 37.5226894, lng: 127.0423736 }
+                },
+                reason: '한국 전통의 맛을 현대적으로 재해석한 미슐랭 2스타'
+              },
+              { 
+                _id: 'rest-2',
+                restaurant: {
+                  _id: 'rest-2',
+                  name: '라연',
+                  category: '한식',
+                  rating: 4.9,
+                  address: '서울 중구 퇴계로 130-3',
+                  priceRange: '₩₩₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20210528_110/1622132045820xwKQl_JPEG/PD9ND_BMREH4uyUOWJOWHOA3.jpg',
+                  coordinates: { lat: 37.5597, lng: 127.0037 }
+                },
+                reason: '신라호텔의 품격있는 한정식, 미슐랭 3스타'
+              },
+              { 
+                _id: 'rest-3',
+                restaurant: {
+                  _id: 'rest-3',
+                  name: '가온',
+                  category: '한식',
+                  rating: 4.7,
+                  address: '서울 강남구 도산대로 317',
+                  priceRange: '₩₩₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20221210_227/1670687308798X6Xqr_JPEG/1670687285779.jpg',
+                  coordinates: { lat: 37.5233, lng: 127.0387 }
+                },
+                reason: '한국의 사계절을 담은 창의적 요리'
+              }
+            ],
+            coverImage: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800',
+            likeCount: 0,
+            viewCount: 0,
+            tags: ['미슐랭', '파인다이닝', '서울']
+          },
+          {
+            _id: 'cert-2',
+            name: '백종원의 골목식당 BEST',
+            title: '백종원의 골목식당 BEST',
+            description: '백종원이 극찬한 진짜 맛집들',
+            createdBy: { username: '백종원', isVerified: true },
+            restaurants: [
+              {
+                _id: 'rest-4',
+                restaurant: {
+                  _id: 'rest-4',
+                  name: '원조쌈밥집',
+                  category: '한식',
+                  rating: 4.5,
+                  address: '서울 종로구 돈화문로 30-1',
+                  priceRange: '₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200622_4/1592834492785WUY3r_JPEG/q1RIzB7E1rLlcn3zx0qDZBP1.jpg',
+                  coordinates: { lat: 37.5738, lng: 126.9988 }
+                },
+                reason: '쌈밥의 정석, 신선한 쌈 채소와 된장찌개가 일품'
+              },
+              {
+                _id: 'rest-5',
+                restaurant: {
+                  _id: 'rest-5',
+                  name: '홍대족발',
+                  category: '족발',
+                  rating: 4.6,
+                  address: '서울 마포구 와우산로21길 31-8',
+                  priceRange: '₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200622_4/1592834492785WUY3r_JPEG/q1RIzB7E1rLlcn3zx0qDZBP1.jpg',
+                  coordinates: { lat: 37.5534, lng: 126.9229 }
+                },
+                reason: '쫄깃한 족발과 새콤달콤한 막국수 조합'
+              },
+              {
+                _id: 'rest-6',
+                restaurant: {
+                  _id: 'rest-6',
+                  name: '을지로골뱅이',
+                  category: '포차',
+                  rating: 4.4,
+                  address: '서울 중구 을지로14길 2',
+                  priceRange: '₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200622_4/1592834492785WUY3r_JPEG/q1RIzB7E1rLlcn3zx0qDZBP1.jpg',
+                  coordinates: { lat: 37.5657, lng: 126.9911 }
+                },
+                reason: '매콤한 골뱅이무침과 소면, 을지로 직장인들의 성지'
+              }
+            ],
+            coverImage: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800',
+            likeCount: 0,
+            viewCount: 0,
+            tags: ['백종원', '골목식당', '맛집']
+          },
+          {
+            _id: 'cert-3',
+            name: '성시경의 먹을텐데 Pick',
+            title: '성시경의 먹을텐데 Pick',
+            description: '성시경이 사랑한 맛집 리스트',
+            createdBy: { username: '성시경', isVerified: true },
+            restaurants: [
+              {
+                _id: 'rest-7',
+                restaurant: {
+                  _id: 'rest-7',
+                  name: '스시효',
+                  category: '일식',
+                  rating: 4.8,
+                  address: '서울 강남구 도산대로67길 13-5',
+                  priceRange: '₩₩₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                  coordinates: { lat: 37.5263, lng: 127.0380 }
+                },
+                reason: '정통 에도마에 스시, 성시경이 극찬한 오마카세'
+              },
+              {
+                _id: 'rest-8',
+                restaurant: {
+                  _id: 'rest-8',
+                  name: '한남북엇국',
+                  category: '한식',
+                  rating: 4.6,
+                  address: '서울 용산구 한남대로20길 31',
+                  priceRange: '₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20210528_110/1622132045820xwKQl_JPEG/PD9ND_BMREH4uyUOWJOWHOA3.jpg',
+                  coordinates: { lat: 37.5345, lng: 127.0106 }
+                },
+                reason: '시원한 북엇국과 깔끔한 밑반찬'
+              },
+              {
+                _id: 'rest-9',
+                restaurant: {
+                  _id: 'rest-9',
+                  name: '평양면옥',
+                  category: '냉면',
+                  rating: 4.7,
+                  address: '서울 중구 장충단로 207',
+                  priceRange: '₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20221210_227/1670687308798X6Xqr_JPEG/1670687285779.jpg',
+                  coordinates: { lat: 37.5608, lng: 127.0074 }
+                },
+                reason: '전통 평양냉면, 깔끔한 육수가 일품'
+              }
+            ],
+            coverImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800',
+            likeCount: 0,
+            viewCount: 0,
+            tags: ['성시경', '먹을텐데', '방송맛집']
+          },
+          {
+            _id: 'cert-4',
+            name: '수요미식회 레전드',
+            title: '수요미식회 레전드',
+            description: '수요미식회 역대 최고 평점 맛집',
+            createdBy: { username: '수요미식회', isVerified: true },
+            restaurants: [
+              {
+                _id: 'rest-10',
+                restaurant: {
+                  _id: 'rest-10',
+                  name: '을밀대',
+                  category: '평양냉면',
+                  rating: 4.9,
+                  address: '서울 마포구 독막로 26-10',
+                  priceRange: '₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                  coordinates: { lat: 37.5496, lng: 126.9147 }
+                },
+                reason: '평양냉면의 진수, 담백한 육수와 쫄깃한 면발'
+              },
+              {
+                _id: 'rest-11',
+                restaurant: {
+                  _id: 'rest-11',
+                  name: '우래옥',
+                  category: '평양냉면',
+                  rating: 4.8,
+                  address: '서울 중구 창경궁로 62-29',
+                  priceRange: '₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20210528_110/1622132045820xwKQl_JPEG/PD9ND_BMREH4uyUOWJOWHOA3.jpg',
+                  coordinates: { lat: 37.5724, lng: 126.9973 }
+                },
+                reason: '1946년 전통의 평양냉면 명가'
+              },
+              {
+                _id: 'rest-12',
+                restaurant: {
+                  _id: 'rest-12',
+                  name: '필동면옥',
+                  category: '평양냉면',
+                  rating: 4.7,
+                  address: '서울 중구 서애로 26',
+                  priceRange: '₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20221210_227/1670687308798X6Xqr_JPEG/1670687285779.jpg',
+                  coordinates: { lat: 37.5593, lng: 126.9942 }
+                },
+                reason: '진한 육수와 메밀향 가득한 면발'
+              }
+            ],
+            coverImage: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
+            likeCount: 0,
+            viewCount: 0,
+            tags: ['수요미식회', 'TV맛집', '레전드']
+          },
+          {
+            _id: 'cert-5',
+            name: '흑백요리사 우승자의 Pick',
+            title: '흑백요리사 우승자의 Pick',
+            description: '넷플릭스 흑백요리사 우승자 추천 맛집',
+            createdBy: { username: '에드워드 리', isVerified: true },
+            restaurants: [
+              {
+                _id: 'rest-13',
+                restaurant: {
+                  _id: 'rest-13',
+                  name: '밍글스',
+                  category: '모던한식',
+                  rating: 4.9,
+                  address: '서울 강남구 도산대로67길 19',
+                  priceRange: '₩₩₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                  coordinates: { lat: 37.5254, lng: 127.0384 }
+                },
+                reason: '한국 식재료로 만든 창의적인 모던 한식'
+              },
+              {
+                _id: 'rest-14',
+                restaurant: {
+                  _id: 'rest-14',
+                  name: '임프레션',
+                  category: '프렌치',
+                  rating: 4.8,
+                  address: '서울 강남구 도산대로55길 22',
+                  priceRange: '₩₩₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20210528_110/1622132045820xwKQl_JPEG/PD9ND_BMREH4uyUOWJOWHOA3.jpg',
+                  coordinates: { lat: 37.5235, lng: 127.0372 }
+                },
+                reason: '정통 프렌치에 한국적 해석을 더한 파인다이닝'
+              },
+              {
+                _id: 'rest-15',
+                restaurant: {
+                  _id: 'rest-15',
+                  name: '에빗룸',
+                  category: '모던유럽',
+                  rating: 4.7,
+                  address: '서울 강남구 청담동 94-9',
+                  priceRange: '₩₩₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20221210_227/1670687308798X6Xqr_JPEG/1670687285779.jpg',
+                  coordinates: { lat: 37.5236, lng: 127.0446 }
+                },
+                reason: '혁신적인 요리와 아트같은 플레이팅'
+              }
+            ],
+            coverImage: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800',
+            likeCount: 0,
+            viewCount: 0,
+            tags: ['흑백요리사', '넷플릭스', '셰프추천']
+          }
+        ];
+        
+        const found = certifiedLists.find(p => p._id === id);
+        if (found) return found;
+      }
+      
+      // friend- 로 시작하는 친구 맛집 데이터
+      if (id?.startsWith('friend-')) {
+        const storedFollowing = localStorage.getItem('followingUsers');
+        const followingList = storedFollowing ? JSON.parse(storedFollowing) : [];
+        
+        // friend-empty 또는 특정 친구 플레이리스트 찾기
+        if (id === 'friend-empty') {
+          return {
+            _id: 'friend-empty',
+            name: '아직 팔로우한 친구가 없어요',
+            title: '친구를 팔로우해보세요',
+            description: '친구를 팔로우하면 그들의 맛집이 표시됩니다',
+            createdBy: { username: 'BobMap', isVerified: false },
+            restaurants: [],
+            coverImage: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800',
+            likeCount: 0,
+            viewCount: 0,
+            tags: []
+          };
+        }
+        
+        // 특정 친구의 플레이리스트 찾기
+        const friendMatch = id.match(/friend-(.+)-(\d+)/);
+        if (friendMatch) {
+          const username = friendMatch[1];
+          return {
+            _id: id,
+            name: `${username}의 맛집 리스트`,
+            title: `${username}의 맛집 컬렉션`,
+            description: `${username}님이 추천하는 맛집들입니다`,
+            createdBy: { username: username, isVerified: false },
+            restaurants: [
+              { 
+                _id: `${username}-rest-1`,
+                restaurant: {
+                  _id: `${username}-rest-1`,
+                  name: '스시 오마카세',
+                  category: '일식',
+                  rating: 4.8,
+                  address: '서울 강남구 청담동',
+                  priceRange: '₩₩₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                  coordinates: { lat: 37.5226894, lng: 127.0423736 }
+                },
+                reason: `${username}님이 강력 추천하는 오마카세`
+              },
+              { 
+                _id: `${username}-rest-2`,
+                restaurant: {
+                  _id: `${username}-rest-2`,
+                  name: '우래옥 평양냉면',
+                  category: '한식',
+                  rating: 4.5,
+                  address: '서울 중구 주교동',
+                  priceRange: '₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20210528_110/1622132045820xwKQl_JPEG/PD9ND_BMREH4uyUOWJOWHOA3.jpg',
+                  coordinates: { lat: 37.5631, lng: 127.0027 }
+                },
+                reason: '여름에 최고! 시원한 평양냉면'
+              },
+              { 
+                _id: `${username}-rest-3`,
+                restaurant: {
+                  _id: `${username}-rest-3`,
+                  name: '하동관 곰탕',
+                  category: '한식',
+                  rating: 4.3,
+                  address: '서울 중구 명동',
+                  priceRange: '₩₩',
+                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20221210_227/1670687308798X6Xqr_JPEG/1670687285779.jpg',
+                  coordinates: { lat: 37.5632, lng: 126.9869 }
+                },
+                reason: '든든한 한 끼, 진한 곰탕'
+              }
+            ],
+            coverImage: 'https://images.unsplash.com/photo-1559329007-40df8a9345d8?w=800',
+            likeCount: 0,
+            viewCount: 0,
+            tags: ['추천', '맛집', username]
+          };
         }
       }
       
@@ -132,7 +509,8 @@ const MobilePlaylistDetail: React.FC = () => {
         const response = await axios.get(`/api/playlists/${id}`);
         return response.data;
       } catch (err) {
-        throw new Error('맛집 리스트를 찾을 수 없습니다');
+        // 못 찾으면 기본 더미 데이터 반환
+        return null;
       }
     },
     enabled: !!id,
@@ -431,9 +809,10 @@ const MobilePlaylistDetail: React.FC = () => {
       {/* 헤더 이미지 */}
       <div className="relative h-[200px] overflow-hidden">
         <img
-          src={playlist.coverImage || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800'}
+          src={imageError ? 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800' : (playlist.coverImage || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800')}
           alt={playlist.title || playlist.name}
           className="w-full h-full object-cover"
+          onError={() => setImageError(true)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         

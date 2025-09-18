@@ -5,6 +5,8 @@ const {
   getDashboardStats,
   getUsers,
   updateUserStatus,
+  verifyUser,
+  makeAdmin,
   getPlaylists,
   deletePlaylist,
   getRestaurants,
@@ -27,6 +29,8 @@ router.get('/dashboard', getDashboardStats);
 // 사용자 관리
 router.get('/users', requirePermission('user_management'), getUsers);
 router.put('/users/:userId/status', requirePermission('user_management'), updateUserStatus);
+router.put('/users/:userId/verify', requirePermission('user_management'), verifyUser);
+router.put('/users/:userId/admin', requirePermission('user_management'), makeAdmin);
 
 // 플레이리스트 관리
 router.get('/playlists', requirePermission('playlist_management'), getPlaylists);

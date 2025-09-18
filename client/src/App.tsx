@@ -56,6 +56,7 @@ import RestaurantDataManager from './pages/RestaurantDataManager';
 import MyFollowingRestaurants from './pages/MyFollowingRestaurants';
 import AdminCertifiedRestaurants from './pages/AdminCertifiedRestaurants';
 import ImportNaverPlaces from './pages/ImportNaverPlaces';
+import AdminVerification from './pages/AdminVerification';
 
 function App() {
   const isMobile = useIsMobile();
@@ -133,6 +134,14 @@ function App() {
           }
         />
         <Route
+          path="profile/:username"
+          element={
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="settings"
           element={
             <ProtectedRoute>
@@ -200,6 +209,7 @@ function App() {
       <Route path="/admin/users" element={<AdminUserManagement />} />
       <Route path="/admin/restaurants" element={<AdminRestaurantManagement />} />
       <Route path="/admin/certified-restaurants" element={<AdminCertifiedRestaurants />} />
+      <Route path="/admin/verification" element={<AdminVerification />} />
     </Routes>
   );
 }

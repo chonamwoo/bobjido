@@ -7,6 +7,7 @@ export interface RestaurantList {
   category: string;
   createdBy: {
     _id: string;
+    userId?: string;  // Added for URL navigation
     username: string;
     profileImage?: string;
     isVerified?: boolean;
@@ -51,6 +52,7 @@ export const certifiedRestaurantLists: RestaurantList[] = [
     category: '미디어 인증',
     createdBy: {
       _id: 'user-black-white',
+      userId: 'blackwhitechef',
       username: '흑백요리사',
       isVerified: true
     },
@@ -124,6 +126,7 @@ export const certifiedRestaurantLists: RestaurantList[] = [
     category: '미디어 인증',
     createdBy: {
       _id: 'user-wednesday',
+      userId: 'wednesdayfood',
       username: '수요미식회',
       isVerified: true
     },

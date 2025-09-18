@@ -6,7 +6,12 @@ const getUser = async (req, res) => {
   try {
     const { username } = req.params;
     
-    const user = await User.findOne({ username })
+    const user = await User.findOne({ 
+      $or: [
+        { username: username },
+        { userId: username.toLowerCase() }
+      ]
+    })
       .select('-password')
       .populate('followers', 'username profileImage')
       .populate('following', 'username profileImage');
@@ -50,7 +55,12 @@ const followUser = async (req, res) => {
     const { username } = req.params;
     const currentUserId = req.user._id;
     
-    const userToFollow = await User.findOne({ username });
+    const userToFollow = await User.findOne({ 
+      $or: [
+        { username: username },
+        { userId: username.toLowerCase() }
+      ]
+    });
     
     if (!userToFollow) {
       return res.status(404).json({ message: '사용자를 찾을 수 없습니다' });
@@ -94,7 +104,12 @@ const getUserPlaylists = async (req, res) => {
     const { username } = req.params;
     const { page = 1, limit = 12 } = req.query;
     
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ 
+      $or: [
+        { username: username },
+        { userId: username.toLowerCase() }
+      ]
+    });
     
     if (!user) {
       return res.status(404).json({ message: '사용자를 찾을 수 없습니다' });
@@ -188,7 +203,12 @@ const getFollowers = async (req, res) => {
     const { username } = req.params;
     const { page = 1, limit = 20 } = req.query;
     
-    const user = await User.findOne({ username })
+    const user = await User.findOne({ 
+      $or: [
+        { username: username },
+        { userId: username.toLowerCase() }
+      ]
+    })
       .populate({
         path: 'followers',
         select: 'username profileImage bio trustScore',
@@ -222,7 +242,12 @@ const getFollowing = async (req, res) => {
     const { username } = req.params;
     const { page = 1, limit = 20 } = req.query;
     
-    const user = await User.findOne({ username })
+    const user = await User.findOne({ 
+      $or: [
+        { username: username },
+        { userId: username.toLowerCase() }
+      ]
+    })
       .populate({
         path: 'following',
         select: 'username profileImage bio trustScore',
@@ -376,8 +401,13 @@ const getUserProfile = async (req, res) => {
   try {
     const { username } = req.params;
     
-    // 사용자 조회
-    const user = await User.findOne({ username })
+    // 사용자 조회 - username 또는 userId로 찾기
+    const user = await User.findOne({ 
+      $or: [
+        { username: username },
+        { userId: username.toLowerCase() }
+      ]
+    })
       .select('-password')
       .populate('followers', 'username profileImage')
       .populate('following', 'username profileImage');
@@ -433,6 +463,19 @@ const getUserProfile = async (req, res) => {
       isMutual = isFollowing && currentUser.followers.some(f => f._id.toString() === user._id.toString());
     }
     
+    // 전체 통계 계산
+    const totalRestaurantsInPlaylists = playlistsWithStats.reduce((total, playlist) => {
+      return total + (playlist.restaurantCount || 0);
+    }, 0);
+    
+    const totalLikes = playlistsWithStats.reduce((total, playlist) => {
+      return total + (playlist.likeCount || 0);
+    }, 0);
+    
+    const totalSaves = playlistsWithStats.reduce((total, playlist) => {
+      return total + (playlist.saveCount || 0);
+    }, 0);
+
     res.json({
       user: {
         _id: user._id,
@@ -443,23 +486,31 @@ const getUserProfile = async (req, res) => {
         tasteProfile: user.tasteProfile,
         rankings: user.rankings,
         trustScore: user.trustScore,
+        isVerified: user.isVerified || false,
+        isAdmin: user.isAdmin || false,
+        verifiedAt: user.verifiedAt,
+        followers: user.followers,
+        following: user.following,
         followerCount: user.followers.length,
         followingCount: user.following.length,
         visitedRestaurantsCount: user.visitedRestaurants?.length || 0,
         categoryVisitCounts: user.categoryVisitCounts,
         foodMBTIType: user.foodMBTIType,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        location: user.location
       },
       playlists: playlistsWithStats,
       createdRestaurants,
-      isFollowing,
-      isMutual,
       stats: {
         totalPlaylists: playlistsWithStats.length,
-        totalRestaurantsInPlaylists: playlistsWithStats.reduce((sum, p) => sum + p.restaurantCount, 0),
-        totalLikesReceived: playlistsWithStats.reduce((sum, p) => sum + p.likeCount, 0),
-        totalSaves: playlistsWithStats.reduce((sum, p) => sum + p.saveCount, 0)
-      }
+        totalRestaurantsInPlaylists,
+        totalCreatedRestaurants: createdRestaurants.length,
+        totalLikes,
+        totalSaves,
+        totalRestaurants: totalRestaurantsInPlaylists + createdRestaurants.length
+      },
+      isFollowing,
+      isMutual
     });
   } catch (error) {
     console.error('Get user profile error:', error);

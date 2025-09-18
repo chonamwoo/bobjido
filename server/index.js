@@ -193,6 +193,14 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bobmap', 
   // Import routes for Naver integration
   app.use('/api/import', require('./routes/importRoutes'));
   
+  // Community routes
+  const communityRoutes = require('./routes/communityRoutes');
+  app.use('/api/community', communityRoutes);
+  
+  // Home routes
+  const homeRoutes = require('./routes/homeRoutes');
+  app.use('/api/home', homeRoutes);
+  
   console.log('✅ 라우트 등록 완료');
 })
 .catch((err) => {
