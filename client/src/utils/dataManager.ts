@@ -47,6 +47,8 @@ interface UserData {
   gameResults: GameResult[];
   tasteProfile?: any;
   tasteAnalysis?: UserTasteAnalysis;
+  playlistViews?: { [playlistId: string]: number };
+  playlistLikes?: { [playlistId: string]: number };
 }
 
 interface Review {
@@ -398,6 +400,38 @@ class DataManager {
     this.saveUserData(userData);
   }
   
+  // 플레이리스트 조회수 증가
+  incrementPlaylistView(playlistId: string): void {
+    const userData = this.getUserData();
+    if (!userData.playlistViews) {
+      userData.playlistViews = {};
+    }
+    userData.playlistViews[playlistId] = (userData.playlistViews[playlistId] || 0) + 1;
+    this.saveUserData(userData);
+  }
+
+  // 플레이리스트 조회수 가져오기
+  getPlaylistViews(playlistId: string): number {
+    const userData = this.getUserData();
+    return userData.playlistViews?.[playlistId] || 0;
+  }
+
+  // 플레이리스트 좋아요 수 가져오기
+  getPlaylistLikes(playlistId: string): number {
+    const userData = this.getUserData();
+    return userData.playlistLikes?.[playlistId] || 0;
+  }
+
+  // 플레이리스트 좋아요 수 업데이트
+  updatePlaylistLikes(playlistId: string, count: number): void {
+    const userData = this.getUserData();
+    if (!userData.playlistLikes) {
+      userData.playlistLikes = {};
+    }
+    userData.playlistLikes[playlistId] = count;
+    this.saveUserData(userData);
+  }
+
   // 모든 데이터 초기화
   clearAllData(): void {
     localStorage.removeItem(this.storageKey);

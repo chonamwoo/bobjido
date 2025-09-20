@@ -63,7 +63,10 @@ router.get('/google', passport.authenticate('google', {
 }));
 
 router.get('/google/callback',
-  passport.authenticate('google', { session: false }),
+  passport.authenticate('google', {
+    session: false,
+    failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/error?provider=google&error=auth_failed`
+  }),
   (req, res) => {
     const token = generateToken(req.user._id);
     const user = {
@@ -73,7 +76,7 @@ router.get('/google/callback',
       profileImage: req.user.profileImage,
       onboardingCompleted: true  // MVP에서는 온보딩 없음
     };
-    
+
     // auth-bridge.html로 리다이렉트 (토큰과 사용자 정보 포함)
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
     const redirectUrl = `${clientUrl}/auth-bridge.html?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`;
@@ -89,7 +92,10 @@ if (process.env.KAKAO_CLIENT_ID) {
   }));
 
   router.get('/kakao/callback',
-    passport.authenticate('kakao', { session: false }),
+    passport.authenticate('kakao', {
+      session: false,
+      failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/error?provider=kakao&error=auth_failed`
+    }),
     (req, res) => {
       console.log('🔍 Kakao callback hit!');
       console.log('CLIENT_URL from env:', process.env.CLIENT_URL);
@@ -117,7 +123,10 @@ if (process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET) {
   router.get('/naver', passport.authenticate('naver'));
 
   router.get('/naver/callback',
-    passport.authenticate('naver', { session: false }),
+    passport.authenticate('naver', {
+      session: false,
+      failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:3000'}/auth/error?provider=naver&error=auth_failed`
+    }),
     (req, res) => {
       console.log('🟢 Naver callback hit!');
       console.log('CLIENT_URL from env:', process.env.CLIENT_URL);

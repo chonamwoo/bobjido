@@ -16,7 +16,7 @@ const { logger, requestLogger, errorLogger, notifyTaskComplete } = require('./ut
 const { trackUserActivity } = require('./middleware/tracking');
 
 // Import routes with error handling
-let authRoutes, userRoutes, restaurantRoutes, playlistRoutes, adminRoutes, tasteProfileRoutes, globalDiscoveryRoutes, matchingRoutes, chatRoutes, onboardingRoutes, userStatsRoutes, followRoutes, notificationRoutes;
+let authRoutes, userRoutes, restaurantRoutes, playlistRoutes, adminRoutes, tasteProfileRoutes, globalDiscoveryRoutes, matchingRoutes, chatRoutes, onboardingRoutes, userStatsRoutes, followRoutes, notificationRoutes, rankingRoutes;
 
 try {
   authRoutes = require('./routes/authRoutes');
@@ -34,6 +34,7 @@ try {
   recommendationsRoutes = require('./routes/recommendations');
   followRoutes = require('./routes/followRoutes');
   notificationRoutes = require('./routes/notificationRoutes');
+  rankingRoutes = require('./routes/rankingRoutes');
 } catch (error) {
   console.error('Error loading routes:', error);
   process.exit(1);
@@ -196,7 +197,10 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bobmap', 
   // Community routes
   const communityRoutes = require('./routes/communityRoutes');
   app.use('/api/community', communityRoutes);
-  
+
+  // Ranking routes
+  app.use('/api/rankings', rankingRoutes);
+
   // Home routes
   const homeRoutes = require('./routes/homeRoutes');
   app.use('/api/home', homeRoutes);

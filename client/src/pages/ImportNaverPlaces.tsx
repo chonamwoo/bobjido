@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, MapPinIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import axios from '../utils/axios';
 import { useAuthStore } from '../store/authStore';
+import toast from 'react-hot-toast';
 
 const ImportNaverPlaces: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [importMethod, setImportMethod] = useState<'oauth' | 'link' | 'file'>('oauth');
+  const [importMethod, setImportMethod] = useState<'link' | 'oauth' | 'file'>('link');
   const [shareLink, setShareLink] = useState('');
   const [loading, setLoading] = useState(false);
   const [importedPlaces, setImportedPlaces] = useState<any[]>([]);
@@ -15,34 +16,33 @@ const ImportNaverPlaces: React.FC = () => {
 
   // 네이버 로그인으로 가져오기
   const handleNaverOAuth = () => {
-    // 네이버 OAuth 로그인 URL
-    const NAVER_CLIENT_ID = process.env.REACT_APP_NAVER_OAUTH_CLIENT_ID || 'YOUR_CLIENT_ID';
-    const REDIRECT_URI = encodeURIComponent(`${window.location.origin}/import/naver/callback`);
-    const STATE = Math.random().toString(36).substring(7);
-    
-    const authUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
-    
-    window.location.href = authUrl;
+    // 네이버 OAuth 로그인 시작
+    window.location.href = 'http://localhost:8888/api/auth/naver';
   };
 
-  // 공유 링크로 가져오기
+  // 공유 링크로 가져오기 (데모)
   const handleShareLink = async () => {
-    if (!shareLink) return;
-    
-    setLoading(true);
-    try {
-      // 네이버 공유 링크 파싱
-      const response = await axios.post('/api/import/naver-link', {
-        shareLink
-      });
-      
-      setImportedPlaces(response.data.places);
-    } catch (error) {
-      console.error('Failed to import from link:', error);
-      alert('링크에서 장소를 가져오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
+    if (!shareLink) {
+      toast.error('네이버 지도 공유 링크를 입력해주세요');
+      return;
     }
+
+    setLoading(true);
+
+    // 데모 데이터 생성
+    setTimeout(() => {
+      const demoPlaces = [
+        { id: 'naver-1', name: '성북동 빵공장', category: '베이커리', address: '서울 성북구 성북동 1-2', rating: 4.5 },
+        { id: 'naver-2', name: '우래옥', category: '한식', address: '서울 중구 창경궁로 62-29', rating: 4.3 },
+        { id: 'naver-3', name: '광화문 국밥', category: '한식', address: '서울 종로구 종로 1-1', rating: 4.7 },
+        { id: 'naver-4', name: '교대 이층집', category: '일식', address: '서울 서초구 서초대로 320', rating: 4.6 },
+        { id: 'naver-5', name: '을지로 골뱅이', category: '술집', address: '서울 중구 을지로 157', rating: 4.4 }
+      ];
+
+      setImportedPlaces(demoPlaces);
+      toast.success('네이버 지도에서 5개의 맛집을 가져왔습니다!');
+      setLoading(false);
+    }, 1500);
   };
 
   // CSV/JSON 파일로 가져오기
@@ -84,43 +84,39 @@ const ImportNaverPlaces: React.FC = () => {
     }
   };
 
-  // 선택한 장소들을 BobMap에 저장
+  // 선택한 장소들을 BobMap에 저장 (데모)
   const handleSavePlaces = async () => {
     if (selectedPlaces.size === 0) {
-      alert('저장할 장소를 선택해주세요.');
+      toast.error('저장할 장소를 선택해주세요.');
       return;
     }
 
     setLoading(true);
-    try {
-      const placesToSave = importedPlaces.filter(place => 
+
+    // 데모: localStorage에 저장
+    setTimeout(() => {
+      const placesToSave = importedPlaces.filter(place =>
         selectedPlaces.has(place.id || place.name)
       );
 
-      const response = await axios.post('/api/restaurants/batch-import', {
-        places: placesToSave.map(place => ({
-          name: place.name || place.title,
-          address: place.address || place.roadAddress,
-          category: place.category || '맛집',
-          naverPlaceId: place.id,
-          coordinates: {
-            lat: place.latitude || place.y,
-            lng: place.longitude || place.x
-          },
-          phone: place.telephone,
-          description: place.description,
-          importedFrom: 'naver'
-        }))
-      });
+      // 기존 저장된 네이버 맛집 가져오기
+      const existingPlaces = JSON.parse(localStorage.getItem('naverImportedPlaces') || '[]');
 
-      alert(`${response.data.imported}개의 장소를 성공적으로 가져왔습니다!`);
-      navigate('/my-restaurants');
-    } catch (error) {
-      console.error('Failed to save places:', error);
-      alert('장소 저장에 실패했습니다.');
-    } finally {
+      // 새로운 맛집 추가
+      const newPlaces = [...existingPlaces, ...placesToSave.map(place => ({
+        ...place,
+        importedAt: new Date().toISOString(),
+        source: 'naver'
+      }))];
+
+      localStorage.setItem('naverImportedPlaces', JSON.stringify(newPlaces));
+
+      toast.success(`${placesToSave.length}개의 맛집을 성공적으로 저장했습니다!`);
       setLoading(false);
-    }
+
+      // 프로필 페이지로 이동
+      navigate('/profile');
+    }, 1000);
   };
 
   const togglePlaceSelection = (placeId: string) => {
@@ -159,53 +155,44 @@ const ImportNaverPlaces: React.FC = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* 가져오기 방법 선택 */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">가져오기 방법 선택</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 가져오기 방법 선택 - 작은 버튼 */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+          <h2 className="text-sm font-medium text-gray-700 mb-3">가져오기 방법</h2>
+          <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setImportMethod('oauth')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                importMethod === 'oauth' 
-                  ? 'border-orange-500 bg-orange-50' 
-                  : 'border-gray-200 hover:border-gray-300'
+              onClick={() => setImportMethod('link')}
+              className={`px-3 py-1.5 rounded-lg border text-sm transition-all flex items-center gap-2 ${
+                importMethod === 'link'
+                  ? 'border-green-500 bg-green-50 text-green-700'
+                  : 'border-gray-300 hover:border-gray-400 text-gray-600'
               }`}
             >
-              <MapPinIcon className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-              <p className="font-medium">네이버 로그인</p>
-              <p className="text-sm text-gray-500 mt-1">
-                네이버 계정으로 로그인하여 자동으로 가져오기
-              </p>
+              <LinkIcon className="w-4 h-4" />
+              공유 링크
             </button>
 
             <button
-              onClick={() => setImportMethod('link')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                importMethod === 'link' 
-                  ? 'border-orange-500 bg-orange-50' 
-                  : 'border-gray-200 hover:border-gray-300'
+              onClick={() => setImportMethod('oauth')}
+              className={`px-3 py-1.5 rounded-lg border text-sm transition-all flex items-center gap-2 ${
+                importMethod === 'oauth'
+                  ? 'border-green-500 bg-green-50 text-green-700'
+                  : 'border-gray-300 hover:border-gray-400 text-gray-600'
               }`}
             >
-              <LinkIcon className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-              <p className="font-medium">공유 링크</p>
-              <p className="text-sm text-gray-500 mt-1">
-                MY플레이스 공유 링크로 가져오기
-              </p>
+              <MapPinIcon className="w-4 h-4" />
+              네이버 로그인
             </button>
 
             <button
               onClick={() => setImportMethod('file')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                importMethod === 'file' 
-                  ? 'border-orange-500 bg-orange-50' 
-                  : 'border-gray-200 hover:border-gray-300'
+              className={`px-3 py-1.5 rounded-lg border text-sm transition-all flex items-center gap-2 ${
+                importMethod === 'file'
+                  ? 'border-green-500 bg-green-50 text-green-700'
+                  : 'border-gray-300 hover:border-gray-400 text-gray-600'
               }`}
             >
-              <CloudArrowUpIcon className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-              <p className="font-medium">파일 업로드</p>
-              <p className="text-sm text-gray-500 mt-1">
-                내보낸 CSV/JSON 파일 업로드
-              </p>
+              <CloudArrowUpIcon className="w-4 h-4" />
+              파일 업로드
             </button>
           </div>
         </div>
@@ -214,15 +201,22 @@ const ImportNaverPlaces: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           {importMethod === 'oauth' && (
             <div className="text-center py-8">
-              <MapPinIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-medium mb-2">네이버 계정으로 로그인</h3>
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-500 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10" viewBox="0 0 24 24" fill="white">
+                  <path d="M16.273 12.845 7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2">네이버 로그인으로 MY플레이스 가져오기</h3>
               <p className="text-gray-600 mb-6">
-                네이버 MY플레이스에 저장된 장소들을 자동으로 가져옵니다
+                네이버 계정으로 로그인하여 저장한 맛집을 가져옵니다
               </p>
               <button
                 onClick={handleNaverOAuth}
-                className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 mx-auto"
               >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white">
+                  <path d="M16.273 12.845 7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>
+                </svg>
                 네이버 로그인
               </button>
             </div>
@@ -230,14 +224,26 @@ const ImportNaverPlaces: React.FC = () => {
 
           {importMethod === 'link' && (
             <div>
-              <h3 className="text-lg font-medium mb-4">MY플레이스 공유 링크 입력</h3>
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#03C75A">
+                    <path d="M16.273 12.845 7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>
+                  </svg>
+                  <h3 className="text-lg font-medium">MY플레이스 공유 링크 입력</h3>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-green-800">
+                    <strong>테스트 모드:</strong> 아무 링크나 입력하시면 예시 맛집 5개가 표시됩니다.
+                  </p>
+                </div>
+              </div>
               <div className="flex space-x-2">
                 <input
                   type="text"
                   value={shareLink}
                   onChange={(e) => setShareLink(e.target.value)}
-                  placeholder="https://naver.me/xxxxx"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="https://naver.me/xxxxx 또는 아무 텍스트나 입력"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
                 <button
                   onClick={handleShareLink}

@@ -32,6 +32,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists_fixed';
 import { dataManager } from '../utils/dataManager';
+import { playlistDataManager } from '../utils/playlistDataManager';
 
 const MobilePlaylistDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -60,6 +61,8 @@ const MobilePlaylistDetail: React.FC = () => {
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
 
+  // 조회수 증가는 playlist가 로드된 후에 처리 (아래 useEffect에서 처리)
+
   const { data: playlist, isLoading, error } = useQuery({
     queryKey: ['playlist', id],
     queryFn: async () => {
@@ -77,7 +80,17 @@ const MobilePlaylistDetail: React.FC = () => {
             p.createdBy?.username === username || p.creator === username
           );
           if (userPlaylist) {
-            return userPlaylist;
+            // 중앙 관리 시스템에서 통계 가져오기
+            const stats = playlistDataManager.getPlaylistStats(id);
+            return {
+              ...userPlaylist,
+              _id: id, // friend- 프리픽스가 있는 ID 유지
+              viewCount: stats.viewCount,
+              likeCount: stats.likeCount,
+              saveCount: stats.saveCount,
+              isLiked: stats.isLiked,
+              isSaved: stats.isSaved
+            };
           }
         }
         
@@ -86,7 +99,17 @@ const MobilePlaylistDetail: React.FC = () => {
         if (certifiedCreators.includes(username)) {
           const certPlaylist = certifiedRestaurantLists.find((p: any) => p.createdBy?.username === username);
           if (certPlaylist) {
-            return certPlaylist;
+            // 중앙 관리 시스템에서 통계 가져오기
+            const stats = playlistDataManager.getPlaylistStats(id);
+            return {
+              ...certPlaylist,
+              _id: id, // friend- 프리픽스가 있는 ID 유지
+              viewCount: stats.viewCount,
+              likeCount: stats.likeCount,
+              saveCount: stats.saveCount,
+              isLiked: stats.isLiked,
+              isSaved: stats.isSaved
+            };
           }
         }
         
@@ -107,7 +130,7 @@ const MobilePlaylistDetail: React.FC = () => {
                 rating: 4.8,
                 address: '서울 강남구 청담동',
                 priceRange: '₩₩₩₩',
-                image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop',
                 coordinates: { lat: 37.5226894, lng: 127.0423736 }
               },
               reason: `${username}님이 강력 추천하는 오마카세`
@@ -140,7 +163,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.8,
                   address: '서울 강남구 선릉로 158길 11',
                   priceRange: '₩₩₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                  image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5226894, lng: 127.0423736 }
                 },
                 reason: '한국 전통의 맛을 현대적으로 재해석한 미슐랭 2스타'
@@ -154,7 +177,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.9,
                   address: '서울 중구 퇴계로 130-3',
                   priceRange: '₩₩₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20210528_110/1622132045820xwKQl_JPEG/PD9ND_BMREH4uyUOWJOWHOA3.jpg',
+                  image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5597, lng: 127.0037 }
                 },
                 reason: '신라호텔의 품격있는 한정식, 미슐랭 3스타'
@@ -168,7 +191,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.7,
                   address: '서울 강남구 도산대로 317',
                   priceRange: '₩₩₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20221210_227/1670687308798X6Xqr_JPEG/1670687285779.jpg',
+                  image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5233, lng: 127.0387 }
                 },
                 reason: '한국의 사계절을 담은 창의적 요리'
@@ -195,7 +218,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.5,
                   address: '서울 종로구 돈화문로 30-1',
                   priceRange: '₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200622_4/1592834492785WUY3r_JPEG/q1RIzB7E1rLlcn3zx0qDZBP1.jpg',
+                  image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5738, lng: 126.9988 }
                 },
                 reason: '쌈밥의 정석, 신선한 쌈 채소와 된장찌개가 일품'
@@ -209,7 +232,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.6,
                   address: '서울 마포구 와우산로21길 31-8',
                   priceRange: '₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200622_4/1592834492785WUY3r_JPEG/q1RIzB7E1rLlcn3zx0qDZBP1.jpg',
+                  image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5534, lng: 126.9229 }
                 },
                 reason: '쫄깃한 족발과 새콤달콤한 막국수 조합'
@@ -223,7 +246,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.4,
                   address: '서울 중구 을지로14길 2',
                   priceRange: '₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200622_4/1592834492785WUY3r_JPEG/q1RIzB7E1rLlcn3zx0qDZBP1.jpg',
+                  image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5657, lng: 126.9911 }
                 },
                 reason: '매콤한 골뱅이무침과 소면, 을지로 직장인들의 성지'
@@ -250,7 +273,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.8,
                   address: '서울 강남구 도산대로67길 13-5',
                   priceRange: '₩₩₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                  image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5263, lng: 127.0380 }
                 },
                 reason: '정통 에도마에 스시, 성시경이 극찬한 오마카세'
@@ -264,7 +287,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.6,
                   address: '서울 용산구 한남대로20길 31',
                   priceRange: '₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20210528_110/1622132045820xwKQl_JPEG/PD9ND_BMREH4uyUOWJOWHOA3.jpg',
+                  image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5345, lng: 127.0106 }
                 },
                 reason: '시원한 북엇국과 깔끔한 밑반찬'
@@ -278,7 +301,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.7,
                   address: '서울 중구 장충단로 207',
                   priceRange: '₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20221210_227/1670687308798X6Xqr_JPEG/1670687285779.jpg',
+                  image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5608, lng: 127.0074 }
                 },
                 reason: '전통 평양냉면, 깔끔한 육수가 일품'
@@ -305,7 +328,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.9,
                   address: '서울 마포구 독막로 26-10',
                   priceRange: '₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                  image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5496, lng: 126.9147 }
                 },
                 reason: '평양냉면의 진수, 담백한 육수와 쫄깃한 면발'
@@ -319,7 +342,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.8,
                   address: '서울 중구 창경궁로 62-29',
                   priceRange: '₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20210528_110/1622132045820xwKQl_JPEG/PD9ND_BMREH4uyUOWJOWHOA3.jpg',
+                  image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5724, lng: 126.9973 }
                 },
                 reason: '1946년 전통의 평양냉면 명가'
@@ -333,7 +356,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.7,
                   address: '서울 중구 서애로 26',
                   priceRange: '₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20221210_227/1670687308798X6Xqr_JPEG/1670687285779.jpg',
+                  image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5593, lng: 126.9942 }
                 },
                 reason: '진한 육수와 메밀향 가득한 면발'
@@ -360,7 +383,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.9,
                   address: '서울 강남구 도산대로67길 19',
                   priceRange: '₩₩₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                  image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5254, lng: 127.0384 }
                 },
                 reason: '한국 식재료로 만든 창의적인 모던 한식'
@@ -374,7 +397,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.8,
                   address: '서울 강남구 도산대로55길 22',
                   priceRange: '₩₩₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20210528_110/1622132045820xwKQl_JPEG/PD9ND_BMREH4uyUOWJOWHOA3.jpg',
+                  image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5235, lng: 127.0372 }
                 },
                 reason: '정통 프렌치에 한국적 해석을 더한 파인다이닝'
@@ -388,7 +411,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.7,
                   address: '서울 강남구 청담동 94-9',
                   priceRange: '₩₩₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20221210_227/1670687308798X6Xqr_JPEG/1670687285779.jpg',
+                  image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5236, lng: 127.0446 }
                 },
                 reason: '혁신적인 요리와 아트같은 플레이팅'
@@ -446,7 +469,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.8,
                   address: '서울 강남구 청담동',
                   priceRange: '₩₩₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20200214_218/1581672344910QMZN0_JPEG/yMwxZDGJYM8MYTRHQAZCuWMr.jpg',
+                  image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5226894, lng: 127.0423736 }
                 },
                 reason: `${username}님이 강력 추천하는 오마카세`
@@ -460,7 +483,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.5,
                   address: '서울 중구 주교동',
                   priceRange: '₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20210528_110/1622132045820xwKQl_JPEG/PD9ND_BMREH4uyUOWJOWHOA3.jpg',
+                  image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5631, lng: 127.0027 }
                 },
                 reason: '여름에 최고! 시원한 평양냉면'
@@ -474,7 +497,7 @@ const MobilePlaylistDetail: React.FC = () => {
                   rating: 4.3,
                   address: '서울 중구 명동',
                   priceRange: '₩₩',
-                  image: 'https://search.pstatic.net/common?type=f&size=184x184&quality=100&direct=true&src=https://ldb-phinf.pstatic.net/20221210_227/1670687308798X6Xqr_JPEG/1670687285779.jpg',
+                  image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=400&fit=crop',
                   coordinates: { lat: 37.5632, lng: 126.9869 }
                 },
                 reason: '든든한 한 끼, 진한 곰탕'
@@ -491,7 +514,16 @@ const MobilePlaylistDetail: React.FC = () => {
       // certifiedRestaurantLists에서 찾기
       const certifiedPlaylist = certifiedRestaurantLists.find(p => p._id === id);
       if (certifiedPlaylist) {
-        return certifiedPlaylist;
+        // 중앙 관리 시스템에서 통계 가져오기
+        const stats = playlistDataManager.getPlaylistStats(id!);
+        return {
+          ...certifiedPlaylist,
+          viewCount: stats.viewCount,
+          likeCount: stats.likeCount,
+          saveCount: stats.saveCount,
+          isLiked: stats.isLiked,
+          isSaved: stats.isSaved
+        };
       }
       
       // 로컬 스토리지에서 찾기
@@ -516,7 +548,7 @@ const MobilePlaylistDetail: React.FC = () => {
     enabled: !!id,
   });
   
-  // 저장 상태 동기화
+  // 저장 상태 동기화 및 조회수 증가
   useEffect(() => {
     if (id && playlist) {
       const saved = dataManager.isPlaylistSaved(id);
@@ -524,10 +556,14 @@ const MobilePlaylistDetail: React.FC = () => {
       setIsSaved(saved);
       setIsLiked(liked);
       console.log(`MobilePlaylistDetail - Loading state for ${id}: saved=${saved}, liked=${liked}`);
+
+      // 조회수 증가
+      playlistDataManager.incrementViewCount(id);
+      console.log(`[MobilePlaylistDetail] View count incremented for ${id}`);
     }
   }, [id, playlist]); // playlist가 변경될 때마다 상태 재로드
   
-  // Listen for dataManager updates
+  // Listen for dataManager and playlistStats updates
   useEffect(() => {
     const handleDataUpdate = () => {
       if (id) {
@@ -542,14 +578,24 @@ const MobilePlaylistDetail: React.FC = () => {
       setSavedRestaurants(savedData.map(r => r.restaurantId));
     };
 
+    const handleStatsUpdate = () => {
+      if (id) {
+        // 통계 업데이트시 리렌더링 트리거
+        queryClient.invalidateQueries(['playlist', id]);
+        console.log(`[MobilePlaylistDetail] Stats updated, refreshing playlist ${id}`);
+      }
+    };
+
     window.addEventListener('dataManager:update', handleDataUpdate);
     window.addEventListener('storage', handleDataUpdate);
+    window.addEventListener('playlistStats:update', handleStatsUpdate);
 
     return () => {
       window.removeEventListener('dataManager:update', handleDataUpdate);
       window.removeEventListener('storage', handleDataUpdate);
+      window.removeEventListener('playlistStats:update', handleStatsUpdate);
     };
-  }, [id]);
+  }, [id, queryClient]);
 
   // 맛집 목록 - 실제 데이터가 없으면 더미 데이터 사용
   // API에서 restaurants 배열은 { restaurant: {...}, addedBy, reason } 형태로 옴
@@ -770,16 +816,54 @@ const MobilePlaylistDetail: React.FC = () => {
     }
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: playlist?.title,
-        text: playlist?.description,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('링크가 복사되었습니다!');
+  const handleShare = async () => {
+    const shareData = {
+      title: playlist?.title || '맛집 플레이리스트',
+      text: playlist?.description || '맛집 플레이리스트를 확인해보세요!',
+      url: window.location.href
+    };
+
+    try {
+      // Web Share API는 HTTPS에서만 작동하고, localhost에서는 권한 문제가 있을 수 있음
+      // 따라서 localhost나 HTTP에서는 클립보드 복사를 기본으로 사용
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const isHttps = window.location.protocol === 'https:';
+
+      if (navigator.share && isHttps && !isLocalhost) {
+        await navigator.share(shareData);
+        toast.success('공유되었습니다!');
+      } else {
+        // Fallback: 클립보드에 복사
+        const shareText = `${shareData.title}\n${shareData.text}\n${shareData.url}`;
+        await navigator.clipboard.writeText(shareText);
+        toast.success('링크가 클립보드에 복사되었습니다!');
+      }
+    } catch (error: any) {
+      // 사용자가 공유를 취소한 경우는 무시
+      if (error?.name === 'AbortError') {
+        return;
+      }
+
+      // Permission denied 에러나 다른 에러의 경우 클립보드 복사 시도
+      if (error?.name === 'NotAllowedError' || error?.message?.includes('Permission denied')) {
+        try {
+          const shareText = `${shareData.title}\n${shareData.text}\n${shareData.url}`;
+          await navigator.clipboard.writeText(shareText);
+          toast.success('링크가 클립보드에 복사되었습니다!');
+          return;
+        } catch (clipboardError) {
+          console.error('Clipboard copy failed:', clipboardError);
+        }
+      }
+
+      // 다른 에러의 경우에도 클립보드 복사 시도
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('링크가 클립보드에 복사되었습니다!');
+      } catch (clipboardError) {
+        // 클립보드도 실패하면 수동 복사 안내
+        toast.error('공유할 수 없습니다. URL을 직접 복사해주세요.');
+      }
     }
   };
 

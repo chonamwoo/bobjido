@@ -169,7 +169,13 @@
       "Bash(move clientsrcpagesFoodRoulette.tsx modulesgamesclient )",
       "Bash(move clientsrcpagesRestaurantQuiz.tsx modulesgamesclient )",
       "Bash(move clientsrcpagesGameResults.tsx modulesgamesclient )",
-      "Bash(move clientsrcpagesLunchRecommendation.tsx modulesgamesclient)"
+      "Bash(move clientsrcpagesLunchRecommendation.tsx modulesgamesclient)",
+      "Bash(python:*)",
+      "Bash(start test-simulator.html)",
+      "Bash(git restore:*)",
+      "Bash(git stash:*)",
+      "Bash(start http://localhost:5555/client/public/mobile-simulator.html)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

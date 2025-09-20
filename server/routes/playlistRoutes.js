@@ -68,6 +68,28 @@ router.delete('/:id/restaurants/:restaurantId', protect, removeRestaurantFromPla
 router.put('/:id/restaurants/reorder', protect, reorderPlaylistRestaurants);
 router.put('/:id/restaurants/:restaurantId/rating', protect, updateRestaurantRating);
 router.get('/:id/ratings', optionalAuth, getRestaurantRatings);
+router.post('/:id/view', optionalAuth, async (req, res) => {
+  try {
+    const Playlist = require('../models/Playlist');
+    const playlist = await Playlist.findById(req.params.id);
+    if (!playlist) {
+      return res.status(404).json({ message: 'Playlist not found' });
+    }
+
+    // incrementView 메서드가 있으면 사용, 없으면 직접 증가
+    if (playlist.incrementView) {
+      await playlist.incrementView(req.user?._id);
+    } else {
+      playlist.viewCount = (playlist.viewCount || 0) + 1;
+      await playlist.save();
+    }
+
+    res.json({ success: true, viewCount: playlist.viewCount });
+  } catch (error) {
+    console.error('View count increment error:', error);
+    res.status(500).json({ message: 'Failed to increment view count' });
+  }
+});
 router.post('/:id/like', protect, likePlaylist);
 router.post('/:id/save', protect, savePlaylist);
 router.post('/:id/remix', protect, remixPlaylist);

@@ -75,7 +75,7 @@ const MobileLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden">
       {/* 모바일 헤더 - Dynamic Island 대응 개선 */}
-      <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 z-40 w-full">
+      <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 z-50 w-full">
         <div className="pt-safe"> {/* iPhone notch/Dynamic Island safe area */}
           <div className="flex items-center justify-between h-12 px-3 max-w-full">
             <div className="flex items-center flex-1">
@@ -105,7 +105,9 @@ const MobileLayout: React.FC = () => {
               
               {/* 드롭다운 메뉴 */}
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 z-50">
+                <div
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100"
+                  style={{ zIndex: 99999 }}>
                   <button
                     onClick={() => {
                       navigate('/create-playlist');

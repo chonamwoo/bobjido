@@ -50,6 +50,7 @@ L.Icon.Default.mergeOptions({
 const RestaurantMapV3: React.FC = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -67,10 +68,64 @@ const RestaurantMapV3: React.FC = () => {
     return savedData.map(p => p.playlistId);
   });
   const [selectedCreatorForExplore, setSelectedCreatorForExplore] = useState<any>(null);
-  
+
   // 소셜 스토어에서 팔로잉 관리
   const { followUser, unfollowUser, isFollowing, syncWithLocalStorage } = useSocialStore();
-  
+
+  // 사용자 선호도에 따라 리스트 정렬
+  const getSortedLists = () => {
+    let sortedLists = [...certifiedRestaurantLists];
+
+    if (user?.preferredFoods && user.preferredFoods.length > 0) {
+      console.log('[RestaurantMapV3] Sorting by user food preferences:', user.preferredFoods);
+
+      // 음식 카테고리 매핑
+      const categoryMap: { [key: string]: string[] } = {
+        korean: ['한식', '한정식', '전통', '김치', '비빔밥'],
+        chinese: ['중식', '중국', '짜장면', '짬뽕', '마라'],
+        japanese: ['일식', '스시', '라멘', '일본', '초밥'],
+        western: ['양식', '스테이크', '파스타', '이탈리안', '프렌치'],
+        asian: ['아시안', '베트남', '태국', '인도', '쌀국수'],
+        cafe: ['카페', '커피', '브런치', '베이커리', '디저트카페'],
+        dessert: ['디저트', '케이크', '빙수', '아이스크림', '마카롱'],
+        chicken: ['치킨', '닭', '후라이드', '양념치킨'],
+        pizza: ['피자', '이탈리안', '화덕피자'],
+        burger: ['버거', '수제버거', '패티', '햄버거'],
+        meat: ['고기', '삼겹살', 'BBQ', '구이', '스테이크'],
+        seafood: ['해물', '해산물', '수산물', '회', '횟집'],
+        noodles: ['면', '라면', '국수', '우동', '파스타'],
+        snack: ['분식', '떡볶이', '김밥', '순대', '튀김'],
+        bar: ['술집', '포차', '이자카야', '바', '호프'],
+        fastfood: ['패스트푸드', '맥도날드', 'KFC', '버거킹']
+      };
+
+      sortedLists = sortedLists.sort((a, b) => {
+        // 각 리스트의 선호도 점수 계산
+        const getPreferenceScore = (list: any) => {
+          let score = 0;
+          const listText = `${list.title} ${list.description} ${list.certification} ${list.category} ${list.restaurants?.map((r: any) => r.restaurant?.category).join(' ')}`.toLowerCase();
+
+          user.preferredFoods?.forEach((foodId, index) => {
+            const weight = user.preferredFoods!.length - index; // 높은 순위일수록 높은 가중치
+            const keywords = categoryMap[foodId] || [];
+
+            if (keywords.some(keyword => listText.includes(keyword.toLowerCase()))) {
+              score += weight * 10;
+            }
+          });
+
+          return score;
+        };
+
+        return getPreferenceScore(b) - getPreferenceScore(a);
+      });
+
+      console.log('[RestaurantMapV3] Lists sorted by preferences');
+    }
+
+    return sortedLists;
+  };
+
   // 컴포넌트 마운트 시 동기화
   useEffect(() => {
     syncWithLocalStorage();
@@ -109,7 +164,6 @@ const RestaurantMapV3: React.FC = () => {
     return savedData.map(r => r.restaurantId);
   });
 
-  const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
   // Listen for dataManager updates
@@ -540,7 +594,7 @@ const RestaurantMapV3: React.FC = () => {
         }
         
         // 플레이리스트 전체 데이터도 저장 (allPlaylists 업데이트)
-        const playlist = certifiedRestaurantLists.find(list => list._id === listId);
+        const playlist = getSortedLists().find(list => list._id === listId);
         if (playlist) {
           const allPlaylistsData = JSON.parse(localStorage.getItem('allPlaylists') || '[]');
           const exists = allPlaylistsData.some((p: any) => p._id === playlist._id);
@@ -861,7 +915,7 @@ const RestaurantMapV3: React.FC = () => {
                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-lg" style={{ zIndex: 1000 }}>
                   <span className="text-sm font-medium text-gray-700">
                     {viewMode === 'lists' ? (
-                      <>📋 {certifiedRestaurantLists.length}개 리스트</>
+                      <>📋 {getSortedLists().length}개 리스트</>
                     ) : (
                       <><BuildingStorefrontIcon className="w-4 h-4 inline mr-1" />
                       {restaurants.length}개 맛집</>
@@ -877,7 +931,7 @@ const RestaurantMapV3: React.FC = () => {
                 {viewMode === 'lists' ? (
                   // 리스트 목록
                   <div className="grid grid-cols-1 gap-3">
-                    {certifiedRestaurantLists.map((list) => (
+                    {getSortedLists().map((list) => (
                   <div key={list._id} className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
                     <div
                       onClick={() => setSelectedList(selectedList?._id === list._id ? null : list)}
@@ -1029,7 +1083,7 @@ const RestaurantMapV3: React.FC = () => {
             {/* 데스크톱에서만 기존 리스트 표시 */}
             {!isMobile && viewMode === 'lists' && (
               <div className="mt-4 grid grid-cols-2 gap-3">
-                {certifiedRestaurantLists.map((list) => (
+                {getSortedLists().map((list) => (
                   <div
                     key={list._id}
                     onClick={() => setSelectedList(list)}
@@ -1190,16 +1244,32 @@ const RestaurantMapV3: React.FC = () => {
                         {dataManager.isRestaurantSaved(selectedRestaurant._id) ? '저장됨' : '저장하기'}
                       </button>
                       <button
-                        onClick={() => {
-                          if (navigator.share) {
-                            navigator.share({
-                              title: selectedRestaurant.name,
-                              text: `${selectedRestaurant.name} - ${selectedRestaurant.category} 맛집`,
-                              url: window.location.href
-                            });
-                          } else {
-                            navigator.clipboard.writeText(window.location.href);
-                            toast.success('링크가 복사되었습니다!');
+                        onClick={async () => {
+                          try {
+                            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                            const isHttps = window.location.protocol === 'https:';
+
+                            if (navigator.share && isHttps && !isLocalhost) {
+                              await navigator.share({
+                                title: selectedRestaurant.name,
+                                text: `${selectedRestaurant.name} - ${selectedRestaurant.category} 맛집`,
+                                url: window.location.href
+                              });
+                              toast.success('공유되었습니다!');
+                            } else {
+                              await navigator.clipboard.writeText(window.location.href);
+                              toast.success('링크가 클립보드에 복사되었습니다!');
+                            }
+                          } catch (error: any) {
+                            if (error?.name === 'AbortError') {
+                              return;
+                            }
+                            try {
+                              await navigator.clipboard.writeText(window.location.href);
+                              toast.success('링크가 클립보드에 복사되었습니다!');
+                            } catch (clipboardError) {
+                              toast.error('공유에 실패했습니다');
+                            }
                           }
                         }}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -1559,7 +1629,7 @@ const RestaurantMapV3: React.FC = () => {
                 <div className="flex gap-6 mt-4">
                   <div className="text-center">
                     <p className="text-xl font-bold text-gray-900">
-                      {certifiedRestaurantLists.filter((list: any) => {
+                      {getSortedLists().filter((list: any) => {
                         if (typeof list.createdBy === 'object') {
                           return list.createdBy._id === selectedCreatorForExplore._id ||
                                  list.createdBy.username === selectedCreatorForExplore.username;
@@ -1572,7 +1642,7 @@ const RestaurantMapV3: React.FC = () => {
                   <div className="text-center">
                     <p className="text-xl font-bold text-gray-900">
                       {(() => {
-                        const lists = certifiedRestaurantLists.filter((list: any) => {
+                        const lists = getSortedLists().filter((list: any) => {
                           if (typeof list.createdBy === 'object') {
                             return list.createdBy._id === selectedCreatorForExplore._id ||
                                    list.createdBy.username === selectedCreatorForExplore.username;
@@ -1623,7 +1693,7 @@ const RestaurantMapV3: React.FC = () => {
                 <h4 className="font-semibold text-sm text-gray-700 mb-3">최근 만든 리스트</h4>
                 {(() => {
                   // 더 유연한 매칭 - username 기반으로도 찾기
-                  const creatorLists = certifiedRestaurantLists.filter((list: any) => {
+                  const creatorLists = getSortedLists().filter((list: any) => {
                     if (typeof list.createdBy === 'object') {
                       return list.createdBy._id === selectedCreatorForExplore._id ||
                              list.createdBy.username === selectedCreatorForExplore.username;

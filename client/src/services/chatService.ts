@@ -26,12 +26,10 @@ interface Chat {
 class ChatService {
   private pendingSync: any[] = [];
 
-  // 채팅 목록 가져오기 (서버 우선, 실패시 로컬)
   async getChats(): Promise<Chat[]> {
     try {
       const response = await axios.get('/api/chat/list');
       if (response.data.success) {
-        // 서버 데이터를 로컬에도 백업
         localStorage.setItem('mobile_chats_backup', JSON.stringify(response.data.data));
         return response.data.data;
       }
@@ -39,17 +37,14 @@ class ChatService {
       console.log('서버에서 채팅 목록을 가져올 수 없어 로컬 데이터 사용');
     }
     
-    // 로컬 데이터 반환
     const localChats = localStorage.getItem('mobile_chats_backup');
     return localChats ? JSON.parse(localChats) : [];
   }
 
-  // 메시지 가져오기
   async getMessages(chatId: string): Promise<Message[]> {
     try {
       const response = await axios.get(`/api/chat/${chatId}/messages`);
       if (response.data.success) {
-        // 서버 데이터를 로컬에도 백업
         const messages = response.data.data || [];
         localStorage.setItem(`messages_${chatId}`, JSON.stringify(messages));
         return messages;

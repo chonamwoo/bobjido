@@ -88,6 +88,13 @@ const userSchema = new mongoose.Schema({
     maxlength: [500, '자기소개는 최대 500자까지 가능합니다'],
     default: ''
   },
+  // 음식 선호도 (순위별로 저장) - English IDs to match frontend
+  preferredFoods: [{
+    type: String,
+    enum: ['korean', 'chinese', 'japanese', 'western', 'asian', 'cafe',
+           'dessert', 'chicken', 'pizza', 'burger', 'meat', 'seafood',
+           'noodles', 'snack', 'bar', 'fastfood']
+  }],
   tasteProfile: {
     // 새로운 프로필 시스템
     type: {
@@ -137,6 +144,20 @@ const userSchema = new mongoose.Schema({
   onboardingCompleted: {
     type: Boolean,
     default: false
+  },
+  // 카테고리별 전문가 점수 (활동 기반 자동 계산)
+  expertiseScores: {
+    type: Map,
+    of: {
+      level: { type: Number, default: 0 },  // 전문가 레벨 (0-100)
+      points: { type: Number, default: 0 },  // 누적 포인트
+      rank: { type: Number, default: null }, // 전체 순위
+      restaurantsAdded: { type: Number, default: 0 }, // 등록한 맛집 수
+      listsCreated: { type: Number, default: 0 }, // 생성한 리스트 수
+      totalLikes: { type: Number, default: 0 }, // 받은 좋아요 수
+      totalSaves: { type: Number, default: 0 }  // 받은 저장 수
+    },
+    default: new Map()
   },
   rankings: {
     type: Map,

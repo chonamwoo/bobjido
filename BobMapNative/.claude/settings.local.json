@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/mchon/PycharmProjects/BobsMap/client/src/pages/**)",
+      "Read(//c/Users/mchon/PycharmProjects/BobsMap/client/src/data/**)",
+      "Bash(git add:*)",
+      "Read(//c/Users/mchon/PycharmProjects/BobsMap/server/models/**)",
+      "Read(//c/Users/mchon/PycharmProjects/BobsMap/server/**)",
+      "Read(//c/Users/mchon/PycharmProjects/BobsMap/client/src/**)",
+      "Read(//c/Users/mchon/PycharmProjects/BobsMap/client/public/**)",
+      "Bash(npm start)",
+      "Read(//c/Users/mchon/PycharmProjects/BobsMap/client/**)",
+      "Read(//c/Users/mchon/PycharmProjects/BobsMap/**)",
+      "Bash(python:*)",
+      "Bash(npx http-server:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

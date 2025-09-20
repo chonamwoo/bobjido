@@ -279,25 +279,25 @@ const getFollowing = async (req, res) => {
 // 프로필 정보 업데이트
 const updateProfile = async (req, res) => {
   try {
-    const { username, email, bio } = req.body;
+    const { username, email, bio, location, preferredFoods } = req.body;
     const userId = req.user._id;
 
     // 사용자명 중복 확인 (자신 제외)
     if (username && username !== req.user.username) {
-      const existingUser = await User.findOne({ 
-        username, 
-        _id: { $ne: userId } 
+      const existingUser = await User.findOne({
+        username,
+        _id: { $ne: userId }
       });
       if (existingUser) {
         return res.status(400).json({ message: '이미 사용 중인 사용자명입니다' });
       }
     }
 
-    // 이메일 중복 확인 (자신 제외)  
+    // 이메일 중복 확인 (자신 제외)
     if (email && email !== req.user.email) {
-      const existingUser = await User.findOne({ 
-        email, 
-        _id: { $ne: userId } 
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: userId }
       });
       if (existingUser) {
         return res.status(400).json({ message: '이미 사용 중인 이메일입니다' });
@@ -308,6 +308,11 @@ const updateProfile = async (req, res) => {
     if (username) updateData.username = username;
     if (email) updateData.email = email;
     if (bio !== undefined) updateData.bio = bio;
+    if (location) updateData.location = location;
+    // 음식 선호도 저장 (최대 5개, 순서 유지)
+    if (preferredFoods && Array.isArray(preferredFoods)) {
+      updateData.preferredFoods = preferredFoods.slice(0, 5);
+    }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,

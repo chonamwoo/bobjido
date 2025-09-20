@@ -9,6 +9,15 @@ interface User {
   email: string;
   profileImage?: string;
   bio?: string;
+  location?: {
+    city?: string;
+    district?: string;
+    coordinates?: {
+      lat: number;
+      lng: number;
+    };
+  };
+  preferredFoods?: string[];
   tasteProfile?: any;
   trustScore?: number;
   followerCount?: number;

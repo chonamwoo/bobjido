@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
+import {
   ArrowLeftIcon,
   MapPinIcon,
   BookmarkIcon,
@@ -12,7 +12,8 @@ import {
   ClipboardDocumentListIcon,
   CheckBadgeIcon,
   UserPlusIcon,
-  UserMinusIcon
+  UserMinusIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { motion } from 'framer-motion';
@@ -229,9 +230,20 @@ const UserProfile: React.FC = () => {
             <ArrowLeftIcon className="w-5 h-5" />
           </button>
           <h1 className="font-semibold">프로필</h1>
-          <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <ShareIcon className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {currentUser?.username === username && (
+              <button
+                onClick={() => navigate('/settings')}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="설정"
+              >
+                <Cog6ToothIcon className="w-5 h-5" />
+              </button>
+            )}
+            <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+              <ShareIcon className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -239,13 +251,23 @@ const UserProfile: React.FC = () => {
       <div className="bg-white">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row gap-6">
-            {/* 프로필 이미지 */}
-            <div className="flex justify-center md:justify-start">
-              <img 
+            {/* 프로필 이미지와 설정 버튼 (모바일) */}
+            <div className="flex justify-center md:justify-start relative">
+              <img
                 src={profileData.profileImage || `https://ui-avatars.com/api/?name=${profileData.username}&background=FF6B35&color=fff`}
                 alt={profileData.username}
                 className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-white shadow-lg"
               />
+              {/* 모바일에서만 보이는 설정 버튼 */}
+              {currentUser?.username === username && (
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="md:hidden absolute -right-2 -top-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                  title="설정"
+                >
+                  <Cog6ToothIcon className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
             {/* 프로필 정보 */}
@@ -294,14 +316,6 @@ const UserProfile: React.FC = () => {
                     )}
                   </button>
                 )}
-                {currentUser?.username === username && (
-                  <button
-                    onClick={() => navigate('/settings')}
-                    className="px-6 py-2 bg-gray-200 rounded-full font-medium hover:bg-gray-300 transition-colors"
-                  >
-                    프로필 편집
-                  </button>
-                )}
               </div>
             </div>
           </div>
@@ -336,6 +350,61 @@ const UserProfile: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* 전문가 레벨 섹션 */}
+        {profileData?.expertiseScores && Object.keys(profileData.expertiseScores).length > 0 && (
+          <div className="border-b bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              <h3 className="text-sm font-semibold text-gray-600 mb-3">전문 분야</h3>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(profileData.expertiseScores)
+                  .filter(([_, score]: [string, any]) => score.level > 0)
+                  .sort((a: any, b: any) => b[1].level - a[1].level)
+                  .slice(0, 5)
+                  .map(([category, score]: [string, any]) => (
+                    <div
+                      key={category}
+                      className="bg-white rounded-lg px-3 py-2 shadow-sm border border-gray-200"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">
+                          {category === '한식' ? '🍚' :
+                           category === '중식' ? '🥟' :
+                           category === '일식' ? '🍱' :
+                           category === '양식' ? '🍝' :
+                           category === '카페' ? '☕' :
+                           category === '치킨' ? '🍗' :
+                           category === '피자' ? '🍕' :
+                           category === '고기' ? '🥩' : '🍴'}
+                        </span>
+                        <div>
+                          <div className="text-sm font-medium">{category}</div>
+                          <div className="text-xs text-gray-500">
+                            Lv.{score.level} {score.rank && `• #${score.rank}`}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+              {profileData?.preferredFoods && profileData.preferredFoods.length > 0 && (
+                <div className="mt-3">
+                  <h4 className="text-xs font-medium text-gray-500 mb-2">선호 음식</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {profileData.preferredFoods.map((food: string) => (
+                      <span
+                        key={food}
+                        className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full"
+                      >
+                        {food}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 탭 메뉴 */}

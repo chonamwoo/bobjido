@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from '../utils/axios';
 import toast from 'react-hot-toast';
 import PlaylistCard from '../components/PlaylistCard';
-import { 
+import {
   UserIcon,
   MapPinIcon,
   HeartIcon,
@@ -19,13 +19,15 @@ import {
   ChevronRightIcon,
   XMarkIcon,
   PlusIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  QueueListIcon,
+  BuildingStorefrontIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon, HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useAuthStore } from '../store/authStore';
 import { useSocialStore } from '../store/socialStore';
 import { getDefaultAvatar } from '../utils/avatars';
-import { useSavedPlaylists, useSavedRestaurants } from '../utils/dataManager';
+import { useSavedPlaylists, useSavedRestaurants, dataManager } from '../utils/dataManager';
 import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists_fixed';
 import { cleanupAndSyncSocialData, getSocialStats, addLikedRestaurant, removeLikedRestaurant } from '../utils/dataSyncUtils';
 // Removed dependency on sampleRestaurants - using MongoDB data
@@ -302,7 +304,7 @@ const ProfileV2: React.FC = () => {
     syncWithLocalStorage
   } = useSocialStore();
   const navigate = useNavigate();
-  const [showMyContent, setShowMyContent] = useState(true);
+  const [showMyContent, setShowMyContent] = useState(false);
   const [myContentToggle, setMyContentToggle] = useState<'created' | 'saved'>('created');
   const [savedToggle, setSavedToggle] = useState<'restaurants' | 'playlists'>('restaurants');
   const [showFollowing, setShowFollowing] = useState(false);
@@ -641,6 +643,48 @@ const ProfileV2: React.FC = () => {
             {/* 사용자명 */}
             <div className="text-center md:text-left">
               <h1 className="text-2xl md:text-3xl font-bold mb-2">{profileUser.username}</h1>
+
+              {/* 음식 선호도 표시 */}
+              {profileUser.preferredFoods && profileUser.preferredFoods.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3 justify-center md:justify-start">
+                  {profileUser.preferredFoods.map((foodId: string, index: number) => {
+                    const foodMap: { [key: string]: { name: string; emoji: string } } = {
+                      korean: { name: '한식', emoji: '🍚' },
+                      chinese: { name: '중식', emoji: '🥟' },
+                      japanese: { name: '일식', emoji: '🍱' },
+                      western: { name: '양식', emoji: '🍝' },
+                      asian: { name: '아시안', emoji: '🍜' },
+                      cafe: { name: '카페', emoji: '☕' },
+                      dessert: { name: '디저트', emoji: '🍰' },
+                      chicken: { name: '치킨', emoji: '🍗' },
+                      pizza: { name: '피자', emoji: '🍕' },
+                      burger: { name: '버거', emoji: '🍔' },
+                      meat: { name: '고기', emoji: '🥩' },
+                      seafood: { name: '해물', emoji: '🦐' },
+                      noodles: { name: '면요리', emoji: '🍜' },
+                      snack: { name: '분식', emoji: '🍢' },
+                      bar: { name: '술집', emoji: '🍺' },
+                      fastfood: { name: '패스트푸드', emoji: '🍟' }
+                    };
+                    const food = foodMap[foodId] || { name: foodId, emoji: '🍽️' };
+                    return (
+                      <span
+                        key={foodId}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                          index === 0
+                            ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                            : 'bg-orange-100 text-orange-700'
+                        }`}
+                      >
+                        <span className="text-sm">{food.emoji}</span>
+                        <span>{food.name}</span>
+                        {index === 0 && <span className="text-xs">👑</span>}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
               <div className="flex items-center justify-center md:justify-start space-x-4 text-sm text-gray-600">
                 <button
                   onClick={() => setShowFollowers(!showFollowers)}
@@ -666,103 +710,6 @@ const ProfileV2: React.FC = () => {
         </div>
       </div>
 
-      {/* 새로고침 버튼 */}
-      {isOwnProfile && (
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => {
-              loadSavedData();
-              setRefreshKey(prev => prev + 1);
-              toast.success('새로고침 완료!');
-            }}
-            className="p-2 text-gray-500 hover:text-gray-700 bg-white rounded-lg border border-gray-200"
-            title="새로고침"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-        </div>
-      )}
-
-      {/* 모바일에서만 보이는 설정 섹션 */}
-      {isMobile && isOwnProfile && (
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="w-full flex items-center justify-between"
-          >
-            <div className="flex items-center space-x-2">
-              <CogIcon className="w-5 h-5 text-gray-600" />
-              <span className="font-semibold">설정</span>
-            </div>
-            <ChevronDownIcon className={`w-5 h-5 transition-transform ${showSettings ? 'rotate-180' : ''}`} />
-          </button>
-          
-          {showSettings && (
-            <div className="mt-4 space-y-3">
-              {!currentUser ? (
-                // 로그인되지 않은 상태
-                <>
-                  <Link
-                    to="/login"
-                    className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium"
-                  >
-                    <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                    <span>로그인</span>
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium"
-                  >
-                    <UserPlusIcon className="w-5 h-5" />
-                    <span>회원가입</span>
-                  </Link>
-                </>
-              ) : (
-                // 로그인된 상태
-                <>
-                  <button
-                    onClick={() => navigate('/settings')}
-                    className="w-full flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <UserIcon className="w-5 h-5 text-gray-600" />
-                      <span>프로필 수정</span>
-                    </div>
-                    <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-                  </button>
-                  
-                  <button
-                    onClick={() => navigate('/settings')}
-                    className="w-full flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <CogIcon className="w-5 h-5 text-gray-600" />
-                      <span>계정 설정</span>
-                    </div>
-                    <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      if (window.confirm('정말 로그아웃 하시겠습니까?')) {
-                        logout();
-                        navigate('/');
-                        toast.success('로그아웃되었습니다');
-                      }
-                    }}
-                    className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
-                  >
-                    <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                    <span>로그아웃</span>
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* 모든 콘텐츠를 한 화면에 표시 */}
       <div className="space-y-6">
@@ -795,8 +742,8 @@ const ProfileV2: React.FC = () => {
                 <button
                   onClick={() => setMyContentToggle('saved')}
                   className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                    myContentToggle === 'saved' 
-                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white' 
+                    myContentToggle === 'saved'
+                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -840,8 +787,8 @@ const ProfileV2: React.FC = () => {
                     <button
                       onClick={() => setSavedToggle('restaurants')}
                       className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
-                        savedToggle === 'restaurants' 
-                          ? 'bg-white shadow-sm text-orange-600 border border-orange-200' 
+                        savedToggle === 'restaurants'
+                          ? 'bg-white shadow-sm text-orange-600 border border-orange-200'
                           : 'bg-transparent text-gray-600 hover:bg-white/50'
                       }`}
                     >
@@ -850,14 +797,25 @@ const ProfileV2: React.FC = () => {
                     <button
                       onClick={() => setSavedToggle('playlists')}
                       className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
-                        savedToggle === 'playlists' 
-                          ? 'bg-white shadow-sm text-orange-600 border border-orange-200' 
+                        savedToggle === 'playlists'
+                          ? 'bg-white shadow-sm text-orange-600 border border-orange-200'
                           : 'bg-transparent text-gray-600 hover:bg-white/50'
                       }`}
                     >
                       <span className="text-lg">📋</span> 리스트 ({localSavedPlaylists.length})
                     </button>
                   </div>
+
+                  {/* 네이버 맛집 연동 버튼 */}
+                  <button
+                    onClick={() => navigate('/import/naver')}
+                    className="w-full mt-3 p-2.5 bg-white border border-green-400 rounded-md hover:bg-green-50 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#03C75A">
+                      <path d="M16.273 12.845 7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">네이버 맛집 리스트 가져오기</span>
+                  </button>
                 </div>
                 
                 {/* Content based on toggle */}
@@ -1016,8 +974,87 @@ const ProfileV2: React.FC = () => {
             </>
           )}
         </div>
+
+        {/* 모바일에서만 보이는 설정 섹션 */}
+        {isMobile && isOwnProfile && (
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="w-full flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-2">
+                <CogIcon className="w-5 h-5 text-gray-600" />
+                <span className="font-semibold">설정</span>
+              </div>
+              <ChevronDownIcon className={`w-5 h-5 transition-transform ${showSettings ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showSettings && (
+              <div className="mt-4 space-y-3">
+                {!currentUser ? (
+                  // 로그인되지 않은 상태
+                  <>
+                    <Link
+                      to="/login"
+                      className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium"
+                    >
+                      <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                      <span>로그인</span>
+                    </Link>
+                    <Link
+                      to="/register"
+                      className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium"
+                    >
+                      <UserPlusIcon className="w-5 h-5" />
+                      <span>회원가입</span>
+                    </Link>
+                  </>
+                ) : (
+                  // 로그인된 상태
+                  <>
+                    <button
+                      onClick={() => navigate('/edit-profile')}
+                      className="w-full flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <UserIcon className="w-5 h-5 text-gray-600" />
+                        <span>프로필 수정</span>
+                      </div>
+                      <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                    </button>
+
+                    <button
+                      onClick={() => navigate('/account-settings')}
+                      className="w-full flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <CogIcon className="w-5 h-5 text-gray-600" />
+                        <span>계정 설정</span>
+                      </div>
+                      <ChevronRightIcon className="w-4 h-4 text-gray-400" />
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (window.confirm('정말 로그아웃 하시겠습니까?')) {
+                          logout();
+                          navigate('/');
+                          toast.success('로그아웃되었습니다');
+                        }
+                      }}
+                      className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
+                    >
+                      <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                      <span>로그아웃</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
-      
+
       {/* 지도 모달 */}
       {selectedRestaurantForMap && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

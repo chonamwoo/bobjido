@@ -58,16 +58,37 @@ const MobileRestaurantDetail: React.FC = () => {
     toast.success(isSaved ? '저장 취소' : '저장됨!');
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: restaurant?.name,
-        text: `${restaurant?.name} - ${restaurant?.category}`,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('링크가 복사되었습니다!');
+  const handleShare = async () => {
+    try {
+      // localhost나 HTTP에서는 Web Share API 사용하지 않음
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const isHttps = window.location.protocol === 'https:';
+
+      if (navigator.share && isHttps && !isLocalhost) {
+        await navigator.share({
+          title: restaurant?.name,
+          text: `${restaurant?.name} - ${restaurant?.category}`,
+          url: window.location.href,
+        });
+        toast.success('공유되었습니다!');
+      } else {
+        // 클립보드에 복사
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('링크가 클립보드에 복사되었습니다!');
+      }
+    } catch (error: any) {
+      // 사용자가 공유를 취소한 경우
+      if (error?.name === 'AbortError') {
+        return;
+      }
+      // 다른 에러의 경우 클립보드 복사
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('링크가 클립보드에 복사되었습니다!');
+      } catch (clipboardError) {
+        toast.error('공유에 실패했습니다');
+        console.error('Share failed:', error);
+      }
     }
   };
 

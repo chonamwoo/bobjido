@@ -28,6 +28,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AuthCallback from './pages/AuthCallback';
 import SavedList from './pages/SavedList';
 import Settings from './pages/Settings';
+import EditProfile from './pages/EditProfile';
+import AccountSettings from './pages/AccountSettings';
 import MyLists from './pages/MyLists';
 import UserProfile from './pages/UserProfile';
 import MyRestaurants from './pages/MyRestaurants';
@@ -57,6 +59,9 @@ import MyFollowingRestaurants from './pages/MyFollowingRestaurants';
 import AdminCertifiedRestaurants from './pages/AdminCertifiedRestaurants';
 import ImportNaverPlaces from './pages/ImportNaverPlaces';
 import AdminVerification from './pages/AdminVerification';
+import FoodExpertRankings from './pages/FoodExpertRankings';
+import FoodPreferenceSelector from './components/FoodPreferenceSelector';
+import AuthError from './pages/AuthError';
 
 function App() {
   const isMobile = useIsMobile();
@@ -91,6 +96,7 @@ function App() {
         <Route path="login" element={<Auth />} />
         <Route path="register" element={<Auth />} />
         <Route path="auth/callback" element={<AuthCallback />} />
+        <Route path="auth/error" element={<AuthError />} />
         <Route path="discover" element={<Discover />} />
         <Route path="explore" element={<ExplorePage />} />
         <Route path="community" element={<CommunityPage />} />
@@ -150,6 +156,22 @@ function App() {
           }
         />
         <Route
+          path="edit-profile"
+          element={
+            <ProtectedRoute>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="account-settings"
+          element={
+            <ProtectedRoute>
+              <AccountSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="my-restaurants"
           element={
             <ProtectedRoute>
@@ -162,6 +184,18 @@ function App() {
           element={
             <ProtectedRoute>
               <Notifications />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="rankings"
+          element={<FoodExpertRankings />}
+        />
+        <Route
+          path="food-preferences"
+          element={
+            <ProtectedRoute>
+              <FoodPreferenceSelector onComplete={(prefs) => console.log(prefs)} />
             </ProtectedRoute>
           }
         />
