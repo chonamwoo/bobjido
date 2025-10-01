@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>커뮤니티 기능 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #ff6b35;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        .test-button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: linear-gradient(135deg, #FF6B35, #FF8E53);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            opacity: 0.9;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 5px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍕 BobMap 커뮤니티 기능 테스트</h1>
+
+        <div class="test-section">
+            <h2>1. 커뮤니티 페이지 접속</h2>
+            <button class="test-button" onclick="testCommunityPage()">커뮤니티 페이지 열기</button>
+            <button class="test-button" onclick="checkPosts()">게시물 확인</button>
+            <div id="pageResult" class="result">테스트 결과가 여기에 표시됩니다...</div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. 상세 콘텐츠 확인</h2>
+            <p>아래 게시물들을 클릭하면 상세 모달이 열려야 합니다:</p>
+            <ul>
+                <li>백종원도 극찬한 라면 끓이는 꿀팁 (레시피)</li>
+                <li>새우 손질 10초 완성법 (조리팁)</li>
+                <li>미슐랭 셰프의 파스타 비법 (레시피)</li>
+                <li>치킨+콜라 말고 이거 드세요 (음식조합)</li>
+                <li>이마트 1+1 행사 총정리 (할인정보)</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2>3. 커뮤니티 페이지 미리보기</h2>
+            <iframe id="communityFrame" src="http://localhost:3000/community"></iframe>
+        </div>
+
+        <div class="test-section">
+            <h2>4. 콘솔 로그</h2>
+            <div id="consoleLog" class="result">콘솔 출력이 여기에 표시됩니다...</div>
+        </div>
+    </div>
+
+    <script>
+        // 콘솔 로그 캡처
+        const originalLog = console.log;
+        const logDiv = document.getElementById('consoleLog');
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            logDiv.textContent += args.join(' ') + '\n';
+        };
+
+        function testCommunityPage() {
+            const result = document.getElementById('pageResult');
+            result.textContent = '커뮤니티 페이지 로딩 중...\n';
+
+            // 새 창에서 커뮤니티 페이지 열기
+            window.open('http://localhost:3000/community', '_blank');
+
+            // iframe 리로드
+            document.getElementById('communityFrame').src = 'http://localhost:3000/community';
+
+            result.textContent += '✅ 커뮤니티 페이지를 새 창에서 열었습니다.\n';
+            result.textContent += '✅ iframe에도 로드했습니다.\n';
+            result.textContent += '\n주요 기능:\n';
+            result.textContent += '- 레시피: 백종원 라면, 미슐랭 파스타\n';
+            result.textContent += '- 조리팁: 새우 손질법\n';
+            result.textContent += '- 음식조합: 치킨+사이다+레몬\n';
+            result.textContent += '- 할인정보: 이마트 1+1\n';
+        }
+
+        function checkPosts() {
+            const result = document.getElementById('pageResult');
+            result.textContent = '게시물 상세 콘텐츠 확인:\n\n';
+
+            const posts = [
+                {
+                    title: '백종원 라면 레시피',
+                    content: '5단계 조리법, 재료: 라면, 계란, 대파, 김치'
+                },
+                {
+                    title: '새우 손질 꿀팁',
+                    content: '4단계 방법, 이쑤시개로 내장 제거'
+                },
+                {
+                    title: '미슐랭 파스타',
+                    content: '8단계 조리법, 알리오올리오 비법'
+                },
+                {
+                    title: '치킨 조합',
+                    content: '치킨+사이다+레몬즙'
+                },
+                {
+                    title: '이마트 할인',
+                    content: '1+1 행사 상품 목록'
+                }
+            ];
+
+            posts.forEach(post => {
+                result.textContent += `📌 ${post.title}\n`;
+                result.textContent += `   ${post.content}\n\n`;
+            });
+
+            result.textContent += '\n💡 제목을 클릭하면 상세 모달이 열립니다!';
+        }
+
+        // 페이지 로드 시 자동 실행
+        window.onload = function() {
+            console.log('테스트 페이지 로드 완료');
+            console.log('커뮤니티 페이지 주소: http://localhost:3000/community');
+        };
+    </script>
+</body>
+</html>
