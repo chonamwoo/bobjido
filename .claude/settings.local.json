@@ -175,7 +175,11 @@
       "Bash(git restore:*)",
       "Bash(git stash:*)",
       "Bash(start http://localhost:5555/client/public/mobile-simulator.html)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(start http://localhost:3000/test-community.html)",
+      "Bash(start chrome http://localhost:5555/mobile-simulator.html)",
+      "Bash(start chrome:*)",
+      "WebFetch(domain:www.gqkorea.co.kr)"
     ],
     "deny": [],
     "ask": []

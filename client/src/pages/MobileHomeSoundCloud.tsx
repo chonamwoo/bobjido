@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  PlayIcon, 
+import {
+  PlayIcon,
   HeartIcon,
   MapPinIcon,
   SparklesIcon,
@@ -14,7 +14,12 @@ import {
   ChevronRightIcon,
   XMarkIcon,
   EyeIcon,
-  ChatBubbleLeftIcon
+  ChatBubbleLeftIcon,
+  PaperAirplaneIcon,
+  EllipsisVerticalIcon,
+  PlusIcon,
+  InboxIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid, BookmarkIcon as BookmarkIconSolid } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
@@ -27,6 +32,7 @@ import { getUniquePlaylistImage } from '../utils/playlistImages';
 import { formatTimeAgo } from '../utils/communityApi';
 import { dataManager } from '../utils/dataManager';
 import { playlistDataManager } from '../utils/playlistDataManager';
+import ShareStatusModal from '../components/ShareStatusModal';
 
 const MobileHomeSoundCloud: React.FC = () => {
   const navigate = useNavigate();
@@ -35,13 +41,12 @@ const MobileHomeSoundCloud: React.FC = () => {
   const [friendsPlaylists, setFriendsPlaylists] = useState<any[]>([]);
   const [communityPosts, setCommunityPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  // sessionStorage에서 이전 필터 상태 복원
-  const [activeFilter, setActiveFilter] = useState<'certified' | 'friends' | 'community'>(() => {
-    const savedFilter = sessionStorage.getItem('mobileHomeFilter');
-    return (savedFilter as 'certified' | 'friends' | 'community') || 'certified';
-  });
+  // 기본값을 'certified'로 고정 (항상 홈에서 인증된 플레이리스트가 먼저 보이도록)
+  const [activeFilter, setActiveFilter] = useState<'certified' | 'friends' | 'community'>('certified');
   const [selectedCreatorForExplore, setSelectedCreatorForExplore] = useState<any>(null);
   const [selectedList, setSelectedList] = useState<any>(null);
+  const [showShareStatus, setShowShareStatus] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const { followUser, unfollowUser, isFollowing, syncWithLocalStorage, followingUsers, followingUserDetails } = useSocialStore();
   
   // 필터 변경시 sessionStorage에 저장
@@ -984,12 +989,6 @@ const MobileHomeSoundCloud: React.FC = () => {
     </motion.div>
   );
 
-  // 디버그용 함수
-  const handleDebugReset = () => {
-    playlistDataManager.resetStats();
-    loadInitialData();
-    toast.success('통계가 초기화되었습니다');
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -1000,14 +999,6 @@ const MobileHomeSoundCloud: React.FC = () => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
               BobMap
             </h1>
-            {/* 디버그 버튼 (임시) */}
-            <button
-              onClick={handleDebugReset}
-              className="text-xs px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-              title="통계 초기화 (디버그)"
-            >
-              🔄
-            </button>
           </div>
 
           {/* Filter tabs */}
@@ -1085,6 +1076,82 @@ const MobileHomeSoundCloud: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 우측 상단 더보기 메뉴 */}
+      <div className="fixed top-4 right-4 z-[9999]">
+        <button
+          onClick={() => setShowMoreMenu(!showMoreMenu)}
+          className="p-2 bg-white hover:bg-gray-100 rounded-lg shadow-md"
+          title="더보기 메뉴"
+        >
+          <EllipsisVerticalIcon className="w-5 h-5 text-gray-700" />
+        </button>
+
+        {/* 더보기 메뉴 드롭다운 */}
+        {showMoreMenu && (
+          <div className="absolute top-12 right-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+            <button
+              onClick={() => {
+                setShowMoreMenu(false);
+                navigate('/create-playlist');
+              }}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+            >
+              <PlusIcon className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-800 font-medium">플레이리스트 만들기</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setShowMoreMenu(false);
+                navigate('/messages');
+              }}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+            >
+              <InboxIcon className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-800 font-medium">메시지</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setShowMoreMenu(false);
+                navigate('/notifications');
+              }}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+            >
+              <BellIcon className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-800 font-medium">알림</span>
+            </button>
+
+            <hr className="my-2 border-gray-200" />
+
+            <button
+              onClick={() => {
+                setShowMoreMenu(false);
+                setShowShareStatus(true);
+              }}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+            >
+              <PaperAirplaneIcon className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-800 font-medium">공유 상태</span>
+            </button>
+          </div>
+        )}
+
+        {/* 메뉴 외부 클릭 시 닫기 */}
+        {showMoreMenu && (
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowMoreMenu(false)}
+          />
+        )}
+      </div>
+
+      {/* 공유 상태 모달 */}
+      <ShareStatusModal
+        isOpen={showShareStatus}
+        onClose={() => setShowShareStatus(false)}
+      />
     </div>
   );
 };

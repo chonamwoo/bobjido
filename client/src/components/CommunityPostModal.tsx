@@ -20,6 +20,7 @@ interface CommunityPostModalProps {
   onSave?: () => void;
   onShare?: () => void;
   onCommentAdd?: (postId: string, comment: any) => void;
+  isShareMode?: boolean;
 }
 
 const CommunityPostModal: React.FC<CommunityPostModalProps> = ({
@@ -29,6 +30,7 @@ const CommunityPostModal: React.FC<CommunityPostModalProps> = ({
   onSave,
   onShare,
   onCommentAdd,
+  isShareMode = false,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<any[]>([]);
@@ -81,7 +83,7 @@ const CommunityPostModal: React.FC<CommunityPostModalProps> = ({
   if (!post) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className={`fixed inset-0 bg-black/50 flex items-center justify-center p-4 ${isShareMode ? 'z-[30]' : 'z-50'}`} onClick={onClose}>
       <div
         className="bg-white w-full max-w-3xl max-h-[90vh] rounded-2xl overflow-hidden animate-slide-up"
         onClick={(e) => e.stopPropagation()}

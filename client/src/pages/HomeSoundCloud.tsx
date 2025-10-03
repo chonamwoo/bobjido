@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ChevronLeftIcon, 
+import {
+  ChevronLeftIcon,
   ChevronRightIcon,
   PlayIcon,
   HeartIcon,
@@ -13,7 +13,12 @@ import {
   UserGroupIcon,
   StarIcon,
   UserPlusIcon,
-  UserMinusIcon
+  UserMinusIcon,
+  PaperAirplaneIcon,
+  EllipsisVerticalIcon,
+  PlusIcon,
+  InboxIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import { useAuthStore } from '../store/authStore';
@@ -24,6 +29,7 @@ import { getPlaylistCoverImage } from '../utils/imageUtils';
 import { certifiedRestaurantLists, getTrendingLists, getLatestLists } from '../data/certifiedRestaurantLists_fixed';
 import { getDefaultAvatar } from '../utils/avatars';
 import syncStorage from '../utils/syncStorage';
+import ShareStatusModal from '../components/ShareStatusModal';
 
 const HomeSoundCloud: React.FC = () => {
   const navigate = useNavigate();
@@ -31,6 +37,8 @@ const HomeSoundCloud: React.FC = () => {
   const { followUser, unfollowUser, isFollowing, syncWithLocalStorage } = useSocialStore();
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showShareStatus, setShowShareStatus] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const scrollRefs = {
     curated: useRef<HTMLDivElement>(null),
     trending: useRef<HTMLDivElement>(null),
@@ -593,6 +601,82 @@ const HomeSoundCloud: React.FC = () => {
           </button>
         </div>
       </section>
+
+      {/* 우측 상단 더보기 메뉴 */}
+      <div className="fixed top-4 right-4 z-[9999]">
+        <button
+          onClick={() => setShowMoreMenu(!showMoreMenu)}
+          className="p-2 bg-white hover:bg-gray-100 rounded-lg shadow-md"
+          title="더보기 메뉴"
+        >
+          <EllipsisVerticalIcon className="w-5 h-5 text-gray-700" />
+        </button>
+
+        {/* 더보기 메뉴 드롭다운 */}
+        {showMoreMenu && (
+          <div className="absolute top-12 right-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+            <button
+              onClick={() => {
+                setShowMoreMenu(false);
+                navigate('/create-playlist');
+              }}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+            >
+              <PlusIcon className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-800 font-medium">플레이리스트 만들기</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setShowMoreMenu(false);
+                navigate('/messages');
+              }}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+            >
+              <InboxIcon className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-800 font-medium">메시지</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setShowMoreMenu(false);
+                navigate('/notifications');
+              }}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+            >
+              <BellIcon className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-800 font-medium">알림</span>
+            </button>
+
+            <hr className="my-2 border-gray-200" />
+
+            <button
+              onClick={() => {
+                setShowMoreMenu(false);
+                setShowShareStatus(true);
+              }}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+            >
+              <PaperAirplaneIcon className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-800 font-medium">공유 상태</span>
+            </button>
+          </div>
+        )}
+
+        {/* 메뉴 외부 클릭 시 닫기 */}
+        {showMoreMenu && (
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowMoreMenu(false)}
+          />
+        )}
+      </div>
+
+      {/* 공유 상태 모달 */}
+      <ShareStatusModal
+        isOpen={showShareStatus}
+        onClose={() => setShowShareStatus(false)}
+      />
     </div>
   );
 };

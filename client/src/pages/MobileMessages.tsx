@@ -20,6 +20,18 @@ interface Message {
   sender: 'me' | 'other';
   timestamp: string;
   read: boolean;
+  type?: 'text' | 'community_share';
+  sharedPost?: {
+    id: string;
+    title: string;
+    content: string;
+    author: {
+      name: string;
+      avatar: string;
+    };
+    category: string;
+    image?: string;
+  };
 }
 
 interface Chat {
@@ -42,6 +54,42 @@ const MobileMessages: React.FC = () => {
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+
+  // 메시지 읽음 처리
+  const markMessagesAsRead = (chatId: string) => {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('userData') || localStorage.getItem('bobmap_user_data') || '{}');
+      const currentUsername = currentUser.username || '사용자';
+
+      // 내가 받은 메시지함에서 읽음 처리
+      const myMessages = JSON.parse(localStorage.getItem(`messages_to_${currentUsername}`) || '[]');
+      const updatedMessages = myMessages.map((msg: any) => {
+        if (!msg.read && msg.sharedBy?.name !== currentUsername) {
+          return {
+            ...msg,
+            read: true,
+            readAt: new Date().toISOString()
+          };
+        }
+        return msg;
+      });
+
+      localStorage.setItem(`messages_to_${currentUsername}`, JSON.stringify(updatedMessages));
+
+      // 채팅방 메시지들도 읽음 처리
+      const chatMessages = JSON.parse(localStorage.getItem(chatId) || '[]');
+      const updatedChatMessages = chatMessages.map((msg: any) => {
+        if (!msg.read && msg.sender === 'other') {
+          return { ...msg, read: true };
+        }
+        return msg;
+      });
+
+      localStorage.setItem(chatId, JSON.stringify(updatedChatMessages));
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
+    }
+  };
 
   const [chats, setChats] = useState<Chat[]>([
     {
@@ -239,30 +287,108 @@ const MobileMessages: React.FC = () => {
                   </svg>
                 </div>
                 
-                {/* 메시지 내용 - 더 읽기 쉽게 */}
-                <div className={`relative px-3 py-2 rounded-2xl ${
-                  message.sender === 'me'
-                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
-                    : 'bg-gray-100 text-gray-900'
-                }`}>
-                  <p className="text-sm leading-relaxed break-words">{message.text}</p>
-                  <div className={`flex items-center gap-1 mt-0.5 ${
-                    message.sender === 'me' ? 'justify-end' : 'justify-start'
+                {/* 메시지 내용 - 공유 포스트 타입별 처리 */}
+                {message.type === 'community_share' && message.sharedPost ? (
+                  /* 공유받은 커뮤니티 포스트 */
+                  <div className={`relative rounded-2xl overflow-hidden ${
+                    message.sender === 'me' ? 'bg-orange-50 border border-orange-200' : 'bg-blue-50 border border-blue-200'
                   }`}>
-                    <span className={`text-[10px] ${
-                      message.sender === 'me' ? 'text-orange-100' : 'text-gray-500'
+                    {/* 공유 헤더 */}
+                    <div className={`px-3 py-2 text-xs font-medium ${
+                      message.sender === 'me' ? 'text-orange-700 bg-orange-100' : 'text-blue-700 bg-blue-100'
                     }`}>
-                      {message.timestamp}
-                    </span>
-                    {message.sender === 'me' && (
-                      message.read ? (
-                        <CheckSolidIcon className="w-2.5 h-2.5 text-orange-100" />
-                      ) : (
-                        <CheckIcon className="w-2.5 h-2.5 text-orange-200" />
-                      )
-                    )}
+                      📱 공유된 커뮤니티 포스트
+                    </div>
+
+                    {/* 포스트 내용 */}
+                    <div className="p-3">
+                      <div className="flex items-start gap-2 mb-2">
+                        <span className="text-lg">{message.sharedPost.author.avatar}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{message.sharedPost.author.name}</span>
+                            <span className="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded">
+                              {message.sharedPost.category}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <h4 className="font-bold text-sm text-gray-900 mb-1">{message.sharedPost.title}</h4>
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">{message.sharedPost.content}</p>
+
+                      {message.sharedPost.image && (
+                        <div className="rounded-lg overflow-hidden mb-2">
+                          <img
+                            src={message.sharedPost.image}
+                            alt="공유 이미지"
+                            className="w-full h-24 object-cover"
+                          />
+                        </div>
+                      )}
+
+                      {/* 함께 보낸 메시지 */}
+                      {message.text && message.text !== `📱 ${message.sharedPost.title}\n\n공유된 커뮤니티 포스트입니다` && (
+                        <div className="mt-2 p-2 bg-white rounded-lg border">
+                          <p className="text-xs text-gray-700">
+                            💬 "{message.text.split('\n\n')[1] || message.text}"
+                          </p>
+                        </div>
+                      )}
+
+                      <button
+                        className="w-full mt-2 py-1.5 bg-gray-900 text-white rounded-lg text-xs font-medium hover:bg-gray-800 transition-colors"
+                        onClick={() => {
+                          // 커뮤니티 포스트로 이동
+                          alert(`"${message.sharedPost?.title}" 포스트를 확인합니다!`);
+                        }}
+                      >
+                        포스트 자세히 보기 →
+                      </button>
+                    </div>
+
+                    {/* 타임스탬프와 읽음 표시 */}
+                    <div className={`px-3 pb-2 flex items-center gap-1 ${
+                      message.sender === 'me' ? 'justify-end' : 'justify-start'
+                    }`}>
+                      <span className="text-[10px] text-gray-500">
+                        {message.timestamp}
+                      </span>
+                      {message.sender === 'me' && (
+                        message.read ? (
+                          <CheckSolidIcon className="w-2.5 h-2.5 text-green-500" />
+                        ) : (
+                          <CheckIcon className="w-2.5 h-2.5 text-gray-400" />
+                        )
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* 일반 텍스트 메시지 */
+                  <div className={`relative px-3 py-2 rounded-2xl ${
+                    message.sender === 'me'
+                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}>
+                    <p className="text-sm leading-relaxed break-words">{message.text}</p>
+                    <div className={`flex items-center gap-1 mt-0.5 ${
+                      message.sender === 'me' ? 'justify-end' : 'justify-start'
+                    }`}>
+                      <span className={`text-[10px] ${
+                        message.sender === 'me' ? 'text-orange-100' : 'text-gray-500'
+                      }`}>
+                        {message.timestamp}
+                      </span>
+                      {message.sender === 'me' && (
+                        message.read ? (
+                          <CheckSolidIcon className="w-2.5 h-2.5 text-orange-100" />
+                        ) : (
+                          <CheckIcon className="w-2.5 h-2.5 text-orange-200" />
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
@@ -343,7 +469,10 @@ const MobileMessages: React.FC = () => {
         {filteredChats.map(chat => (
           <motion.button
             key={chat.id}
-            onClick={() => setSelectedChat(chat.id)}
+            onClick={() => {
+              setSelectedChat(chat.id);
+              markMessagesAsRead(chat.id);
+            }}
             className="w-full bg-white border-b hover:bg-gray-50 transition-colors"
             whileTap={{ scale: 0.98 }}
           >

@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { getCommunityImage, getAvatarColor, getPostVisual, getRealFoodImage } from '../utils/communityImages';
+import CommunityPostModal from '../components/CommunityPostModal';
 
 interface CommunityPost {
   id: string;
@@ -49,14 +50,19 @@ interface CommunityPost {
   cookTime?: string;
   servings?: number;
   ingredients?: string[];
-  steps?: { order: number; description: string; image?: string }[];
-  discount?: { percentage: number; store: string; validUntil: string };
+  steps?: { order: number; description: string; image?: string; tip?: string; warning?: string }[];
+  discount?: { percentage: number; store: string; validUntil: string; description?: string };
+  detailedContent?: string;
+  additionalTips?: string[];
+  tipDetails?: { summary: string };
+  detailedSteps?: { title: string; description: string; warning?: string }[];
 }
 
 const Community: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'latest' | 'popular' | 'trending'>('trending');
+  const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
   const [allPosts, setAllPosts] = useState<CommunityPost[]>([
     {
       id: '1',
@@ -83,12 +89,20 @@ const Community: React.FC = () => {
       difficulty: '초급',
       cookTime: '5분',
       servings: 1,
-      ingredients: ['라면 1개', '계란 1개', '파 조금', '김치 약간'],
+      ingredients: ['라면 1개', '계란 1개', '대파 1/2대', '김치 100g', '청양고추 1개 (선택)', '치즈 1장 (선택)'],
       steps: [
-        { order: 1, description: '물 550ml를 끓인다' },
-        { order: 2, description: '스프를 먼저 넣고 잘 푼다' },
-        { order: 3, description: '면을 넣고 2분 30초 끓인다' },
-        { order: 4, description: '계란을 넣고 30초 더 끓인다' },
+        { order: 1, description: '물 550ml를 정확히 계량해서 냄비에 붓습니다. 너무 많으면 싱겁고, 너무 적으면 짜집니다.', tip: '종이컵으로 3컵 정도가 550ml입니다' },
+        { order: 2, description: '물이 끓기 시작하면 스프를 먼저 넣고 젓가락으로 잘 풀어줍니다. 이렇게 하면 면에 간이 골고루 배어듭니다.' },
+        { order: 3, description: '면을 넣고 타이머를 2분 30초로 맞춥니다. 1분이 지나면 면을 한 번 뒤집어 줍니다.', tip: '쫄깃한 면을 원하면 2분, 부드러운 면을 원하면 3분' },
+        { order: 4, description: '남은 30초가 되면 계란을 넣습니다. 반숙을 원하면 그대로, 완숙을 원하면 1분 더 끓입니다.' },
+        { order: 5, description: '불을 끄고 썰어둔 파와 김치를 올립니다. 취향에 따라 치즈를 올려도 좋습니다.' }
+      ],
+      detailedContent: '백종원 셰프가 방송에서 공개한 황금 레시피입니다. 핵심은 스프를 먼저 넣는 것! 이렇게 하면 면에 간이 배어들어 훨씬 맛있습니다. 또한 정확한 물의 양과 시간을 지키는 것이 중요합니다. 계란은 취향에 따라 반숙 또는 완숙으로 조절하세요.',
+      additionalTips: [
+        '물 대신 육수를 사용하면 더욱 깊은 맛이 납니다',
+        '버터를 조금 넣으면 고소한 맛이 더해집니다',
+        '삶은 계란보다 수란을 만들어 올리면 더 고급스럽습니다',
+        '김치는 신김치를 사용하면 더 맛있습니다'
       ],
     },
     {
@@ -96,6 +110,35 @@ const Community: React.FC = () => {
       type: 'tip',
       title: '새우 손질 10초 완성법',
       content: '레스토랑 셰프들이 사용하는 새우 손질법. 이쑤시개 하나로 내장을 깔끔하게 제거하는 방법',
+      tipDetails: {
+        summary: '이쑤시개를 새우 등 두 번째 마디에 찔러 넣고 위로 살짝 들어올리면 내장이 한 번에 빠집니다'
+      },
+      detailedContent: '새우 손질이 어렵다고 생각하시나요? 전문 셰프들이 사용하는 이 방법을 알면 누구나 10초 만에 새우를 완벽하게 손질할 수 있습니다. 칼로 등을 가르는 번거로운 작업 없이, 이쑤시개 하나만으로 깔끔하게 내장을 제거하는 비법을 알려드립니다.',
+      detailedSteps: [
+        {
+          title: '새우 준비하기',
+          description: '새우를 찬물에 헹구고 키친타올로 물기를 제거합니다. 냉동 새우는 미리 해동해주세요.',
+          warning: '뜨거운 물로 해동하면 새우가 익어버립니다'
+        },
+        {
+          title: '이쑤시개 위치 잡기',
+          description: '새우의 머리에서 두 번째 마디를 찾습니다. 등 쪽에서 마디 사이의 틈이 보이는 곳입니다.'
+        },
+        {
+          title: '내장 빼내기',
+          description: '이쑤시개를 살짝 비스듬히 찔러 넣은 후, 위로 천천히 들어올립니다. 검은 내장이 따라 올라옵니다.',
+          warning: '너무 깊이 찌르면 새우가 부서질 수 있습니다'
+        },
+        {
+          title: '마무리 확인',
+          description: '내장이 완전히 제거되었는지 확인합니다. 남은 부분이 있다면 같은 방법으로 한 번 더 시도합니다.'
+        }
+      ],
+      additionalTips: [
+        '손질한 새우는 소금물에 헹구면 더 깨끗해집니다',
+        '레몬즙을 뿌리면 비린내가 제거됩니다',
+        '요리 직전에 손질하는 것이 신선도 유지에 좋습니다'
+      ],
       author: {
         id: 'user2',
         name: '요리왕비룡',
@@ -137,30 +180,13 @@ const Community: React.FC = () => {
       createdAt: '1일 전',
       isLiked: false,
       isSaved: true,
-    },
-    {
-      id: '4',
-      type: 'deal',
-      title: '이마트 1+1 행사 총정리',
-      content: '이번 주 이마트 전국 매장 1+1 행사 상품 총정리. 라면, 과자, 음료 등 필수템 할인 정보',
-      author: {
-        id: 'user4',
-        name: '할인헌터',
-        avatar: '💰',
-        level: '세일 마스터',
-        isVerified: false,
-      },
-      category: '할인 정보',
-      tags: ['이마트', '1+1', '할인', '세일'],
-      images: [],
-      likes: 2341,
-      comments: 89,
-      saves: 1892,
-      views: 8901,
-      createdAt: '3시간 전',
-      isLiked: false,
-      isSaved: false,
-      discount: { percentage: 50, store: '이마트', validUntil: '2025-01-25' },
+      detailedContent: '치킨에는 콜라가 정석이라고 생각하시나요? 제가 발견한 이 조합을 한번 시도해보세요. 사이다의 탄산이 기름기를 싹 잡아주고, 레몬즙이 입안을 개운하게 만들어줍니다. 특히 양념치킨이나 후라이드치킨과 잘 어울립니다!',
+      additionalTips: [
+        '사이다는 꼭 제로콜라가 아닌 일반 사이다로',
+        '레몬즙은 생레몬을 짜서 사용하면 더 상큼합니다',
+        '치킨을 먹기 전에 음료를 한 모금 마시고 시작하세요',
+        '피클과 함께 먹으면 더욱 맛있습니다'
+      ],
     },
     {
       id: '5',
@@ -187,6 +213,62 @@ const Community: React.FC = () => {
       difficulty: '고급',
       cookTime: '20분',
       servings: 2,
+      detailedContent: '알리오올리오는 가장 단순하면서도 가장 어려운 파스타입니다. 재료가 단순할수록 기술이 중요하죠. 미슐랭 스타 셰프에게 직접 배운 비법을 공개합니다. 핵심은 파스타 면수와 올리브오일의 유화입니다!',
+      ingredients: [
+        '스파게티 200g',
+        '엑스트라 버진 올리브오일 80ml',
+        '마늘 4쪽',
+        '페페론치노 1개 (선택)',
+        '이탈리안 파슬리 한줄',
+        '파르미지아노 치즈 (선택)',
+        '굵은소금',
+        '후추'
+      ],
+      steps: [
+        {
+          order: 1,
+          description: '큰 냄비에 물을 끓입니다. 물 1L당 굵은소금 10g을 넣습니다.',
+          tip: '바닷물 정도의 짠맛이 나야 합니다'
+        },
+        {
+          order: 2,
+          description: '마늘을 옆면으로 얇게 자릅니다. 너무 얇으면 탈 수 있으니 2mm 정도가 적당합니다.'
+        },
+        {
+          order: 3,
+          description: '차가운 팬에 올리브오일과 마늘을 넣고 약한 불에서 천천히 볶습니다.',
+          tip: '마늘이 노릇해질 때까지 기다립니다. 갈색이 되면 안 됩니다!'
+        },
+        {
+          order: 4,
+          description: '물이 끓으면 파스타를 넣고 설명서보다 1분 적게 삶습니다.',
+          warning: '알 덴테로 마무리할 것이므로 약간 덜 익히는 것이 포인트'
+        },
+        {
+          order: 5,
+          description: '파스타가 익는 동안 면수 한 국자를 따로 보관합니다. 이것이 유화의 핵심입니다.'
+        },
+        {
+          order: 6,
+          description: '파스타가 익으면 불을 끄고 마늘 팬에 파스타를 넣습니다.',
+          tip: '불을 끄는 것이 중요합니다!'
+        },
+        {
+          order: 7,
+          description: '면수를 조금씩 넣으면서 빠르게 저어 유화시킵니다. 크림 같은 질감이 되면 성공!',
+          tip: '한 번에 많이 넣으면 유화가 깨집니다'
+        },
+        {
+          order: 8,
+          description: '파슬리를 넣고 마무리합니다. 취향에 따라 파르미지아노나 페페론치노를 추가합니다.'
+        }
+      ],
+      additionalTips: [
+        '파스타 면은 두께 1.6mm 정도가 가장 좋습니다',
+        '올리브오일은 꼭 엑스트라 버진을 사용하세요',
+        '파슬리가 없다면 바질로 대체 가능합니다',
+        '매운맛을 원한다면 페페론치노를 꼭 넣어보세요'
+      ],
     },
   ]);
 
@@ -195,7 +277,6 @@ const Community: React.FC = () => {
     { id: 'recipe', label: '레시피', icon: BookOpenIcon },
     { id: 'tip', label: '조리 팁', icon: LightBulbIcon },
     { id: 'combination', label: '음식 조합', icon: FireIcon },
-    { id: 'deal', label: '할인 정보', icon: TagIcon },
   ];
 
   const trendingTags = [
@@ -247,7 +328,7 @@ const Community: React.FC = () => {
           >
             <h1 className="text-4xl font-bold mb-4">푸드 커뮤니티</h1>
             <p className="text-xl opacity-90 mb-8">
-              레시피, 조리 팁, 음식 조합, 할인 정보를 공유하는 공간
+              레시피, 조리 팁, 음식 조합을 공유하는 공간
             </p>
             
             {/* Search Bar */}
@@ -255,7 +336,7 @@ const Community: React.FC = () => {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="레시피, 팁, 할인 정보 검색..."
+                  placeholder="레시피, 팁, 음식 조합 검색..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-12 py-4 rounded-full text-gray-900 placeholder-gray-500"
@@ -393,14 +474,18 @@ const Community: React.FC = () => {
                       }`}>
                         {post.type === 'recipe' ? '레시피' :
                          post.type === 'tip' ? '조리팁' :
-                         post.type === 'combination' ? '음식조합' :
-                         post.type === 'deal' ? '할인정보' : '기타'}
+                         post.type === 'combination' ? '음식조합' : '기타'}
                       </span>
                     </div>
 
-                    {/* Post Content */}
-                    <h3 className="text-xl font-bold mb-2">{post.title}</h3>
-                    <p className="text-gray-600 mb-4">{post.content}</p>
+                    {/* Post Content - 클릭 가능하게 수정 */}
+                    <div
+                      className="cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => setSelectedPost(post)}
+                    >
+                      <h3 className="text-xl font-bold mb-2 hover:text-orange-600 transition-colors">{post.title}</h3>
+                      <p className="text-gray-600 mb-4">{post.content}</p>
+                    </div>
 
                     {/* 실제 음식 이미지 - 겹침 방지 처리 */}
                     <div className="mb-4 relative rounded-lg overflow-hidden bg-gray-100">
@@ -439,19 +524,6 @@ const Community: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Discount Info */}
-                    {post.discount && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-red-600">
-                            {post.discount.percentage}% 할인
-                          </span>
-                          <span className="text-sm text-gray-600">
-                            {post.discount.store} | ~{post.discount.validUntil}
-                          </span>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -514,7 +586,6 @@ const Community: React.FC = () => {
                 {[
                   { name: '라면마스터', posts: 42, followers: 1234, avatar: '🍜' },
                   { name: '요리왕비룡', posts: 38, followers: 892, avatar: '👨‍🍳' },
-                  { name: '할인헌터', posts: 31, followers: 567, avatar: '💰' },
                   { name: '이탈리아셰프', posts: 28, followers: 445, avatar: '🍝' },
                   { name: '에어프라이어신', posts: 25, followers: 334, avatar: '🍟' },
                 ].map((author, index) => (
@@ -536,6 +607,16 @@ const Community: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Post Detail Modal */}
+      {selectedPost && (
+        <CommunityPostModal
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+          onLike={() => handleLike(selectedPost.id)}
+          onSave={() => handleSave(selectedPost.id)}
+        />
+      )}
     </div>
   );
 };

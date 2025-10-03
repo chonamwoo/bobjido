@@ -21,7 +21,8 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   QueueListIcon,
-  BuildingStorefrontIcon
+  BuildingStorefrontIcon,
+  ChatBubbleBottomCenterTextIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon, HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useAuthStore } from '../store/authStore';
@@ -307,15 +308,17 @@ const ProfileV2: React.FC = () => {
   const [showMyContent, setShowMyContent] = useState(false);
   const [myContentToggle, setMyContentToggle] = useState<'created' | 'saved'>('created');
   const [savedToggle, setSavedToggle] = useState<'restaurants' | 'playlists'>('restaurants');
+  const [activeTab, setActiveTab] = useState<'my-lists' | 'saved' | 'likes'>('my-lists');
   const [showFollowing, setShowFollowing] = useState(false);
   const [showFollowers, setShowFollowers] = useState(false);
   const [showLikes, setShowLikes] = useState(false);
-  const [likesToggle, setLikesToggle] = useState<'restaurants' | 'playlists'>('restaurants');
+  const [likesToggle, setLikesToggle] = useState<'restaurants' | 'playlists' | 'community'>('restaurants');
   const [refreshKey, setRefreshKey] = useState(0);
   const [localSavedPlaylists, setLocalSavedPlaylists] = useState<any[]>([]);
   const [localSavedRestaurants, setLocalSavedRestaurants] = useState<any[]>([]);
   const [likedRestaurants, setLikedRestaurants] = useState<any[]>([]);
   const [likedPlaylists, setLikedPlaylists] = useState<any[]>([]);
+  const [likedCommunityPosts, setLikedCommunityPosts] = useState<any[]>([]);
   const [showRestaurantDetails, setShowRestaurantDetails] = useState<{[key: string]: boolean}>({});
   const [showAddRestaurantModal, setShowAddRestaurantModal] = useState(false);
   const [selectedPlaylistForAdd, setSelectedPlaylistForAdd] = useState<string | null>(null);
@@ -383,10 +386,14 @@ const ProfileV2: React.FC = () => {
     // Load liked items with proper structure - filter out nulls
     let likedRestaurantIds = JSON.parse(localStorage.getItem('likedRestaurants') || '[]');
     let likedPlaylistIds = JSON.parse(localStorage.getItem('likedPlaylists') || '[]');
-    
+    const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
+
     // Filter out null, undefined, and empty strings
     likedRestaurantIds = likedRestaurantIds.filter((id: any) => id && id.trim && id.trim() !== '');
     likedPlaylistIds = likedPlaylistIds.filter((id: any) => id && id.trim && id.trim() !== '');
+
+    // Get liked community post IDs
+    const likedPostIds = Object.keys(likedPosts).filter(id => likedPosts[id]);
     
     // Get all available restaurants from various sources
     const localRestaurants = JSON.parse(localStorage.getItem('localRestaurants') || '[]');
@@ -417,7 +424,20 @@ const ProfileV2: React.FC = () => {
       };
     });
     setLikedRestaurants(likedRestaurantDetails);
-    
+
+    // Map liked community post IDs to actual data
+    const likedCommunityPostsData = likedPostIds.map((id: string) => {
+      // Simple community post structure with essential info
+      return {
+        id,
+        title: `포스트 ${id}`,
+        type: 'community',
+        category: '커뮤니티',
+        // Add more details if needed from localStorage
+      };
+    });
+    setLikedCommunityPosts(likedCommunityPostsData);
+
     // Get all available playlists
     const adminPlaylists = JSON.parse(localStorage.getItem('adminPlaylists') || '[]');
     const localPlaylistsData = JSON.parse(localStorage.getItem('localPlaylists') || '[]');
@@ -698,12 +718,6 @@ const ProfileV2: React.FC = () => {
                 >
                   팔로잉 <span className="font-semibold">{followingUserDetails.length}</span>
                 </button>
-                <button
-                  onClick={() => setShowLikes(!showLikes)}
-                  className="hover:text-gray-800 transition-colors"
-                >
-                  좋아요 <span className="font-semibold">{likedRestaurants.length + likedPlaylists.length}</span>
-                </button>
               </div>
             </div>
           </div>
@@ -711,268 +725,442 @@ const ProfileV2: React.FC = () => {
       </div>
 
 
-      {/* 모든 콘텐츠를 한 화면에 표시 */}
-      <div className="space-y-6">
-        {/* 내 콘텐츠 섹션 (만든 리스트 & 저장한 항목) */}
-        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">내 콘텐츠</h3>
-            <button
-              onClick={() => setShowMyContent(!showMyContent)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <ChevronDownIcon className={`w-5 h-5 transition-transform ${showMyContent ? 'rotate-180' : ''}`} />
-            </button>
-          </div>
-          
-          {showMyContent && (
+      {/* 개선된 프로필 콘텐츠 탭 네비게이션 */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        {/* 탭 헤더 */}
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('my-lists')}
+            className={`flex-1 py-3 px-2 md:px-4 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'my-lists'
+                ? 'bg-orange-500 text-white'
+                : 'text-gray-600 hover:text-orange-500 hover:bg-orange-50'
+            }`}
+          >
+            <QueueListIcon className="w-4 h-4 hidden md:inline mr-1" />
+            <span>리스트</span>
+            <span className="ml-1 text-xs">({allPlaylists.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={`flex-1 py-3 px-2 md:px-4 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'saved'
+                ? 'bg-orange-500 text-white'
+                : 'text-gray-600 hover:text-orange-500 hover:bg-orange-50'
+            }`}
+          >
+            <BookmarkIcon className="w-4 h-4 hidden md:inline mr-1" />
+            <span>저장</span>
+            <span className="ml-1 text-xs">({localSavedRestaurants.length + localSavedPlaylists.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('likes')}
+            className={`flex-1 py-3 px-2 md:px-4 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'likes'
+                ? 'bg-orange-500 text-white'
+                : 'text-gray-600 hover:text-orange-500 hover:bg-orange-50'
+            }`}
+          >
+            <HeartIcon className="w-4 h-4 hidden md:inline mr-1" />
+            <span>좋아요</span>
+            <span className="ml-1 text-xs">({likedRestaurants.length + likedPlaylists.length + likedCommunityPosts.length})</span>
+          </button>
+        </div>
+
+        {/* 탭 콘텐츠 */}
+        <div className="p-4 md:p-6">
+
+          {/* 내 리스트 탭 */}
+          {activeTab === 'my-lists' && (
+            allPlaylists.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {allPlaylists.map((playlist: any) => (
+                  <div key={playlist._id} className="relative">
+                    <PlaylistCard playlist={playlist} horizontal={false} />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPlaylistForAdd(playlist._id);
+                        setShowAddRestaurantModal(true);
+                      }}
+                      className="absolute top-2 right-2 bg-white/90 backdrop-blur hover:bg-white p-2 rounded-full shadow-md transition-all hover:scale-110 z-10"
+                      title="맛집 추가"
+                    >
+                      <PlusIcon className="w-5 h-5 text-orange-600" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <QueueListIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">아직 만든 플레이리스트가 없습니다</h3>
+                <p className="text-gray-500 mb-4">나만의 맛집 리스트를 만들어보세요!</p>
+                <Link
+                  to="/create-playlist"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  플레이리스트 만들기
+                </Link>
+              </div>
+            )
+          )}
+
+          {/* 저장한 항목 탭 */}
+          {activeTab === 'saved' && (
             <>
-              {/* 토글 버튼 - 만든 리스트 vs 저장한 항목 */}
-              <div className="flex space-x-2 mb-4">
+              {/* 저장한 항목 내부 토글 */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="text-sm text-gray-600 mb-3">저장한 항목 선택:</div>
+                <div className="flex space-x-2 mb-4">
+                  <button
+                    onClick={() => setSavedToggle('restaurants')}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                      savedToggle === 'restaurants'
+                        ? 'bg-white shadow-sm text-orange-600 border border-orange-200'
+                        : 'bg-transparent text-gray-600 hover:bg-white/70'
+                    }`}
+                  >
+                    <BuildingStorefrontIcon className="w-4 h-4 inline mr-1" />
+                    맛집 ({localSavedRestaurants.length})
+                  </button>
+                  <button
+                    onClick={() => setSavedToggle('playlists')}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                      savedToggle === 'playlists'
+                        ? 'bg-white shadow-sm text-orange-600 border border-orange-200'
+                        : 'bg-transparent text-gray-600 hover:bg-white/70'
+                    }`}
+                  >
+                    <QueueListIcon className="w-4 h-4 inline mr-1" />
+                    리스트 ({localSavedPlaylists.length})
+                  </button>
+                </div>
+
+                {/* 네이버 맛집 연동 버튼 */}
                 <button
-                  onClick={() => setMyContentToggle('created')}
-                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                    myContentToggle === 'created' 
-                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                  onClick={() => navigate('/import/naver')}
+                  className="w-full p-3 bg-white border border-green-400 rounded-lg hover:bg-green-50 transition-colors flex items-center justify-center space-x-2"
                 >
-                  만든 리스트 ({allPlaylists.length})
-                </button>
-                <button
-                  onClick={() => setMyContentToggle('saved')}
-                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                    myContentToggle === 'saved'
-                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  저장한 항목 ({localSavedRestaurants.length + localSavedPlaylists.length})
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#03C75A">
+                    <path d="M16.273 12.845 7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>
+                  </svg>
+                  <span className="text-sm font-medium text-gray-700">네이버 맛집 리스트 가져오기</span>
                 </button>
               </div>
-              
-              {/* 콘텐츠 표시 */}
-              {myContentToggle === 'created' ? (
-                allPlaylists.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {allPlaylists.map((playlist: any) => (
-                      <div key={playlist._id} className="relative">
-                        <PlaylistCard playlist={playlist} horizontal={false} />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedPlaylistForAdd(playlist._id);
-                            setShowAddRestaurantModal(true);
-                          }}
-                          className="absolute top-2 right-2 bg-white/90 backdrop-blur hover:bg-white p-2 rounded-full shadow-md transition-all hover:scale-110 z-10"
-                          title="맛집 추가"
+
+              {/* 저장한 콘텐츠 표시 */}
+              {savedToggle === 'restaurants' ? (
+                localSavedRestaurants.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {localSavedRestaurants.map((saved: any) => {
+                      // 로컬 스토리지에서 레스토랑 정보 찾기
+                      const localRestaurants = localStorage.getItem('localRestaurants');
+                      const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
+                      let restaurant = restaurants.find((r: any) => r._id === saved.restaurantId);
+
+                      // 레스토랑 정보가 없으면 기본값 사용
+                      if (!restaurant) {
+                        restaurant = saved.restaurant || {
+                          _id: saved.restaurantId,
+                          name: '정보 없음',
+                          category: '',
+                          rating: 0
+                        };
+                      }
+
+                      return (
+                        <div
+                          key={saved.restaurantId}
+                          className="bg-white rounded-lg border hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer group"
+                          onClick={() => setSelectedRestaurantForMap(restaurant)}
                         >
-                          <PlusIcon className="w-5 h-5 text-orange-600" />
-                        </button>
+                          <div className="relative w-full aspect-square">
+                            {restaurant?.image ? (
+                              <img
+                                src={restaurant.image}
+                                alt={restaurant.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.onerror = null;
+                                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(restaurant?.name || 'Restaurant')}&size=200&background=FED7AA&color=C2410C&bold=true`;
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
+                                <BuildingStorefrontIcon className="w-8 h-8 text-orange-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <h4 className="font-medium text-sm line-clamp-1 mb-1">
+                              {restaurant?.name || saved.restaurantId}
+                            </h4>
+                            <p className="text-xs text-gray-500 line-clamp-1 mb-2">{restaurant?.category}</p>
+                            {restaurant?.rating && (
+                              <div className="flex items-center">
+                                <StarIcon className="w-3 h-3 text-yellow-500 fill-current" />
+                                <span className="text-xs ml-1">{restaurant.rating.toFixed(1)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <BuildingStorefrontIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">저장한 맛집이 없습니다</h3>
+                    <p className="text-gray-500">맛집을 저장하고 나만의 컬렉션을 만들어보세요!</p>
+                  </div>
+                )
+              ) : (
+                localSavedPlaylists.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {localSavedPlaylists.map((saved: any) => {
+                      let playlist: any = certifiedRestaurantLists.find(p => p._id === saved.playlistId);
+
+                      if (!playlist) {
+                        const adminPlaylists = localStorage.getItem('adminPlaylists');
+                        if (adminPlaylists) {
+                          const playlists = JSON.parse(adminPlaylists);
+                          playlist = playlists.find((p: any) => p._id === saved.playlistId);
+                        }
+                      }
+
+                      if (!playlist) return null;
+
+                      const formattedPlaylist = {
+                        ...playlist,
+                        category: playlist.certification || '맛집',
+                        likeCount: playlist.likeCount || 0,
+                        saveCount: playlist.saveCount || 0,
+                        viewCount: playlist.viewCount || 0,
+                        createdAt: playlist.createdAt || new Date().toISOString(),
+                        restaurants: playlist.restaurants || []
+                      };
+
+                      return (
+                        <div key={playlist._id} className="space-y-3">
+                          <PlaylistCard playlist={formattedPlaylist} horizontal={false} />
+
+                          {/* 리스트 내 맛집들 표시 (토글 가능) */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowRestaurantDetails(prev => ({...prev, [playlist._id]: !prev[playlist._id]}));
+                            }}
+                            className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                          >
+                            {showRestaurantDetails[playlist._id] ? '맛집 숨기기' : `맛집 ${playlist.restaurants?.length || 0}개 보기`}
+                          </button>
+
+                          {showRestaurantDetails[playlist._id] && playlist.restaurants && (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3 p-3 bg-gray-50 rounded-lg">
+                              {playlist.restaurants.slice(0, 6).map((restaurant: any, idx: number) => {
+                                const restaurantData = typeof restaurant === 'string' ?
+                                  { _id: restaurant, name: 'Loading...', category: '' } : restaurant;
+
+                                return (
+                                  <div
+                                    key={restaurantData._id || idx}
+                                    onClick={() => setSelectedRestaurantForMap(restaurantData)}
+                                    className="bg-white rounded-lg p-2 cursor-pointer hover:shadow-sm transition-shadow"
+                                  >
+                                    {restaurantData.image && (
+                                      <img
+                                        src={restaurantData.image}
+                                        alt={restaurantData.name}
+                                        className="w-full h-16 object-cover rounded mb-2"
+                                      />
+                                    )}
+                                    <h5 className="text-xs font-medium line-clamp-1">{restaurantData.name}</h5>
+                                    <p className="text-xs text-gray-500">{restaurantData.category || '음식점'}</p>
+                                    {restaurantData.rating && (
+                                      <div className="flex items-center mt-1">
+                                        <StarIcon className="w-2.5 h-2.5 text-yellow-500 fill-current" />
+                                        <span className="text-xs ml-0.5">{restaurantData.rating}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <QueueListIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">저장한 리스트가 없습니다</h3>
+                    <p className="text-gray-500">다른 사람들의 맛집 리스트를 저장해보세요!</p>
+                  </div>
+                )
+              )}
+            </>
+          )}
+
+          {/* 좋아요 탭 */}
+          {activeTab === 'likes' && (
+            <>
+              {/* 좋아요 내부 토글 */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="text-sm text-gray-600 mb-3">좋아요 항목 선택:</div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setLikesToggle('restaurants')}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                      likesToggle === 'restaurants'
+                        ? 'bg-white shadow-sm text-red-600 border border-red-200'
+                        : 'bg-transparent text-gray-600 hover:bg-white/70'
+                    }`}
+                  >
+                    <BuildingStorefrontIcon className="w-4 h-4 inline mr-1" />
+                    맛집 ({likedRestaurants.length})
+                  </button>
+                  <button
+                    onClick={() => setLikesToggle('playlists')}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                      likesToggle === 'playlists'
+                        ? 'bg-white shadow-sm text-red-600 border border-red-200'
+                        : 'bg-transparent text-gray-600 hover:bg-white/70'
+                    }`}
+                  >
+                    <QueueListIcon className="w-4 h-4 inline mr-1" />
+                    리스트 ({likedPlaylists.length})
+                  </button>
+                  <button
+                    onClick={() => setLikesToggle('community')}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                      likesToggle === 'community'
+                        ? 'bg-white shadow-sm text-red-600 border border-red-200'
+                        : 'bg-transparent text-gray-600 hover:bg-white/70'
+                    }`}
+                  >
+                    <ChatBubbleBottomCenterTextIcon className="w-4 h-4 inline mr-1" />
+                    커뮤니티 ({likedCommunityPosts.length})
+                  </button>
+                </div>
+              </div>
+
+              {/* 좋아요 콘텐츠 표시 */}
+              {likesToggle === 'restaurants' ? (
+                likedRestaurants.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {likedRestaurants.map((restaurant: any) => (
+                      <div
+                        key={restaurant._id}
+                        className="bg-white rounded-lg border hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer group"
+                        onClick={() => setSelectedRestaurantForMap(restaurant)}
+                      >
+                        <div className="relative w-full aspect-square">
+                          {restaurant.image ? (
+                            <img
+                              src={restaurant.image}
+                              alt={restaurant.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.onerror = null;
+                                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(restaurant.name)}&size=200&background=FED7AA&color=C2410C&bold=true`;
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-red-100 to-pink-100 flex items-center justify-center">
+                              <HeartIcon className="w-8 h-8 text-red-400" />
+                            </div>
+                          )}
+                          <div className="absolute top-2 right-2">
+                            <HeartSolidIcon className="w-5 h-5 text-red-500" />
+                          </div>
+                        </div>
+                        <div className="p-3">
+                          <h4 className="font-medium text-sm line-clamp-1 mb-1">{restaurant.name}</h4>
+                          <p className="text-xs text-gray-500 line-clamp-1 mb-2">{restaurant.category}</p>
+                          {restaurant.rating && (
+                            <div className="flex items-center">
+                              <StarIcon className="w-3 h-3 text-yellow-500 fill-current" />
+                              <span className="text-xs ml-1">{restaurant.rating.toFixed(1)}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <MapPinIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500">아직 만든 플레이리스트가 없습니다</p>
+                  <div className="text-center py-12">
+                    <HeartIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">좋아요한 맛집이 없습니다</h3>
+                    <p className="text-gray-500">마음에 드는 맛집에 좋아요를 눌러보세요!</p>
+                  </div>
+                )
+              ) : likesToggle === 'playlists' ? (
+                likedPlaylists.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {likedPlaylists.map((playlist: any) => (
+                      <div
+                        key={playlist._id}
+                        className="flex items-center space-x-4 p-4 bg-white border rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer group"
+                        onClick={() => navigate(`/playlist/${playlist._id}`)}
+                      >
+                        <div className="w-16 h-16 bg-gradient-to-br from-red-400 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                          {playlist.restaurants?.length || 0}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-base line-clamp-1 mb-1">{playlist.title}</h4>
+                          <p className="text-sm text-gray-500 line-clamp-1">
+                            {playlist.certification || playlist.category} · {playlist.restaurants?.length || 0}개 맛집
+                          </p>
+                        </div>
+                        <HeartSolidIcon className="w-6 h-6 text-red-500 flex-shrink-0" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <QueueListIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">좋아요한 리스트가 없습니다</h3>
+                    <p className="text-gray-500">다른 사람들의 맛집 리스트에 좋아요를 눌러보세요!</p>
                   </div>
                 )
               ) : (
-              <>
-                {/* 저장한 항목 내부 토글 - 계층 구조 표시 */}
-                <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                  <div className="text-xs text-gray-500 mb-2">저장한 항목 선택:</div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setSavedToggle('restaurants')}
-                      className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
-                        savedToggle === 'restaurants'
-                          ? 'bg-white shadow-sm text-orange-600 border border-orange-200'
-                          : 'bg-transparent text-gray-600 hover:bg-white/50'
-                      }`}
-                    >
-                      <span className="text-lg">🍽️</span> 맛집 ({localSavedRestaurants.length})
-                    </button>
-                    <button
-                      onClick={() => setSavedToggle('playlists')}
-                      className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
-                        savedToggle === 'playlists'
-                          ? 'bg-white shadow-sm text-orange-600 border border-orange-200'
-                          : 'bg-transparent text-gray-600 hover:bg-white/50'
-                      }`}
-                    >
-                      <span className="text-lg">📋</span> 리스트 ({localSavedPlaylists.length})
-                    </button>
-                  </div>
-
-                  {/* 네이버 맛집 연동 버튼 */}
-                  <button
-                    onClick={() => navigate('/import/naver')}
-                    className="w-full mt-3 p-2.5 bg-white border border-green-400 rounded-md hover:bg-green-50 transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#03C75A">
-                      <path d="M16.273 12.845 7.376 0H0v24h7.726V11.156L16.624 24H24V0h-7.727v12.845z"/>
-                    </svg>
-                    <span className="text-sm font-medium text-gray-700">네이버 맛집 리스트 가져오기</span>
-                  </button>
-                </div>
-                
-                {/* Content based on toggle */}
-                {savedToggle === 'playlists' ? (
-              localSavedPlaylists.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {localSavedPlaylists.map((saved: any) => {
-                    let playlist: any = certifiedRestaurantLists.find(p => p._id === saved.playlistId);
-                    
-                    if (!playlist) {
-                      const adminPlaylists = localStorage.getItem('adminPlaylists');
-                      if (adminPlaylists) {
-                        const playlists = JSON.parse(adminPlaylists);
-                        playlist = playlists.find((p: any) => p._id === saved.playlistId);
-                      }
-                    }
-                    
-                    if (!playlist) return null;
-                    
-                    const formattedPlaylist = {
-                      ...playlist,
-                      category: playlist.certification || '맛집',
-                      likeCount: playlist.likeCount || 0,
-                      saveCount: playlist.saveCount || 0,
-                      viewCount: playlist.viewCount || 0,
-                      createdAt: playlist.createdAt || new Date().toISOString(),
-                      restaurants: playlist.restaurants || []
-                    };
-                    
-                    return (
-                      <div key={playlist._id} className="space-y-3">
-                        <PlaylistCard playlist={formattedPlaylist} horizontal={false} />
-                        
-                        {/* 리스트 내 맛집들 표시 (토글 가능) */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowRestaurantDetails(prev => ({...prev, [playlist._id]: !prev[playlist._id]}));
-                          }}
-                          className="text-sm text-gray-600 hover:text-gray-800"
-                        >
-                          {showRestaurantDetails[playlist._id] ? '맛집 숨기기' : `맛집 ${playlist.restaurants?.length || 0}개 보기`}
-                        </button>
-                        
-                        {showRestaurantDetails[playlist._id] && playlist.restaurants && (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                            {playlist.restaurants.slice(0, 6).map((restaurant: any, idx: number) => {
-                              // restaurants 배열이 ID 문자열 배열이 아닌 객체 배열인 경우 처리
-                              const restaurantData = typeof restaurant === 'string' ? 
-                                { _id: restaurant, name: 'Loading...', category: '' } : restaurant;
-                              
-                              return (
-                                <div
-                                  key={restaurantData._id || idx}
-                                  onClick={() => setSelectedRestaurantForMap(restaurantData)}
-                                  className="bg-gray-50 rounded-lg p-2 cursor-pointer hover:bg-gray-100 transition-colors"
-                                >
-                                  {restaurantData.image && (
-                                    <img
-                                      src={restaurantData.image}
-                                      alt={restaurantData.name}
-                                      className="w-full h-16 object-cover rounded mb-1"
-                                    />
-                                  )}
-                                  <h5 className="text-xs font-medium line-clamp-1">{restaurantData.name}</h5>
-                                  <p className="text-xs text-gray-500">{restaurantData.category || '음식점'}</p>
-                                  {restaurantData.rating && (
-                                    <div className="flex items-center mt-1">
-                                      <StarIcon className="w-2.5 h-2.5 text-yellow-500 fill-current" />
-                                      <span className="text-xs ml-0.5">{restaurantData.rating}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <BookmarkIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500">저장한 리스트가 없습니다</p>
-                </div>
-              )
-            ) : (
-              localSavedRestaurants.length > 0 ? (
-                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                  {localSavedRestaurants.map((saved: any) => {
-                    // 로컬 스토리지에서 레스토랑 정보 찾기
-                    const localRestaurants = localStorage.getItem('localRestaurants');
-                    const restaurants = localRestaurants ? JSON.parse(localRestaurants) : [];
-                    let restaurant = restaurants.find((r: any) => r._id === saved.restaurantId);
-                    
-                    // 레스토랑 정보가 없으면 기본값 사용
-                    if (!restaurant) {
-                      restaurant = saved.restaurant || { 
-                        _id: saved.restaurantId, 
-                        name: '정보 없음', 
-                        category: '', 
-                        rating: 0 
-                      };
-                    }
-                    
-                    return (
-                      <div 
-                        key={saved.restaurantId} 
-                        className="bg-white rounded-md border hover:shadow-sm transition-shadow overflow-hidden cursor-pointer"
-                        onClick={() => setSelectedRestaurantForMap(restaurant)}
+                likedCommunityPosts.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {likedCommunityPosts.map((post: any) => (
+                      <div
+                        key={post.id}
+                        className="flex items-center space-x-4 p-4 bg-white border rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer group"
+                        onClick={() => navigate('/community')}
                       >
-                        <div className="relative w-full aspect-square">
-                          {restaurant?.image ? (
-                            <img 
-                              src={restaurant.image} 
-                              alt={restaurant.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.onerror = null;
-                                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(restaurant?.name || 'Restaurant')}&size=150&background=FED7AA&color=C2410C&bold=true`;
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
-                              <span className="text-xl">🍽️</span>
-                            </div>
-                          )}
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center text-white text-2xl flex-shrink-0">
+                          {post.type === 'recipe' ? '🍳' : post.type === 'tip' ? '💡' : '📝'}
                         </div>
-                        <div className="p-1.5">
-                          <h4 className="font-medium text-xs line-clamp-1">
-                            {restaurant?.name || saved.restaurantId}
-                          </h4>
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{restaurant?.category}</p>
-                          {restaurant?.rating && (
-                            <div className="flex items-center mt-0.5">
-                              <StarIcon className="w-2.5 h-2.5 text-yellow-500 fill-current" />
-                              <span className="text-xs ml-0.5">{restaurant.rating.toFixed(1)}</span>
-                            </div>
-                          )}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-base line-clamp-1 mb-1">{post.title || `커뮤니티 포스트 ${post.id}`}</h4>
+                          <p className="text-sm text-gray-500 line-clamp-1">
+                            {post.category} · 커뮤니티
+                          </p>
                         </div>
+                        <HeartSolidIcon className="w-6 h-6 text-red-500 flex-shrink-0" />
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <MapPinIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500">저장한 맛집이 없습니다</p>
-                </div>
-              )
-            )}
-              </>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <ChatBubbleBottomCenterTextIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">좋아요한 커뮤니티 포스트가 없습니다</h3>
+                    <p className="text-gray-500">커뮤니티에서 유용한 포스트에 좋아요를 눌러보세요!</p>
+                  </div>
+                )
               )}
             </>
           )}
+
         </div>
 
         {/* 모바일에서만 보이는 설정 섹션 */}
@@ -1323,9 +1511,9 @@ const ProfileV2: React.FC = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={() => setLikesToggle('restaurants')}
-                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                    likesToggle === 'restaurants' 
-                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white' 
+                  className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors text-sm ${
+                    likesToggle === 'restaurants'
+                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
@@ -1333,13 +1521,23 @@ const ProfileV2: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setLikesToggle('playlists')}
-                  className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                    likesToggle === 'playlists' 
-                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white' 
+                  className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors text-sm ${
+                    likesToggle === 'playlists'
+                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   리스트 ({likedPlaylists.length})
+                </button>
+                <button
+                  onClick={() => setLikesToggle('community')}
+                  className={`flex-1 py-2 px-3 rounded-lg font-medium transition-colors text-sm ${
+                    likesToggle === 'community'
+                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  커뮤니티 ({likedCommunityPosts.length})
                 </button>
               </div>
             </div>
@@ -1392,7 +1590,7 @@ const ProfileV2: React.FC = () => {
                     좋아요한 맛집이 없습니다
                   </div>
                 )
-              ) : (
+              ) : likesToggle === 'playlists' ? (
                 likedPlaylists.length > 0 ? (
                   <div className="p-4 space-y-3">
                     {likedPlaylists.map((playlist: any) => (
@@ -1420,6 +1618,37 @@ const ProfileV2: React.FC = () => {
                 ) : (
                   <div className="p-8 text-center text-gray-500">
                     좋아요한 리스트가 없습니다
+                  </div>
+                )
+              ) : (
+                /* Community posts */
+                likedCommunityPosts.length > 0 ? (
+                  <div className="p-4 space-y-3">
+                    {likedCommunityPosts.map((post: any) => (
+                      <div
+                        key={post.id}
+                        className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                        onClick={() => {
+                          navigate('/community');
+                          setShowLikes(false);
+                        }}
+                      >
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center text-white">
+                          {post.type === 'recipe' ? '🍳' : post.type === 'tip' ? '💡' : '📝'}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium">{post.title || `커뮤니티 포스트 ${post.id}`}</h4>
+                          <p className="text-sm text-gray-500">
+                            {post.category} · 커뮤니티
+                          </p>
+                        </div>
+                        <HeartSolidIcon className="w-5 h-5 text-red-500" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-gray-500">
+                    좋아요한 커뮤니티 포스트가 없습니다
                   </div>
                 )
               )}

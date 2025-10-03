@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import LayoutMVP from './components/LayoutMVP';
 import MobileLayout from './components/MobileLayout';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -244,6 +244,8 @@ function App() {
       <Route path="/admin/restaurants" element={<AdminRestaurantManagement />} />
       <Route path="/admin/certified-restaurants" element={<AdminCertifiedRestaurants />} />
       <Route path="/admin/verification" element={<AdminVerification />} />
+      {/* Catch-all route - 모든 잘못된 경로를 홈으로 리다이렉트 */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

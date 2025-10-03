@@ -6,57 +6,181 @@ const cheerio = require('cheerio');
 const parseNaverShareLink = async (req, res) => {
   try {
     const { shareLink } = req.body;
-    
-    // 네이버 단축 URL을 실제 URL로 변환
-    const response = await axios.get(shareLink, {
-      maxRedirects: 5,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+
+    console.log('Parsing Naver share link:', shareLink);
+
+    // 네이버 단축 URL을 실제 URL로 변환하고 장소 ID 추출
+    let finalUrl;
+    let placeId;
+
+    try {
+      // 리다이렉트를 따라가서 최종 URL 얻기
+      const response = await axios.get(shareLink, {
+        maxRedirects: 5,
+        validateStatus: function (status) {
+          return status >= 200 && status < 400; // 리다이렉트도 성공으로 처리
+        },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+
+      finalUrl = response.request.res.responseUrl || response.config.url;
+      console.log('Final URL:', finalUrl);
+
+      // URL에서 장소 ID 추출 (예: /restaurant/12345678 or place?id=12345678)
+      const idMatch = finalUrl.match(/(?:restaurant|place)[\/\?](?:id=)?(\d+)/);
+      if (idMatch) {
+        placeId = idMatch[1];
+        console.log('Extracted place ID:', placeId);
       }
-    });
-    
-    // HTML 파싱
-    const $ = cheerio.load(response.data);
-    const places = [];
-    
-    // 네이버 MY플레이스 페이지 구조에서 장소 정보 추출
-    $('.place_list_item').each((index, element) => {
-      const place = {
-        name: $(element).find('.place_name').text().trim(),
-        address: $(element).find('.place_address').text().trim(),
-        category: $(element).find('.place_category').text().trim(),
-        id: $(element).data('id')
-      };
-      
-      if (place.name) {
-        places.push(place);
-      }
-    });
-    
-    // 대안: JSON-LD 구조화된 데이터에서 추출
-    $('script[type="application/ld+json"]').each((index, element) => {
-      try {
-        const jsonData = JSON.parse($(element).html());
-        if (jsonData['@type'] === 'Restaurant' || jsonData['@type'] === 'LocalBusiness') {
+
+      // HTML에서 정보 추출
+      const $ = cheerio.load(response.data);
+      const places = [];
+
+      // 방법 1: meta 태그에서 정보 추출
+      const title = $('meta[property="og:title"]').attr('content') ||
+                   $('meta[name="twitter:title"]').attr('content') ||
+                   $('title').text();
+
+      const description = $('meta[property="og:description"]').attr('content') ||
+                         $('meta[name="description"]').attr('content');
+
+      const image = $('meta[property="og:image"]').attr('content');
+
+      // 방법 2: 구조화된 데이터(JSON-LD) 찾기
+      $('script[type="application/ld+json"]').each((index, element) => {
+        try {
+          const jsonData = JSON.parse($(element).html());
+          if (jsonData['@type'] === 'Restaurant' || jsonData['@type'] === 'LocalBusiness' || jsonData['@type'] === 'FoodEstablishment') {
+            places.push({
+              name: jsonData.name || title,
+              address: jsonData.address?.streetAddress || jsonData.address?.addressLocality || '',
+              telephone: jsonData.telephone || '',
+              category: jsonData.servesCuisine || jsonData['@type'] || '음식점',
+              url: finalUrl,
+              image: jsonData.image || image,
+              priceRange: jsonData.priceRange,
+              rating: jsonData.aggregateRating?.ratingValue
+            });
+          }
+        } catch (e) {
+          console.log('JSON-LD parse error:', e.message);
+        }
+      });
+
+      // 방법 3: 네이버 지도 페이지 구조 파싱
+      if (places.length === 0) {
+        // 장소명 추출
+        const placeName = $('.GHAhO').text() || // 새로운 네이버 지도
+                         $('._3XamX').text() || // 이전 버전
+                         $('.place_name').text() || // MY플레이스
+                         $('#_title').text() || // 구버전
+                         title?.replace(' : 네이버 지도', '').replace(' - 네이버 MY플레이스', '');
+
+        // 주소 추출
+        const placeAddress = $('.PkgBl').text() ||
+                            $('._2yqUQ').text() ||
+                            $('.place_address').text() ||
+                            $('[class*="address"]').first().text();
+
+        // 전화번호 추출
+        const placeTel = $('.xlx7Q').text() ||
+                        $('[class*="phone"]').first().text() ||
+                        $('a[href^="tel:"]').text();
+
+        // 카테고리 추출
+        const placeCategory = $('.DJJvD').text() ||
+                             $('._3ocDE').text() ||
+                             $('.place_category').text() ||
+                             $('[class*="category"]').first().text();
+
+        if (placeName) {
           places.push({
-            name: jsonData.name,
-            address: jsonData.address?.streetAddress,
-            telephone: jsonData.telephone,
-            category: jsonData.servesCuisine || '맛집'
+            name: placeName.trim(),
+            address: placeAddress?.trim() || '',
+            telephone: placeTel?.trim() || '',
+            category: placeCategory?.trim() || '음식점',
+            url: finalUrl,
+            placeId: placeId
           });
         }
-      } catch (e) {
-        console.error('Failed to parse JSON-LD:', e);
       }
-    });
-    
-    res.json({ success: true, places });
+
+      // 방법 4: 네이버 검색 API로 보완
+      if (places.length === 0 && title) {
+        // 제목에서 장소명 추출
+        const placeName = title.replace(' : 네이버 지도', '').replace(' - 네이버 MY플레이스', '').trim();
+
+        if (placeName) {
+          // 네이버 검색 API로 추가 정보 얻기
+          const searchResponse = await axios.get('https://openapi.naver.com/v1/search/local.json', {
+            params: {
+              query: placeName,
+              display: 5
+            },
+            headers: {
+              'X-Naver-Client-Id': process.env.NAVER_SEARCH_CLIENT_ID,
+              'X-Naver-Client-Secret': process.env.NAVER_SEARCH_CLIENT_SECRET
+            }
+          });
+
+          if (searchResponse.data.items && searchResponse.data.items.length > 0) {
+            // 가장 유사한 결과 찾기
+            const bestMatch = searchResponse.data.items[0];
+            places.push({
+              name: bestMatch.title.replace(/<[^>]*>/g, ''),
+              address: bestMatch.address || bestMatch.roadAddress,
+              telephone: bestMatch.telephone,
+              category: bestMatch.category,
+              url: finalUrl,
+              placeId: placeId
+            });
+          }
+        }
+      }
+
+      console.log('Extracted places:', places);
+
+      if (places.length > 0) {
+        res.json({ success: true, places });
+      } else {
+        // 최소한의 정보라도 반환
+        res.json({
+          success: true,
+          places: [{
+            name: title?.replace(' : 네이버 지도', '').replace(' - 네이버 MY플레이스', '').trim() || '알 수 없는 장소',
+            address: description || '',
+            url: finalUrl,
+            category: '음식점'
+          }]
+        });
+      }
+
+    } catch (axiosError) {
+      console.error('Axios error:', axiosError.message);
+
+      // 네이버 공유 링크가 막혀있는 경우 검색 API 사용
+      if (shareLink.includes('naver.me')) {
+        res.json({
+          success: false,
+          error: '공유 링크 파싱 실패',
+          message: '네이버 지도에서 장소명을 복사해서 검색해주세요.',
+          alternative: 'search'
+        });
+      } else {
+        throw axiosError;
+      }
+    }
+
   } catch (error) {
     console.error('Failed to parse Naver share link:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: '링크 파싱에 실패했습니다.',
-      message: error.message 
+      message: error.message,
+      hint: '네이버 지도에서 장소명을 복사해서 검색 기능을 사용해주세요.'
     });
   }
 };

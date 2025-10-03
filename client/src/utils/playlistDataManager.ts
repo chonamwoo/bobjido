@@ -21,6 +21,13 @@ class PlaylistDataManager {
     return data ? JSON.parse(data) : {};
   }
 
+  // 모든 통계 초기화
+  clearAllStats(): void {
+    localStorage.removeItem(this.storageKey);
+    console.log('[PlaylistDataManager] All stats cleared');
+    window.dispatchEvent(new CustomEvent('playlistStats:update', { detail: {} }));
+  }
+
   // 플레이리스트 통계 저장
   private saveStats(stats: Record<string, PlaylistStats>): void {
     localStorage.setItem(this.storageKey, JSON.stringify(stats));
@@ -33,13 +40,45 @@ class PlaylistDataManager {
   // 특정 플레이리스트의 통계 가져오기
   getPlaylistStats(playlistId: string): PlaylistStats {
     const stats = this.getStats();
-    return stats[playlistId] || {
-      viewCount: 0,
-      likeCount: 0,
-      saveCount: 0,
-      isLiked: false,
-      isSaved: false
-    };
+
+    // 초기값 설정 - 플레이리스트 ID에 따라 다른 기본값 설정
+    if (!stats[playlistId]) {
+      let initialStats: PlaylistStats = {
+        viewCount: 0,
+        likeCount: 0,
+        saveCount: 0,
+        isLiked: false,
+        isSaved: false
+      };
+
+      // 미슐랭, 백종원, 성시경 등 유명 플레이리스트는 초기값 설정
+      if (playlistId === 'certified-1') { // 미슐랭 가이드
+        initialStats.viewCount = 1523;
+        initialStats.likeCount = 89;
+        initialStats.saveCount = 45;
+      } else if (playlistId === 'certified-2') { // 백종원의 골목식당
+        initialStats.viewCount = 2341;
+        initialStats.likeCount = 156;
+        initialStats.saveCount = 78;
+      } else if (playlistId === 'certified-3') { // 성시경 먹을텐데
+        initialStats.viewCount = 1892;
+        initialStats.likeCount = 123;
+        initialStats.saveCount = 67;
+      } else if (playlistId === 'certified-4') { // 수요미식회
+        initialStats.viewCount = 987;
+        initialStats.likeCount = 76;
+        initialStats.saveCount = 34;
+      } else if (playlistId === 'certified-5') { // 흑백요리사
+        initialStats.viewCount = 3456;
+        initialStats.likeCount = 234;
+        initialStats.saveCount = 125;
+      }
+
+      stats[playlistId] = initialStats;
+      this.saveStats(stats);
+    }
+
+    return stats[playlistId];
   }
 
   // 조회수 증가
@@ -71,6 +110,78 @@ class PlaylistDataManager {
       const timeSinceLastView = (now.getTime() - new Date(lastViewed).getTime()) / 1000;
       console.log(`[PlaylistDataManager] ⏭️ Skipping view count for ${playlistId} (viewed ${timeSinceLastView}s ago)`);
     }
+  }
+
+  // 좋아요 카운트 증가
+  incrementLikeCount(playlistId: string): void {
+    const stats = this.getStats();
+    if (!stats[playlistId]) {
+      stats[playlistId] = {
+        viewCount: 0,
+        likeCount: 0,
+        saveCount: 0,
+        isLiked: false,
+        isSaved: false
+      };
+    }
+    stats[playlistId].likeCount += 1;
+    stats[playlistId].isLiked = true;
+    this.saveStats(stats);
+    console.log(`[PlaylistDataManager] Like count increased for ${playlistId}: ${stats[playlistId].likeCount}`);
+  }
+
+  // 좋아요 카운트 감소
+  decrementLikeCount(playlistId: string): void {
+    const stats = this.getStats();
+    if (!stats[playlistId]) {
+      stats[playlistId] = {
+        viewCount: 0,
+        likeCount: 0,
+        saveCount: 0,
+        isLiked: false,
+        isSaved: false
+      };
+    }
+    stats[playlistId].likeCount = Math.max(0, stats[playlistId].likeCount - 1);
+    stats[playlistId].isLiked = false;
+    this.saveStats(stats);
+    console.log(`[PlaylistDataManager] Like count decreased for ${playlistId}: ${stats[playlistId].likeCount}`);
+  }
+
+  // 저장 카운트 증가
+  incrementSaveCount(playlistId: string): void {
+    const stats = this.getStats();
+    if (!stats[playlistId]) {
+      stats[playlistId] = {
+        viewCount: 0,
+        likeCount: 0,
+        saveCount: 0,
+        isLiked: false,
+        isSaved: false
+      };
+    }
+    stats[playlistId].saveCount += 1;
+    stats[playlistId].isSaved = true;
+    this.saveStats(stats);
+    console.log(`[PlaylistDataManager] Save count increased for ${playlistId}: ${stats[playlistId].saveCount}`);
+  }
+
+  // 저장 카운트 감소
+  decrementSaveCount(playlistId: string): void {
+    const stats = this.getStats();
+    if (!stats[playlistId]) {
+      stats[playlistId] = {
+        viewCount: 0,
+        likeCount: 0,
+        saveCount: 0,
+        isLiked: false,
+        isSaved: false
+      };
+    }
+    stats[playlistId].saveCount = Math.max(0, stats[playlistId].saveCount - 1);
+    stats[playlistId].isSaved = false;
+    this.saveStats(stats);
+    console.log(`[PlaylistDataManager] Save count decreased for ${playlistId}: ${stats[playlistId].saveCount}`);
   }
 
   // 좋아요 토글

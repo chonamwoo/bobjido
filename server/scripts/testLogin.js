@@ -28,7 +28,7 @@ async function testLogin() {
         console.log('  User:', response.data.data.username);
         console.log('  Email:', response.data.data.email);
       } else {
-        console.log('❌ Unexpected success - should have failed');
+        console.log('Unexpected success - should have failed');
       }
     } catch (error) {
       if (test.expected === 'fail') {

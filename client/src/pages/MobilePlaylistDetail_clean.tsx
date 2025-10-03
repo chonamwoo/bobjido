@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from '../utils/axios';
 import toast from 'react-hot-toast';
-import {
-  HeartIcon,
-  BookmarkIcon,
+import { 
+  HeartIcon, 
+  BookmarkIcon, 
   ShareIcon,
   MapPinIcon,
   ClockIcon,
@@ -19,10 +18,10 @@ import {
   ListBulletIcon,
   MapIcon
 } from '@heroicons/react/24/outline';
-import {
-  HeartIcon as HeartSolidIcon,
+import { 
+  HeartIcon as HeartSolidIcon, 
   BookmarkIcon as BookmarkSolidIcon,
-  StarIcon as StarSolidIcon
+  StarIcon as StarSolidIcon 
 } from '@heroicons/react/24/solid';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -35,7 +34,6 @@ import { certifiedRestaurantLists } from '../data/certifiedRestaurantLists_fixed
 import { dataManager } from '../utils/dataManager';
 import { playlistDataManager } from '../utils/playlistDataManager';
 import RestaurantDetailPopup from '../components/RestaurantDetailPopup';
-import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 
 const MobilePlaylistDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -63,18 +61,6 @@ const MobilePlaylistDetail: React.FC = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareMessage, setShareMessage] = useState('');
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
-  const [showRestaurantShareModal, setShowRestaurantShareModal] = useState(false);
-  const [selectedShareRestaurant, setSelectedShareRestaurant] = useState<any>(null);
-  const [restaurantShareMessage, setRestaurantShareMessage] = useState('');
-  const [restaurantShareUsers, setRestaurantShareUsers] = useState<string[]>([]);
-  const [currentViewCount, setCurrentViewCount] = useState(0);
-  const [currentLikeCount, setCurrentLikeCount] = useState(0);
-  const [currentSaveCount, setCurrentSaveCount] = useState(0);
-  const [isFollowing, setIsFollowing] = useState(false);
 
   // 조회수 증가는 playlist가 로드된 후에 처리 (아래 useEffect에서 처리)
 
@@ -86,12 +72,12 @@ const MobilePlaylistDetail: React.FC = () => {
         // friend- prefix를 제거하고 실제 플레이리스트 찾기
         const parts = id.split('-');
         const username = parts.slice(1, -1).join('-'); // friend-{username}-{index}에서 username 추출
-
+        
         // localStorage에서 해당 사용자의 플레이리스트 찾기
         const localPlaylists = localStorage.getItem('localPlaylists');
         if (localPlaylists) {
           const playlists = JSON.parse(localPlaylists);
-          const userPlaylist = playlists.find((p: any) =>
+          const userPlaylist = playlists.find((p: any) => 
             p.createdBy?.username === username || p.creator === username
           );
           if (userPlaylist) {
@@ -108,7 +94,7 @@ const MobilePlaylistDetail: React.FC = () => {
             };
           }
         }
-
+        
         // 인증 크리에이터인지 확인
         const certifiedCreators = ['흑백요리사', '미슐랭 가이드', '블루리본', '백종원', '수요미식회', '에드워드 리'];
         if (certifiedCreators.includes(username)) {
@@ -127,7 +113,7 @@ const MobilePlaylistDetail: React.FC = () => {
             };
           }
         }
-
+        
         // 플레이리스트가 없으면 기본 더미 데이터 반환
         return {
           _id: id,
@@ -136,7 +122,7 @@ const MobilePlaylistDetail: React.FC = () => {
           description: `${username}님이 추천하는 맛집들입니다`,
           createdBy: { username: username, isVerified: false },
           restaurants: [
-            {
+            { 
               _id: `${username}-rest-1`,
               restaurant: {
                 _id: `${username}-rest-1`,
@@ -157,7 +143,7 @@ const MobilePlaylistDetail: React.FC = () => {
           tags: ['추천', '맛집', username]
         };
       }
-
+      
       // cert-1, cert-2 등의 인증 맛집 데이터 직접 가져오기
       if (id?.startsWith('cert-')) {
         // MobileHomeSoundCloud에서 사용하는 동일한 더미 데이터를 가져옵니다
@@ -169,7 +155,7 @@ const MobilePlaylistDetail: React.FC = () => {
             description: '미슐랭이 인정한 서울의 맛집들',
             createdBy: { username: '미슐랭 가이드', isVerified: true },
             restaurants: [
-              {
+              { 
                 _id: 'rest-1',
                 restaurant: {
                   _id: 'rest-1',
@@ -183,7 +169,7 @@ const MobilePlaylistDetail: React.FC = () => {
                 },
                 reason: '한국 전통의 맛을 현대적으로 재해석한 미슐랭 2스타'
               },
-              {
+              { 
                 _id: 'rest-2',
                 restaurant: {
                   _id: 'rest-2',
@@ -197,7 +183,7 @@ const MobilePlaylistDetail: React.FC = () => {
                 },
                 reason: '신라호텔의 품격있는 한정식, 미슐랭 3스타'
               },
-              {
+              { 
                 _id: 'rest-3',
                 restaurant: {
                   _id: 'rest-3',
@@ -438,16 +424,16 @@ const MobilePlaylistDetail: React.FC = () => {
             tags: ['흑백요리사', '넷플릭스', '셰프추천']
           }
         ];
-
+        
         const found = certifiedLists.find(p => p._id === id);
         if (found) return found;
       }
-
+      
       // friend- 로 시작하는 친구 맛집 데이터
       if (id?.startsWith('friend-')) {
         const storedFollowing = localStorage.getItem('followingUsers');
         const followingList = storedFollowing ? JSON.parse(storedFollowing) : [];
-
+        
         // friend-empty 또는 특정 친구 플레이리스트 찾기
         if (id === 'friend-empty') {
           return {
@@ -463,7 +449,7 @@ const MobilePlaylistDetail: React.FC = () => {
             tags: []
           };
         }
-
+        
         // 특정 친구의 플레이리스트 찾기
         const friendMatch = id.match(/friend-(.+)-(\d+)/);
         if (friendMatch) {
@@ -475,7 +461,7 @@ const MobilePlaylistDetail: React.FC = () => {
             description: `${username}님이 추천하는 맛집들입니다`,
             createdBy: { username: username, isVerified: false },
             restaurants: [
-              {
+              { 
                 _id: `${username}-rest-1`,
                 restaurant: {
                   _id: `${username}-rest-1`,
@@ -489,7 +475,7 @@ const MobilePlaylistDetail: React.FC = () => {
                 },
                 reason: `${username}님이 강력 추천하는 오마카세`
               },
-              {
+              { 
                 _id: `${username}-rest-2`,
                 restaurant: {
                   _id: `${username}-rest-2`,
@@ -503,7 +489,7 @@ const MobilePlaylistDetail: React.FC = () => {
                 },
                 reason: '여름에 최고! 시원한 평양냉면'
               },
-              {
+              { 
                 _id: `${username}-rest-3`,
                 restaurant: {
                   _id: `${username}-rest-3`,
@@ -525,7 +511,7 @@ const MobilePlaylistDetail: React.FC = () => {
           };
         }
       }
-
+      
       // certifiedRestaurantLists에서 찾기
       const certifiedPlaylist = certifiedRestaurantLists.find(p => p._id === id);
       if (certifiedPlaylist) {
@@ -540,7 +526,7 @@ const MobilePlaylistDetail: React.FC = () => {
           isSaved: stats.isSaved
         };
       }
-
+      
       // 로컬 스토리지에서 찾기
       const localPlaylists = localStorage.getItem('localPlaylists');
       if (localPlaylists) {
@@ -550,7 +536,7 @@ const MobilePlaylistDetail: React.FC = () => {
           return localPlaylist;
         }
       }
-
+      
       // 둘 다 없으면 API 호출
       try {
         const response = await axios.get(`/api/playlists/${id}`);
@@ -562,7 +548,7 @@ const MobilePlaylistDetail: React.FC = () => {
     },
     enabled: !!id,
   });
-
+  
   // 저장 상태 동기화 및 조회수 증가
   useEffect(() => {
     if (id && playlist) {
@@ -575,15 +561,9 @@ const MobilePlaylistDetail: React.FC = () => {
       // 조회수 증가
       playlistDataManager.incrementViewCount(id);
       console.log(`[MobilePlaylistDetail] View count incremented for ${id}`);
-
-      // 현재 통계 설정
-      const stats = playlistDataManager.getPlaylistStats(id);
-      setCurrentViewCount(stats.viewCount);
-      setCurrentLikeCount(stats.likeCount);
-      setCurrentSaveCount(stats.saveCount);
     }
   }, [id, playlist]); // playlist가 변경될 때마다 상태 재로드
-
+  
   // Listen for dataManager and playlistStats updates
   useEffect(() => {
     const handleDataUpdate = () => {
@@ -604,12 +584,6 @@ const MobilePlaylistDetail: React.FC = () => {
         // 통계 업데이트시 리렌더링 트리거
         queryClient.invalidateQueries(['playlist', id]);
         console.log(`[MobilePlaylistDetail] Stats updated, refreshing playlist ${id}`);
-
-        // 현재 통계 업데이트
-        const stats = playlistDataManager.getPlaylistStats(id);
-        setCurrentViewCount(stats.viewCount);
-        setCurrentLikeCount(stats.likeCount);
-        setCurrentSaveCount(stats.saveCount);
       }
     };
 
@@ -649,95 +623,95 @@ const MobilePlaylistDetail: React.FC = () => {
     }
     return restaurant;
   }) || [];
-
+  
   // 디버깅: 실제 데이터 확인
   console.log('Playlist data:', playlist);
   console.log('Restaurant list:', restaurantList);
-
+  
   // 실제 데이터에 좌표가 없으면 더미 데이터 사용
   const hasValidCoordinates = restaurantList.some((r: any) => r.lat && r.lng);
-
+  
   const restaurants = restaurantList.length > 0 && hasValidCoordinates
-    ? restaurantList
+    ? restaurantList 
     : [
-        {
-          _id: '1',
-          name: '브로이하우스 성수',
-          category: '양식',
-          rating: 4.5,
-          price: '₩₩',
+        { 
+          _id: '1', 
+          name: '브로이하우스 성수', 
+          category: '양식', 
+          rating: 4.5, 
+          price: '₩₩', 
           address: '서울 성동구 연무장길 41-1',
           lat: 37.5447128,  // 실제 좌표
           lng: 127.0557743,
           image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400',
           reason: '수제 맥주와 함께 즐기는 정통 독일식 소시지, 분위기도 최고!'
         },
-        {
-          _id: '2',
-          name: '스시선수 청담',
-          category: '일식',
-          rating: 4.8,
-          price: '₩₩₩₩',
+        { 
+          _id: '2', 
+          name: '스시선수 청담', 
+          category: '일식', 
+          rating: 4.8, 
+          price: '₩₩₩₩', 
           address: '서울 강남구 도산대로45길 6',
           lat: 37.5226894,  // 실제 좌표
           lng: 127.0423736,
           image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400',
           reason: '신선한 재료와 셰프님의 설명이 일품, 예약 필수입니다.'
         },
-        {
-          _id: '3',
-          name: '피오니 홍대점',
-          category: '이탈리안',
-          rating: 4.3,
-          price: '₩₩',
+        { 
+          _id: '3', 
+          name: '피오니 홍대점', 
+          category: '이탈리안', 
+          rating: 4.3, 
+          price: '₩₩', 
           address: '서울 마포구 홍익로3길 34',
           lat: 37.5530374,  // 실제 좌표
           lng: 126.9235845,
           image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400',
           reason: '로제 파스타가 시그니처! 웨이팅 있지만 기다릴 가치 있어요.'
         },
-        {
-          _id: '4',
-          name: '카페 무이 이태원',
-          category: '브런치',
-          rating: 4.6,
-          price: '₩₩',
+        { 
+          _id: '4', 
+          name: '카페 무이 이태원', 
+          category: '브런치', 
+          rating: 4.6, 
+          price: '₩₩', 
           address: '서울 용산구 회나무로26길 39',
           lat: 37.5347819,  // 실제 좌표
           lng: 126.9947892,
           image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400',
           reason: '리코타 팬케이크가 유명해요. 주말엔 웨이팅 필수!'
         },
-        {
-          _id: '5',
-          name: '다올 종로점',
-          category: '한식',
-          rating: 4.7,
-          price: '₩₩₩',
+        { 
+          _id: '5', 
+          name: '다올 종로점', 
+          category: '한식', 
+          rating: 4.7, 
+          price: '₩₩₩', 
           address: '서울 종로구 인사동길 30-1',
           lat: 37.5738639,  // 실제 좌표
           lng: 126.9864245,
           image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
           reason: '정갈한 한정식, 외국인 접대나 어르신 모시고 가기 좋아요.'
         },
-        {
-          _id: '6',
-          name: '민들레떡볶이 신촌점',
-          category: '분식',
-          rating: 4.4,
-          price: '₩',
+        { 
+          _id: '6', 
+          name: '민들레떡볶이 신촌점', 
+          category: '분식', 
+          rating: 4.4, 
+          price: '₩', 
           address: '서울 마포구 신촌로12길 2',
           lat: 37.5559073,  // 실제 좌표
           lng: 126.9367825,
           image: 'https://images.unsplash.com/photo-1635363638580-c2809d049eee?w=400',
           reason: '바삭한 튀김과 쫄깃한 떡볶이, 대학생들의 성지!'
         },
-        {
-          _id: '7',
-          name: '하노이의 아침 연남',
-          category: '아시안',
-          rating: 4.5,
-          price: '₩₩',
+        { 
+          _id: '7', 
+          name: '하노이의 아침 연남', 
+          category: '아시안', 
+          rating: 4.5, 
+          price: '₩₩', 
           address: '서울 마포구 동교로41길 28',
           lat: 37.5627738,  // 실제 좌표
           lng: 126.9254852,
@@ -785,7 +759,7 @@ const MobilePlaylistDetail: React.FC = () => {
         "></div>
       </div>
     `;
-
+    
     return L.divIcon({
       html: iconHtml,
       className: 'custom-marker',
@@ -800,21 +774,13 @@ const MobilePlaylistDetail: React.FC = () => {
       navigate('/auth');
       return;
     }
-
+    
     if (id) {
       const liked = dataManager.togglePlaylistLike(id);
       setIsLiked(liked);
-
-      // playlistDataManager에 라이크 카운트 업데이트
-      if (liked) {
-        playlistDataManager.incrementLikeCount(id);
-      } else {
-        playlistDataManager.decrementLikeCount(id);
-      }
-
       toast.success(liked ? '좋아요!' : '좋아요 취소');
       console.log(`MobilePlaylistDetail - Like toggled for ${id}: liked=${liked}`);
-
+      
       // 이벤트 발생
       window.dispatchEvent(new CustomEvent('dataManager:update'));
     }
@@ -822,296 +788,85 @@ const MobilePlaylistDetail: React.FC = () => {
 
   const handleSave = () => {
     console.log('Mobile - handleSave called - id:', id, 'isSaved:', isSaved);
-
+    
     if (!user) {
       toast.error('로그인이 필요합니다');
       navigate('/auth');
       return;
     }
-
+    
     if (id) {
       if (isSaved) {
         console.log('Mobile - Unsaving playlist:', id);
         dataManager.unsavePlaylist(id);
         setIsSaved(false);
-        playlistDataManager.decrementSaveCount(id); // 저장 카운트 감소
         toast.success('저장 취소됨');
       } else {
         console.log('Mobile - Saving playlist:', id);
         dataManager.savePlaylist(id);
         setIsSaved(true);
-        playlistDataManager.incrementSaveCount(id); // 저장 카운트 증가
         toast.success('저장됨!');
       }
-
+      
       // 저장 후 상태 확인
       const savedData = dataManager.getSavedPlaylists();
       console.log('Mobile - After save - Saved playlists:', savedData);
-
+      
       // 이벤트 발생시켜 다른 컴포넌트들이 업데이트 되도록
       window.dispatchEvent(new CustomEvent('dataManager:update'));
     }
   };
 
-  const handleShare = () => {
-    setShowShareModal(true);
-    loadAvailableUsers();
-  };
-
-  const loadAvailableUsers = () => {
-    try {
-      const userDataRaw = localStorage.getItem('userData') || localStorage.getItem('bobmap_user_data') || '{}';
-      const userData = JSON.parse(userDataRaw);
-      const followingUserDetails = userData.followingUserDetails || [];
-      const followerDetails = userData.followerDetails || [];
-
-      const uniqueUsers = new Map();
-
-      followingUserDetails.forEach((user: any) => {
-        uniqueUsers.set(user._id, {
-          ...user,
-          type: followerDetails.some((f: any) => f._id === user._id) ? 'mutual' : 'following'
-        });
-      });
-
-      followerDetails.forEach((user: any) => {
-        if (!uniqueUsers.has(user._id)) {
-          uniqueUsers.set(user._id, { ...user, type: 'follower' });
-        }
-      });
-
-      setAvailableUsers(Array.from(uniqueUsers.values()));
-    } catch (error) {
-      console.error('Failed to load users:', error);
-      setAvailableUsers([]);
-    }
-  };
-
-  const sendShareMessage = () => {
-    if (!playlist || selectedUsers.length === 0) {
-      toast.error('받는 사람을 선택해주세요');
-      return;
-    }
+  const handleShare = async () => {
+    const shareData = {
+      title: playlist?.title || '맛집 플레이리스트',
+      text: playlist?.description || '맛집 플레이리스트를 확인해보세요!',
+      url: window.location.href
+    };
 
     try {
-      const currentUser = JSON.parse(localStorage.getItem('userData') || localStorage.getItem('bobmap_user_data') || '{}');
-      const senderId = currentUser.username || '사용자';
-      const messageReceipts: any[] = [];
+      // Web Share API는 HTTPS에서만 작동하고, localhost에서는 권한 문제가 있을 수 있음
+      // 따라서 localhost나 HTTP에서는 클립보드 복사를 기본으로 사용
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const isHttps = window.location.protocol === 'https:';
 
-      const sentMessages = JSON.parse(localStorage.getItem(`playlist_shares_by_${senderId}`) || '[]');
-
-      selectedUsers.forEach(userId => {
-        const recipient = availableUsers.find(u => u._id === userId);
-        if (!recipient) return;
-
-        const messageId = `playlist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const timestamp = new Date().toISOString();
-
-        const sharedMessage = {
-          id: messageId,
-          type: 'playlist_share',
-          senderId,
-          senderName: senderId,
-          recipientId: userId,
-          recipientName: recipient.username,
-          playlist: {
-            id: playlist._id,
-            title: playlist.title,
-            description: playlist.description,
-            restaurants: playlist.restaurants || []
-          },
-          message: shareMessage,
-          timestamp,
-          status: 'sent',
-          sharedBy: {
-            id: senderId,
-            name: senderId,
-            avatar: '😊'
-          },
-          read: false
-        };
-
-        const recipientMessages = JSON.parse(localStorage.getItem(`messages_to_${recipient.username}`) || '[]');
-        recipientMessages.push(sharedMessage);
-        localStorage.setItem(`messages_to_${recipient.username}`, JSON.stringify(recipientMessages));
-
-        sentMessages.push({
-          ...sharedMessage,
-          recipientName: recipient.username
-        });
-
-        messageReceipts.push({
-          recipientId: userId,
-          recipientName: recipient.username,
-          status: 'sent',
-          sentAt: timestamp
-        });
-      });
-
-      localStorage.setItem(`playlist_shares_by_${senderId}`, JSON.stringify(sentMessages));
-
-      setSelectedUsers([]);
-      setShareMessage('');
-      setShowShareModal(false);
-      toast.success(`${selectedUsers.length}명에게 플레이리스트를 공유했습니다!`);
-    } catch (error) {
-      console.error('Share failed:', error);
-      toast.error('공유 중 오류가 발생했습니다');
-    }
-  };
-
-  const handleRestaurantShare = (restaurant: any) => {
-    setSelectedShareRestaurant(restaurant);
-    setShowRestaurantShareModal(true);
-    loadAvailableUsers();
-  };
-
-  const sendRestaurantShareMessage = () => {
-    if (restaurantShareUsers.length > 0 && selectedShareRestaurant) {
-      try {
-        const currentUser = JSON.parse(localStorage.getItem('userData') || localStorage.getItem('bobmap_user_data') || '{}');
-        const senderId = currentUser.username || '사용자';
-
-        restaurantShareUsers.forEach(userId => {
-          const recipient = availableUsers.find(u => u.username === userId);
-          if (recipient) {
-            const messageId = `restaurant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            const timestamp = new Date().toISOString();
-
-            const sharedMessage = {
-              id: messageId,
-              type: 'restaurant_share',
-              senderId,
-              senderName: senderId,
-              recipientId: recipient._id || userId,
-              recipientName: recipient.username || userId,
-              content: restaurantShareMessage || `${selectedShareRestaurant.name} 맛집을 공유했습니다!`,
-              restaurant: {
-                id: selectedShareRestaurant._id || selectedShareRestaurant.id,
-                name: selectedShareRestaurant.name,
-                category: selectedShareRestaurant.category,
-                address: selectedShareRestaurant.address,
-                rating: selectedShareRestaurant.rating
-              },
-              timestamp,
-              read: false,
-              shareType: 'restaurant',
-              sharedData: {
-                restaurant: selectedShareRestaurant,
-                type: 'restaurant'
-              }
-            };
-
-            // 발신자의 보낸 메시지에 저장
-            const sentMessagesKey = `restaurant_shares_by_${senderId}`;
-            const existingSentMessages = JSON.parse(localStorage.getItem(sentMessagesKey) || '[]');
-            existingSentMessages.push(sharedMessage);
-            localStorage.setItem(sentMessagesKey, JSON.stringify(existingSentMessages));
-
-            // 수신자의 받은 메시지에 저장
-            const receivedMessagesKey = `messages_received_by_${recipient.username}`;
-            const existingReceivedMessages = JSON.parse(localStorage.getItem(receivedMessagesKey) || '[]');
-            existingReceivedMessages.push(sharedMessage);
-            localStorage.setItem(receivedMessagesKey, JSON.stringify(existingReceivedMessages));
-          }
-        });
-
-        setRestaurantShareUsers([]);
-        setRestaurantShareMessage('');
-        setShowRestaurantShareModal(false);
-        setSelectedShareRestaurant(null);
-        toast.success(`${restaurantShareUsers.length}명에게 맛집을 공유했습니다!`);
-      } catch (error) {
-        console.error('Restaurant share failed:', error);
-        toast.error('맛집 공유 중 오류가 발생했습니다');
-      }
-    }
-  };
-
-  const handleFollow = () => {
-    if (!user) {
-      toast.error('로그인이 필요합니다');
-      return;
-    }
-
-    if (!playlist?.createdBy?.username && !playlist?.creator) {
-      toast.error('플레이리스트 작성자 정보를 찾을 수 없습니다');
-      return;
-    }
-
-    const targetUsername = playlist.createdBy?.username || playlist.creator;
-
-    // 본인 플레이리스트는 팔로우 불가
-    if (targetUsername === user.username) {
-      toast.error('본인은 팔로우할 수 없습니다');
-      return;
-    }
-
-    try {
-      const userData = JSON.parse(localStorage.getItem('userData') || localStorage.getItem('bobmap_user_data') || '{}');
-      const followingList = userData.following || [];
-      const followingUserDetails = userData.followingUserDetails || [];
-
-      if (isFollowing) {
-        // 언팔로우
-        const updatedFollowing = followingList.filter((username: string) => username !== targetUsername);
-        const updatedFollowingDetails = followingUserDetails.filter((user: any) => user.username !== targetUsername);
-
-        userData.following = updatedFollowing;
-        userData.followingUserDetails = updatedFollowingDetails;
-
-        localStorage.setItem('userData', JSON.stringify(userData));
-        localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
-
-        setIsFollowing(false);
-        toast.success(`${targetUsername}님을 언팔로우했습니다`);
+      if (navigator.share && isHttps && !isLocalhost) {
+        await navigator.share(shareData);
+        toast.success('공유되었습니다!');
       } else {
-        // 팔로우
-        if (!followingList.includes(targetUsername)) {
-          userData.following = [...followingList, targetUsername];
+        // Fallback: 클립보드에 복사
+        const shareText = `${shareData.title}\n${shareData.text}\n${shareData.url}`;
+        await navigator.clipboard.writeText(shareText);
+        toast.success('링크가 클립보드에 복사되었습니다!');
+      }
+    } catch (error: any) {
+      // 사용자가 공유를 취소한 경우는 무시
+      if (error?.name === 'AbortError') {
+        return;
+      }
 
-          // 사용자 상세 정보 추가 (임시 데이터)
-          const newUserDetail = {
-            _id: `user_${Date.now()}`,
-            username: targetUsername,
-            profile: {
-              bio: '맛집 탐방을 좋아하는 사용자',
-              avatar: '👤'
-            }
-          };
-          userData.followingUserDetails = [...followingUserDetails, newUserDetail];
-
-          localStorage.setItem('userData', JSON.stringify(userData));
-          localStorage.setItem('bobmap_user_data', JSON.stringify(userData));
-
-          setIsFollowing(true);
-          toast.success(`${targetUsername}님을 팔로우했습니다`);
+      // Permission denied 에러나 다른 에러의 경우 클립보드 복사 시도
+      if (error?.name === 'NotAllowedError' || error?.message?.includes('Permission denied')) {
+        try {
+          const shareText = `${shareData.title}\n${shareData.text}\n${shareData.url}`;
+          await navigator.clipboard.writeText(shareText);
+          toast.success('링크가 클립보드에 복사되었습니다!');
+          return;
+        } catch (clipboardError) {
+          console.error('Clipboard copy failed:', clipboardError);
         }
       }
 
-      // 전역 업데이트 이벤트 발생
-      window.dispatchEvent(new CustomEvent('userDataUpdate'));
-    } catch (error) {
-      console.error('Follow operation failed:', error);
-      toast.error('팔로우 처리 중 오류가 발생했습니다');
+      // 다른 에러의 경우에도 클립보드 복사 시도
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('링크가 클립보드에 복사되었습니다!');
+      } catch (clipboardError) {
+        // 클립보드도 실패하면 수동 복사 안내
+        toast.error('공유할 수 없습니다. URL을 직접 복사해주세요.');
+      }
     }
   };
-
-  // 팔로우 상태 초기화
-  useEffect(() => {
-    if (playlist && user) {
-      const targetUsername = playlist.createdBy?.username || playlist.creator;
-      if (targetUsername && targetUsername !== user.username) {
-        try {
-          const userData = JSON.parse(localStorage.getItem('userData') || localStorage.getItem('bobmap_user_data') || '{}');
-          const followingList = userData.following || [];
-          setIsFollowing(followingList.includes(targetUsername));
-        } catch (error) {
-          console.error('Failed to check follow status:', error);
-        }
-      }
-    }
-  }, [playlist, user]);
 
   if (isLoading) {
     return (
@@ -1145,7 +900,7 @@ const MobilePlaylistDetail: React.FC = () => {
           onError={() => setImageError(true)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-
+        
       </div>
 
       {/* 플레이리스트 정보 */}
@@ -1153,7 +908,7 @@ const MobilePlaylistDetail: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-4">
           <h1 className="text-xl font-bold text-gray-900 mb-2">{playlist.title || playlist.name}</h1>
           <p className="text-sm text-gray-600 mb-3">{playlist.description}</p>
-
+          
           {/* 해시태그 */}
           <div className="flex flex-wrap gap-2 mb-4">
             {tags.map((tag: string, index: number) => (
@@ -1178,15 +933,8 @@ const MobilePlaylistDetail: React.FC = () => {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleFollow}
-              className={`text-xs px-3 py-1 rounded-full transition-colors ${
-                isFollowing
-                  ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  : 'bg-orange-500 text-white hover:bg-orange-600'
-              }`}
-            >
-              {isFollowing ? '팔로잉' : '팔로우'}
+            <button className="text-xs bg-orange-500 text-white px-3 py-1 rounded-full">
+              팔로우
             </button>
           </div>
 
@@ -1199,10 +947,10 @@ const MobilePlaylistDetail: React.FC = () => {
                 <HeartIcon className="w-6 h-6 text-gray-600" />
               )}
               <span className="text-xs text-gray-600 mt-1">
-                {currentLikeCount || playlist.likeCount || 0}
+                {(playlist.likeCount || 0) + (isLiked ? 1 : 0)}
               </span>
             </button>
-
+            
             <button onClick={handleSave} className="flex flex-col items-center">
               {isSaved ? (
                 <BookmarkSolidIcon className="w-6 h-6 text-orange-500" />
@@ -1211,16 +959,16 @@ const MobilePlaylistDetail: React.FC = () => {
               )}
               <span className="text-xs text-gray-600 mt-1">저장</span>
             </button>
-
+            
             <button onClick={handleShare} className="flex flex-col items-center">
               <ShareIcon className="w-6 h-6 text-gray-600" />
               <span className="text-xs text-gray-600 mt-1">공유</span>
             </button>
-
+            
             <button className="flex flex-col items-center">
               <EyeIcon className="w-6 h-6 text-gray-600" />
               <span className="text-xs text-gray-600 mt-1">
-                {currentViewCount || playlist.viewCount || 0}
+                {playlist.viewCount || 0}
               </span>
             </button>
           </div>
@@ -1240,9 +988,9 @@ const MobilePlaylistDetail: React.FC = () => {
       {/* 지도 뷰 (항상 표시) */}
       <div className="px-4">
           <div className="w-full h-[400px] rounded-lg shadow-md overflow-hidden">
-            <MapContainer
-              center={[37.5500, 126.9700]}
-              zoom={12}
+            <MapContainer 
+              center={[37.5500, 126.9700]} 
+              zoom={12} 
               style={{ height: '100%', width: '100%' }}
               scrollWheelZoom={true}  // 스크롤로 확대/축소 가능
               zoomControl={true}      // 줌 컨트롤 표시
@@ -1257,19 +1005,19 @@ const MobilePlaylistDetail: React.FC = () => {
                 // 실제 좌표 사용 (랜덤 생성 제거)
                 const lat = restaurant.lat;
                 const lng = restaurant.lng;
-
+                
                 // 디버깅을 위한 로그
                 console.log(`Restaurant ${index + 1}: ${restaurant.name}`, { lat, lng });
-
+                
                 // 좌표가 없는 경우 스킵
                 if (!lat || !lng) {
                   console.warn(`No coordinates for ${restaurant.name}`);
                   return null;
                 }
-
+                
                 return (
-                  <Marker
-                    key={restaurant._id || `marker-${index}`}
+                  <Marker 
+                    key={restaurant._id || `marker-${index}`} 
                     position={[lat, lng]}
                     icon={createNumberIcon(index + 1)}
                     eventHandlers={{
@@ -1285,12 +1033,12 @@ const MobilePlaylistDetail: React.FC = () => {
               })}
             </MapContainer>
           </div>
-
+          
           {/* 지도 조작 안내 */}
           <div className="mt-2 text-xs text-gray-500 text-center">
             💡 지도를 확대하려면 더블 클릭 또는 두 손가락으로 확대하세요
           </div>
-
+          
           {/* 지도 아래 간단한 리스트 */}
           <div className="mt-3 space-y-2 max-h-[300px] overflow-y-auto">
             {restaurants.map((restaurant: any, index: number) => (
@@ -1327,7 +1075,7 @@ const MobilePlaylistDetail: React.FC = () => {
       </div>
 
       {/* 맛집 상세 팝업 - 통일된 팝업 사용 */}
-      {showRestaurantPopup && selectedRestaurant && createPortal(
+      {showRestaurantPopup && selectedRestaurant && (
         <RestaurantDetailPopup
           restaurant={selectedRestaurant}
           onClose={() => setShowRestaurantPopup(false)}
@@ -1391,9 +1139,7 @@ const MobilePlaylistDetail: React.FC = () => {
             (r._id === selectedRestaurant._id) ||
             (r.restaurant?._id === selectedRestaurant._id)
           )?.reason || selectedRestaurant.reason}
-          onShare={handleRestaurantShare}
-        />,
-        document.body
+        />
       )}
 
       {/* 리뷰 작성 모달 */}
@@ -1490,199 +1236,6 @@ const MobilePlaylistDetail: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* 플레이리스트 공유 모달 - Portal로 body에 직접 렌더링 */}
-      {showShareModal && playlist && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 2147483647 }}>
-          <div className="bg-white w-full max-w-md rounded-2xl p-6">
-            <h3 className="text-lg font-bold mb-4">플레이리스트 공유</h3>
-
-            {/* 공유할 플레이리스트 미리보기 */}
-            <div className="bg-gray-50 rounded-lg p-3 mb-4">
-              <p className="font-medium text-sm">{playlist.title}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                📋 맛집 리스트 · {playlist.restaurants?.length || 0}개 맛집
-              </p>
-            </div>
-
-            {/* 메시지 입력 */}
-            <textarea
-              value={shareMessage}
-              onChange={(e) => setShareMessage(e.target.value)}
-              placeholder="함께 보낼 메시지를 입력하세요 (선택)"
-              className="w-full p-3 border rounded-lg text-sm mb-4"
-              rows={3}
-            />
-
-            {/* 사용자 선택 */}
-            <div className="mb-4">
-              <p className="text-sm font-medium mb-2">받는 사람 선택 (팔로잉 & 팔로워)</p>
-              {availableUsers.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {availableUsers.map((user) => (
-                    <label key={user._id} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded">
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(user._id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedUsers([...selectedUsers, user._id]);
-                          } else {
-                            setSelectedUsers(selectedUsers.filter(u => u !== user._id));
-                          }
-                        }}
-                        className="rounded text-orange-500 focus:ring-orange-500"
-                      />
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="text-lg">😊</span>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{user.username}</span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              user.type === 'mutual' ? 'bg-purple-100 text-purple-700' :
-                              user.type === 'following' ? 'bg-green-100 text-green-700' :
-                              'bg-blue-100 text-blue-700'
-                            }`}>
-                              {user.type === 'mutual' ? '서로팔로우' :
-                               user.type === 'following' ? '팔로잉' :
-                               '팔로워'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 py-4 text-center">
-                  팔로잉/팔로워가 없습니다
-                </p>
-              )}
-            </div>
-
-            {/* 버튼 */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setShowShareModal(false);
-                  setSelectedUsers([]);
-                  setShareMessage('');
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                취소
-              </button>
-              <button
-                onClick={sendShareMessage}
-                disabled={selectedUsers.length === 0}
-                className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                공유하기
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* 맛집 공유 모달 - Portal로 body에 직접 렌더링 */}
-      {showRestaurantShareModal && selectedShareRestaurant && createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 2147483647, position: 'fixed' }}>
-          <div className="bg-white w-full max-w-md rounded-2xl p-6">
-            <h3 className="text-lg font-bold mb-4">맛집 공유</h3>
-
-            {/* 공유할 맛집 미리보기 */}
-            <div className="bg-gray-50 rounded-lg p-3 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">🍽️</span>
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">{selectedShareRestaurant.name}</h4>
-                  <p className="text-sm text-gray-600">{selectedShareRestaurant.category}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* 메시지 입력 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                메시지 (선택사항)
-              </label>
-              <textarea
-                value={restaurantShareMessage}
-                onChange={(e) => setRestaurantShareMessage(e.target.value)}
-                placeholder="함께 공유할 메시지를 입력하세요..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
-                rows={3}
-              />
-            </div>
-
-            {/* 사용자 선택 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                공유할 사람 선택
-              </label>
-              <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg">
-                {availableUsers.length > 0 ? (
-                  availableUsers.map((user) => (
-                    <label
-                      key={user.username}
-                      className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={restaurantShareUsers.includes(user.username)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setRestaurantShareUsers(prev => [...prev, user.username]);
-                          } else {
-                            setRestaurantShareUsers(prev => prev.filter(u => u !== user.username));
-                          }
-                        }}
-                        className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                      />
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">
-                          {user.username.substring(0, 1).toUpperCase()}
-                        </span>
-                      </div>
-                      <span className="font-medium">{user.username}</span>
-                    </label>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-gray-500">
-                    팔로우하는 사용자가 없습니다
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 버튼 */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setShowRestaurantShareModal(false);
-                  setSelectedShareRestaurant(null);
-                  setRestaurantShareMessage('');
-                  setRestaurantShareUsers([]);
-                }}
-                className="flex-1 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
-              >
-                취소
-              </button>
-              <button
-                onClick={sendRestaurantShareMessage}
-                disabled={restaurantShareUsers.length === 0}
-                className="flex-1 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                공유하기 ({restaurantShareUsers.length})
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
       )}
     </div>
   );

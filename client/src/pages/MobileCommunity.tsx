@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   FireIcon,
   BookOpenIcon,
@@ -14,10 +15,15 @@ import {
   PlusIcon,
   MagnifyingGlassIcon,
   SparklesIcon,
+  PaperAirplaneIcon,
+  EllipsisVerticalIcon,
+  InboxIcon,
+  BellIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { getCommunityImage, getAvatarColor, getPostVisual, getRealFoodImage } from '../utils/communityImages';
 import CommunityPostModal from '../components/CommunityPostModal';
+import ShareStatusModal from '../components/ShareStatusModal';
 
 interface Comment {
   id: string;
@@ -69,6 +75,7 @@ interface CommunityPost {
 }
 
 const MobileCommunity: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,6 +85,8 @@ const MobileCommunity: React.FC = () => {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [availableUsers, setAvailableUsers] = useState<any[]>([]);
   const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
+  const [showShareStatusModal, setShowShareStatusModal] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // 실제 사용자 데이터 로드
   useEffect(() => {
@@ -207,25 +216,92 @@ const MobileCommunity: React.FC = () => {
   const handleShare = (post: any) => {
     setSelectedSharePost(post);
     setShowShareModal(true);
+    // 포스트 모달을 공유 모드로 변경 (뒤로 보내기)
   };
 
   const sendShareMessage = () => {
     if (selectedUsers.length > 0 && selectedSharePost) {
-      // 선택된 사용자들에게 메시지 보내기
+      const currentUser = JSON.parse(localStorage.getItem('userData') || localStorage.getItem('bobmap_user_data') || '{}');
+      const senderId = currentUser.username || '사용자';
+      const senderAvatar = currentUser.profileImage || '👤';
+
+      // 공유 메시지 데이터 생성
       const shareData = {
+        id: `share_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'community_share',
-        post: selectedSharePost,
+        post: {
+          id: selectedSharePost.id,
+          title: selectedSharePost.title,
+          content: selectedSharePost.content,
+          author: selectedSharePost.author,
+          category: selectedSharePost.category,
+          image: selectedSharePost.images?.[0] || null
+        },
         message: shareMessage,
-        sharedBy: '사용자',
-        timestamp: new Date().toISOString()
+        sharedBy: {
+          id: currentUser._id || senderId,
+          name: senderId,
+          avatar: senderAvatar
+        },
+        timestamp: new Date().toISOString(),
+        read: false,
+        readAt: null
       };
 
-      // localStorage에 메시지 저장
+      const messageReceipts: any[] = []; // 전송 상태 추적
+
+      // 선택된 각 사용자에게 메시지 전송
       selectedUsers.forEach(userId => {
-        const userMessages = JSON.parse(localStorage.getItem(`messages_${userId}`) || '[]');
-        userMessages.push(shareData);
-        localStorage.setItem(`messages_${userId}`, JSON.stringify(userMessages));
+        const user = availableUsers.find(u => u.id === userId);
+        const recipientName = user?.name || userId;
+
+        // 수신자의 메시지함에 저장
+        const recipientMessages = JSON.parse(localStorage.getItem(`messages_to_${recipientName}`) || '[]');
+        recipientMessages.unshift({ // 최신 메시지가 맨 위로
+          ...shareData,
+          recipientId: userId,
+          recipientName: recipientName
+        });
+        localStorage.setItem(`messages_to_${recipientName}`, JSON.stringify(recipientMessages));
+
+        // 전송자의 전송함에 저장 (읽음 확인용)
+        const sentMessages = JSON.parse(localStorage.getItem(`messages_sent_by_${senderId}`) || '[]');
+        sentMessages.unshift({
+          ...shareData,
+          recipientId: userId,
+          recipientName: recipientName,
+          status: 'sent' // sent, delivered, read
+        });
+        localStorage.setItem(`messages_sent_by_${senderId}`, JSON.stringify(sentMessages));
+
+        messageReceipts.push({
+          recipientId: userId,
+          recipientName: recipientName,
+          status: 'sent',
+          sentAt: new Date().toISOString()
+        });
+
+        // 통합 채팅방 메시지도 생성 (MobileMessages와 연동)
+        const chatKey = `chat_${[senderId, recipientName].sort().join('_')}`;
+        const chatMessages = JSON.parse(localStorage.getItem(chatKey) || '[]');
+        chatMessages.push({
+          id: shareData.id,
+          text: `📱 ${selectedSharePost.title}\n\n${shareMessage || '공유된 커뮤니티 포스트입니다'}`,
+          sender: 'me',
+          timestamp: new Date().toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          }),
+          read: false,
+          type: 'community_share',
+          sharedPost: shareData.post
+        });
+        localStorage.setItem(chatKey, JSON.stringify(chatMessages));
       });
+
+      // 전송 상태 저장
+      localStorage.setItem(`share_receipt_${shareData.id}`, JSON.stringify(messageReceipts));
 
       // 성공 메시지 - 실제 사용자 이름 표시
       const selectedUserNames = selectedUsers.map(userId => {
@@ -233,11 +309,19 @@ const MobileCommunity: React.FC = () => {
         return user ? user.name : userId;
       });
 
-      alert(`${selectedUserNames.join(', ')} 등 ${selectedUsers.length}명에게 공유했습니다!`);
+      // 토스트 메시지로 더 세련되게 표시
+      if (selectedUsers.length === 1) {
+        alert(`${selectedUserNames[0]}님에게 포스트를 공유했습니다! 📨\n\n메시지에서 전송 상태를 확인할 수 있습니다.`);
+      } else {
+        alert(`${selectedUserNames.join(', ')} 등 ${selectedUsers.length}명에게 포스트를 공유했습니다! 📨\n\n메시지에서 전송 상태를 확인할 수 있습니다.`);
+      }
+
       setShowShareModal(false);
       setSelectedUsers([]);
       setShareMessage('');
       setSelectedSharePost(null);
+      // 공유 완료 후 포스트 모달도 닫기
+      setSelectedPost(null);
     }
   };
 
@@ -929,12 +1013,84 @@ const MobileCommunity: React.FC = () => {
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold">커뮤니티</h1>
-            <button
-              onClick={() => setShowSearch(!showSearch)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <MagnifyingGlassIcon className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowSearch(!showSearch)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <MagnifyingGlassIcon className="w-5 h-5" />
+              </button>
+
+              {/* 더보기 메뉴 */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowMoreMenu(!showMoreMenu)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  title="더보기 메뉴"
+                >
+                  <EllipsisVerticalIcon className="w-5 h-5" />
+                </button>
+
+                {/* 더보기 메뉴 드롭다운 */}
+                {showMoreMenu && (
+                  <div className="absolute top-10 right-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+                    <button
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        navigate('/create-playlist');
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                    >
+                      <PlusIcon className="w-5 h-5 text-gray-600" />
+                      <span className="text-gray-800 font-medium">플레이리스트 만들기</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        navigate('/messages');
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                    >
+                      <InboxIcon className="w-5 h-5 text-gray-600" />
+                      <span className="text-gray-800 font-medium">메시지</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        navigate('/notifications');
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                    >
+                      <BellIcon className="w-5 h-5 text-gray-600" />
+                      <span className="text-gray-800 font-medium">알림</span>
+                    </button>
+
+                    <hr className="my-2 border-gray-200" />
+
+                    <button
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        setShowShareStatusModal(true);
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                    >
+                      <PaperAirplaneIcon className="w-5 h-5 text-gray-600" />
+                      <span className="text-gray-800 font-medium">공유 상태</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* 메뉴 외부 클릭 시 닫기 */}
+                {showMoreMenu && (
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowMoreMenu(false)}
+                  />
+                )}
+              </div>
+            </div>
           </div>
 
           {/* 검색바 */}
@@ -1148,12 +1304,13 @@ const MobileCommunity: React.FC = () => {
           onSave={() => handleSave(selectedPost.id)}
           onShare={() => handleShare(selectedPost)}
           onCommentAdd={handleCommentAdd}
+          isShareMode={showShareModal}
         />
       )}
 
       {/* 공유 모달 */}
       {showShareModal && selectedSharePost && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
           <div className="bg-white w-full max-w-md rounded-2xl p-6">
             <h3 className="text-lg font-bold mb-4">커뮤니티 게시글 공유</h3>
 
@@ -1229,6 +1386,7 @@ const MobileCommunity: React.FC = () => {
                   setSelectedSharePost(null);
                   setShareMessage('');
                   setSelectedUsers([]);
+                  // 공유 취소 시 포스트 모달로 돌아가기 (닫지 않음)
                 }}
                 className="flex-1 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
               >
@@ -1244,6 +1402,24 @@ const MobileCommunity: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 공유 상태 모달 */}
+      <ShareStatusModal
+        isOpen={showShareStatusModal}
+        onClose={() => setShowShareStatusModal(false)}
+      />
+
+      {/* 커뮤니티 포스트 상세 모달 */}
+      {selectedPost && (
+        <CommunityPostModal
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+          onLike={() => handleLike(selectedPost.id)}
+          onSave={() => handleSave(selectedPost.id)}
+          onShare={() => handleShare(selectedPost)}
+          isShareMode={showShareModal}
+        />
       )}
     </div>
   );

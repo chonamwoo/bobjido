@@ -465,6 +465,18 @@
                 this.src = this.src;
             }, 2000);
         };
+
+        // Force mobile view in iframe
+        window.onload = function() {
+            const iframe = document.getElementById('appFrame');
+            iframe.onload = function() {
+                // 홈 페이지 자동 로드
+                console.log('Mobile simulator loaded - staying on home page');
+            };
+
+            // 초기 로드 시 홈 페이지 유지
+            // iframe.src는 이미 http://localhost:3000으로 설정되어 있음
+        };
     </script>
 </body>
 </html>
